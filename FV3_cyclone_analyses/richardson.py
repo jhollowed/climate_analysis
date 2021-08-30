@@ -14,7 +14,7 @@ from guppy import hpy
 sys.path.append('/home/hollowed/repos/ncl_exports')
 import wrappers
 
-class cyclone_analysis:
+class richardson:
     def __init__(self, runs, names=None, cmap=plt.cm.gist_rainbow):
         self.files = [Nio.open_file(f, 'wr') for f in runs]
         if names is None:
@@ -165,6 +165,7 @@ class cyclone_analysis:
             Rd = 287.058
             cp = 1005
             g = 9.8065
+            eps = 0.61
  
             print('computing P') 
             # performs P = hyam*P0 + hybm*PS
@@ -178,7 +179,8 @@ class cyclone_analysis:
            
             print('computing Ri') 
             # get virtual temp, pot. temp, thetav and velocity gradients
-            Tv = T*(1+0.61*Q)
+            w = Q/(1-Q)
+            Tv = T*(1+eps*w)
             thetav = Tv*(P0/P)**(Rd/cp)
             dtdp = self.grad(thetav, P, 'tmp/dtdp_{}.npy'.format(i))
             dudp = self.grad(U, P, 'tmp/dudp_{}.npy'.format(i))
@@ -186,7 +188,7 @@ class cyclone_analysis:
             vv = np.linalg.norm([dudp, dvdp], axis=0)**2 
 
             # get richardson number, critical richardson number
-            Ri = dtdp/(thetav*RHO * vv)
+            Ri = -dtdp/(thetav*RHO * vv)
             Rc = self.Rc(P)
             mixing = Ri < Rc
 

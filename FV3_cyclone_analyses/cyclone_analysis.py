@@ -17,7 +17,8 @@ class cyclone_analysis:
         else: 
             self.run_names = names
         self.colors = cmap(np.linspace(0.1, 0.9, len(self.files)))
- 
+
+
     def rl_fig_5(self, lev=28):
 
         fig = plt.figure(figsize=(5, 9))
@@ -95,13 +96,13 @@ def great_circle(lat1, lon1, lat2, lon2):
          
 if __name__ == '__main__':
 
-    print('CHECK: {}'.format(great_circle(90, 0, -90, 0)/(const.R_earth.to(u.m).value*np.pi)))
     ff = sorted(glob.glob('/scratch/cjablono_root/cjablono1/hollowed/cesm2.2/'\
                           'cyclone_tests/clones/*/run/*h0*.nc'))
-    ff.append('/scratch/cjablono_root/cjablono1/hollowed/cesm2.2/cyclone_tests/'
-              'root/cesm2.2.ne60.L30.RJ12/run/cesm2.2.ne60.L30.RJ12.cam.h0.0001-01-01-00000.nc')
-    names = ['FV3: C192, n_sponge=0', 'FV3: C192, sg_adj=1800, n_sponge=30', 
-            'FV3: C192, sg_adj=3600, n_sponge=30', 'SE: ne30']
+    #ff.append('/scratch/cjablono_root/cjablono1/hollowed/cesm2.2/cyclone_tests/'
+    #          'root/cesm2.2.ne60.L30.RJ12/run/cesm2.2.ne60.L30.RJ12.cam.h0.0001-01-01-00000.nc')
+    #names = ['FV3: C192, n_sponge=0', 'FV3: C192, sg_adj=1800, n_sponge=30', 
+    #        'FV3: C192, sg_adj=3600, n_sponge=30', 'SE: ne30']
+    names = [s.split('__')[-1] for s in ff]
     aa = cyclone_analysis(ff, names)
     aa.rl_fig_5()
 
