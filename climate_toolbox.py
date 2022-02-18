@@ -9,8 +9,10 @@ import pdb
 import glob
 import numpy as np
 import xarray as xr
-import Nio, Ngl
 from cftime import DatetimeNoLeap
+
+sys.path.append('/glade/u/home/jhollowed/repos/ncl_exports')
+from wrappers import dpres_hybrid_ccm
 
 # ==========================================================================================
 
@@ -95,7 +97,7 @@ def QBO_index(data, p=30, u_var_name='ua', p_var_name='plev'):
     p = p*100
     if(p in u['plev']):
         u = u.sel({'plev':3000})
-    else
+    else:
         u = u.interp({'plev':3000})
     return u
     
@@ -141,21 +143,103 @@ def Nino34_index(data, sst_var_name='tos', time_samples_mon=1):
 # -------------------------------------------------------------
     
     
+def l2_norm(dat, varname='U', norm_type=15, compdat=None, compMean=False):
+    '''
+    Computes l2 norms from Jablonowski+Williamson 2006
 
+    Parameters
+    ----------
+    dat : xarray Dataset
+        the input data
+    varname : string
+        Variable to take the norm of
+    norm_type: int
+        Either 14 or 15, giving the equation number from JW06
+        - Default is 15, in which case the norm is taken between the 
+        zonal mean of the field, and the initial zonal mean of the 
+        field (this measures the departure from stability)
+        - If 14, the norm is taken between the zonal mean of the field, 
+        and the 3D field (this measures the departure from symmetry)
+    compdat : xarray Dataset
+        Another set of input data to compare the input against.
+        Default is None, in which case the norm is taken as described
+        in Jablonowski+06, respecting norm_type. 
+        If provided, norm is taken between the entire 3D fields of each
+        file as a time series (i.e. norm_type will be ignored)
+        It will be assumed that the comparison data set is on the same 
+        horizontal and vertical grid as the input (horizontal only if looking
+        at 2D quantities), and output at the same timesteps
+    compMean : bool
+        If True, and compdat is given, copare the zonally averaged fields
+        from each dataset, rather than the 3D field
+    '''
 
+    var = dat[varname]
+    u = dat['U']
+    ps = dat['PS']
+    hyai = dat['hyai']
+    hybi = dat['hybi']
+    P0 = 100000.0         #Pa, to match ps units
+    dp = dpres_hybrid_ccm(ps, P0, hyai, hybi).values
+    dp = xr.DataArray(dp, dims=u.dims, coords=u.coords, name='dp')
+    
+    # approx horizontal weighting
+    rad = np.pi/180
+    lat = dat['lat']
+    wy  = np.cos(lat*rad) #proxy [ sin(j+1/2)-sin(j-1/2) ]
 
+    # get time samples and zonal-mean var
+    ntime = len(dat['time'])
+    varm = var.mean('lon')
 
-
-
-
-
-
-
-
-
-
-
-
+    # read comparison dataset if given
+    if(compdat is not None):
+        norm_type = 0
+        compvar = compdat[varname]
+        comp_varm = var.mean('lon')
+        
+    # compute the norm...
+    
+    # =============== EQ 14 ===============
+    if(norm_type == 14):
+        
+        norm = np.zeros(ntime)
+        for i in range(ntime):
+            # the broadcasting here works by matching dimensions by their names, 
+            # which importantly comes from the input netcdf file
+            diff2 = (var[i] - varm[i])**2
+            num = np.sum(diff2 * wy * dp[i])
+            den = np.sum(wy * dp[i])
+            norm[i] = np.sqrt(num/den)    
+        
+    # =============== EQ 14 ===============
+    elif(norm_type == 15):
+        
+        norm = np.zeros(ntime)
+        for i in range(ntime):
+            # the broadcasting here works by matching dimensions by their names, 
+            # which importantly comes from the input netcdf file
+            diff2 = (varm[i] - varm[0])**2
+            num = np.sum(diff2 * wy * dp[i])
+            den = np.sum(wy * dp[i])
+            norm[i] = np.sqrt(num/den)
+    
+    # =============== COMPARE ===============
+    elif(norm_type == 0):
+        
+        norm = np.zeros(ntime)
+        for i in range(ntime):
+            # the broadcasting here works by matching dimensions by their names, 
+            # which importantly comes from the input netcdf file
+            if(compMean):
+                diff2 = (varm[i] - compvarm[i])**2
+            else:
+                diff2 = (var[i] - compvar[i])**2
+            num = np.sum(diff2 * wy * dp[i])
+            den = np.sum(wy * dp[i])
+            norm[i] = np.sqrt(num/den)
+    
+    return norm
 
 
 

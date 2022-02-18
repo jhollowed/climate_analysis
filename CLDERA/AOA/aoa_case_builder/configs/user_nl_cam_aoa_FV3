@@ -1,0 +1,21 @@
+
+! ========== AOA settings ==========
+
+empty_htapes     = .TRUE.              ! output only the varibales listed below
+avgflag_pertape  = 'A'                 ! hist file 1 is average
+
+fincl1           = 'U','V','OMEGA','AOA1','AOA2','TT_LW'
+
+NHTFRQ           = -720,-720       :q! output frequency every 30 days
+MFILT            = 48,48           ! allow 48 time samples per hist file (4 years)
+NDENS            = 2,2             ! single-precision for each hist file
+
+aoa_read_from_ic_file = .FALSE.        ! activate built-in analytic init of aoa tracers
+
+
+! ========== Dycore-specific settings ==========
+
+fv3_tau = 0                            ! disable built-in Rayleigh friction (we use our own)
+fv3_n_split = 3                        ! number of acoustic timesteps between vertical remapping
+pertlim = 1.0D-5                       ! Perturb initial conditions for temperature randomly by up to
+
