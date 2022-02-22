@@ -409,8 +409,8 @@ subroutine tracers_timestep_forcing(state, ptend, dt)
     !------------------------------------------------------------------
     
     ! set the spinup period
-    ! spinup_nday = 300.0_r8 ! Aman's original value
-    spinup_nday = 2.0_r8 ! Aman's original value
+    spinup_nday = 300.0_r8 ! Aman's original value
+    !spinup_nday = 2.0_r8 ! effectively remove spinup period
 
     ! Get or manually set tracer number
     num_tracer=1
