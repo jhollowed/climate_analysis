@@ -56,12 +56,17 @@ contains
 
 !> \section arg_table_held_suarez_1994_init Argument Table
 !! \htmlinclude held_suarez_1994_init.html
-  subroutine held_suarez_1994_init(pver_in, cappa_in, cpair_in, psurf_ref_in, pref_mid_norm_in, errmsg, errflg)
+  !subroutine held_suarez_1994_init(pver_in, cappa_in, cpair_in, &
+  !                                 psurf_ref_in, pref_mid_norm_in, ptop_ref, errmsg, errflg)
+  !--JH-- modified calling signature; added ptop_ref
+  subroutine held_suarez_1994_init(pver_in, cappa_in, cpair_in, &
+                                   psurf_ref_in, pref_mid_norm_in, ptop_ref, errmsg, errflg)
     !! Dummy arguments
     integer,           intent(in) :: pver_in
     real(kind_phys),   intent(in) :: cappa_in
     real(kind_phys),   intent(in) :: cpair_in
     real(kind_phys),   intent(in) :: psurf_ref_in
+    real(kind_phys),   intent(in) :: ptop_ref_in   !--JH--
     real(kind_phys),   intent(in) :: pref_mid_norm_in(:)
     character(len=512),intent(out):: errmsg
     integer,           intent(out):: errflg
@@ -76,6 +81,7 @@ contains
     cappa         = cappa_in
     cpair         = cpair_in
     psurf_ref     = psurf_ref_in
+    ptop_ref     = ptop_ref_in         !--JH--
     pref_mid_norm = pref_mid_norm_in   ! Layer midpoints normalized by surface pressure 
                                        ! ('eta' coordinate)
 
@@ -176,7 +182,8 @@ contains
     dphi0  = 15._kind_phys*pi/180._kind_phys
     a0     = 2.65_kind_phys/dphi0
     aeq    = 10000._kind_phys / psurf_ref 
-    apole  = 200._kind_phys / psurf_ref
+    !apole  = 200._kind_phys / psurf_ref            ! original value from Williamson+ modificaiton
+    apole  = (ptop_ref * 0.9_kind_phys) / psurf_ref ! place apole slightly above model top
     lapsew = -3.345e-03_kind_phys
     constw = rair*lapsew/gravit
     lapsec =  2.00e-03_kind_phys

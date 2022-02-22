@@ -14,8 +14,7 @@ cmap = plt.cm.rainbow
 # ==========================================================================================
 
 
-def vertical_slice(var, x, y, plotType='contourf', ax=None, savefig=None,
-                   inverty=True, yscale='log', xscale='linear', pltargs=[],
+def vertical_slice(var_dict, x, y, ax=None, savefig=None, inverty=True, yscale='log', xscale='linear',
                    xlabel=None, ylabel=None, title=None, xlim=None, ylim=None):
     '''
     Plot the 2D vertical slice of a variable

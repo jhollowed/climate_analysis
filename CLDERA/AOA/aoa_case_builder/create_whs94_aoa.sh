@@ -23,7 +23,7 @@ CASES=/glade/u/home/jhollowed/CAM/cases/aoa_cases/project3/cases
 CONFIGS=/glade/u/home/jhollowed/CAM/cases/aoa_cases/project3/configs
 VGRIDS=/glade/u/home/cjablono/CESM_vertical_grids
 DATA=/glade/u/home/jhollowed/CAM/inputdata
-SRCMODS=${CONFIGS}/SourceMods/aman_mods
+SRCMODS=${CONFIGS}/SourceMods
 
 # =============== configure based on dycore, resolution ===============
 if [ "$RES" == "C24" ]; then
@@ -107,7 +107,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     
     printf "\n\n========== COPYING SOURCEMODS ==========\n"
     # ---------- copy source mods
-    cp --verbose -r ${SRCMODS}/* ./SourceMods
+    cp --verbose -r ${SRCMODS}/src.cam ./SourceMods/src.cam
     
     printf "\n\n========== CASE SETUP ==========\n"
     ./case.setup
