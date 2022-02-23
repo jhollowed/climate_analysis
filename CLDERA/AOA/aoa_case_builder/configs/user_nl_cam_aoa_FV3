@@ -6,7 +6,7 @@ avgflag_pertape  = 'A'                 ! hist file 1 is average
 
 fincl1           = 'U','V','OMEGA','AOA1','AOA2','TT_LW'
 
-NHTFRQ           = -720,-720       :q! output frequency every 30 days
+NHTFRQ           = -720,-720       ! output frequency every 30 days
 MFILT            = 48,48           ! allow 48 time samples per hist file (4 years)
 NDENS            = 2,2             ! single-precision for each hist file
 

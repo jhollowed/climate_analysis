@@ -16,6 +16,7 @@ module held_suarez_1994
   !--JH--
   use physconst,   only: gravit, rair
   use cam_logfile, only: iulog
+  use ref_pres,           only: ptop_ref  !--JH--
 
   implicit none
   private
@@ -56,17 +57,13 @@ contains
 
 !> \section arg_table_held_suarez_1994_init Argument Table
 !! \htmlinclude held_suarez_1994_init.html
-  !subroutine held_suarez_1994_init(pver_in, cappa_in, cpair_in, &
-  !                                 psurf_ref_in, pref_mid_norm_in, ptop_ref, errmsg, errflg)
-  !--JH-- modified calling signature; added ptop_ref
   subroutine held_suarez_1994_init(pver_in, cappa_in, cpair_in, &
-                                   psurf_ref_in, pref_mid_norm_in, ptop_ref, errmsg, errflg)
+                                   psurf_ref_in, pref_mid_norm_in, errmsg, errflg)
     !! Dummy arguments
     integer,           intent(in) :: pver_in
     real(kind_phys),   intent(in) :: cappa_in
     real(kind_phys),   intent(in) :: cpair_in
     real(kind_phys),   intent(in) :: psurf_ref_in
-    real(kind_phys),   intent(in) :: ptop_ref_in   !--JH--
     real(kind_phys),   intent(in) :: pref_mid_norm_in(:)
     character(len=512),intent(out):: errmsg
     integer,           intent(out):: errflg
@@ -81,7 +78,6 @@ contains
     cappa         = cappa_in
     cpair         = cpair_in
     psurf_ref     = psurf_ref_in
-    ptop_ref     = ptop_ref_in         !--JH--
     pref_mid_norm = pref_mid_norm_in   ! Layer midpoints normalized by surface pressure 
                                        ! ('eta' coordinate)
 
@@ -130,7 +126,7 @@ contains
     real(kind_phys)   :: efoldaa          ! efolding time for T dissipation
     real(kind_phys)   :: kaa              ! 1./efolding_time for temperature diss.
     real(kind_phys)   :: pi               ! pi
-    real(kind_phys)   :: p0strat          ! threshold pressure
+    real(kind_phys)   :: p0strat          ! threshold pressure in Pa
     real(kind_phys)   :: phi0             ! threshold latitude
     real(kind_phys)   :: dphi0            ! del-latitude
     real(kind_phys)   :: a0               ! coefficent
@@ -239,12 +235,13 @@ contains
           trefa   = max(t00,trefa)
 
           ! --- apply first term of WHS+1998 Eq1 Apdx A for p < aeq
-          if (pmid(i,k) < aeq) then
+          if (pmid(i,k) < (aeq * psurf_ref)) then    ! scale aeq to Pa
              trefa = t00*((pmid(i,k)/10000._kind_phys))**constc
           endif
           
           ! --- apply second term of WHS+1998 Eq1 Apdx A for p < p0strat
           p0strat = aeq - (aeq - apole)*0.5_kind_phys*(1._kind_phys + tanh(a0*(acoslat - phi0)))
+          p0strat = p0strat * psurf_ref   ! scale to Pa
           if (pmid(i,k) < p0strat) then
              trefa = trefa + t00*( ((pmid(i,k)/p0strat))**constw - 1._kind_phys )
           endif

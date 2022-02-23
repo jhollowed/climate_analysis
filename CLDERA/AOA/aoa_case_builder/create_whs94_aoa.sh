@@ -13,9 +13,16 @@ pause(){
 DYCORE=$1
 RES=$2
 NLEV=$3
-BUILD_FLAG=$4  # either 0,1,or 2; 0 throws error if case exists, 
-               #                  1 will rebuild (without clean-all) and submit,e.g. for namelist changes 
-               #                  2 will nuke the case and create from scratch
+BUILD_FLAG=$4  # either 0,1,or 2; 
+               # 0 throws error if case exists, 
+               # 1 will rebuild (without clean-all) and submit,e.g. for namelist changes 
+               # 2 will nuke the case and create from scratch
+MOD_TYPE=$5    # Options:
+               # 0: vanilla HS
+               # 1: WHS mod
+               # 2: WHS mod + RF sponge
+               # 4: WHS mod + RF sponge + topography
+               # 5: WHS mod + RF sponge + topography + solstice climatology
 
 MODEL=/glade/u/home/jhollowed/CAM/CAM_dev/cime/scripts/create_newcase
 OUT=/glade/scratch/jhollowed/CAM/cases/aoa_runs/project3
@@ -23,7 +30,7 @@ CASES=/glade/u/home/jhollowed/CAM/cases/aoa_cases/project3/cases
 CONFIGS=/glade/u/home/jhollowed/CAM/cases/aoa_cases/project3/configs
 VGRIDS=/glade/u/home/cjablono/CESM_vertical_grids
 DATA=/glade/u/home/jhollowed/CAM/inputdata
-SRCMODS=${CONFIGS}/SourceMods
+SRCMODS=${CONFIGS}/SourceMods/src.cam.$5
 
 # =============== configure based on dycore, resolution ===============
 if [ "$RES" == "C24" ]; then
@@ -44,6 +51,7 @@ elif [ "$RES" == "C48" ]; then
         GRID="ne16_ne16_mg17"
         LAB="ne16"
         PE=288
+        ATM_NCPL=96
     fi
 fi
 
@@ -55,7 +63,7 @@ STOP_N=720        # total simulated time will be STOP_N * (RESUBMIT+1)
                   # here 2 years --> RESUBMIT=11 for 25 years
 RESUBMIT=11
 #CASENAME=${DYCORE}_${LAB}L${NLEV}_whs_aoa_N${STOP_N}
-CASENAME=${DYCORE}_${LAB}L${NLEV}_whs_aoa
+CASENAME=${DYCORE}_${LAB}L${NLEV}_whs_aoa_mod${MOD_TYPE}
 CASE=${CASES}/${CASENAME}
 
 
@@ -85,12 +93,6 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "--nlev=$NLEV "
     ./xmlchange JOB_WALLCLOCK_TIME=01:00:00
     ./xmlchange SAVE_TIMING=TRUE
-    #./xmlchange DIN_LOC_ROOT=$DATA
-
-    # temporary fix for missing grid definitions
-    #if [ "$DYCORE" == "FV3" ]; then
-        #./xmlchange ATM_DOMAIN_MESH=${ATM_DOMAIN_MESH}
-    #fi
     
     # ---------- configure run restarts
     # setting RESUBMIT>0 automatically sets CONTINUE_RUN=TRUE for all runs 
@@ -107,7 +109,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     
     printf "\n\n========== COPYING SOURCEMODS ==========\n"
     # ---------- copy source mods
-    cp --verbose -r ${SRCMODS}/src.cam ./SourceMods/src.cam
+    cp --verbose ${SRCMODS}/* ./SourceMods/src.cam/
     
     printf "\n\n========== CASE SETUP ==========\n"
     ./case.setup
@@ -115,8 +117,8 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # ---------- build, submit
     printf "\n\n========== BUILDING, SUBMITTING JOB ==========\n"
     #pause
-    ./case.build 2>&1 | tee ./log.case.buid 
-    #qcmd -A UMIC0087 -- ./case.build
+    #./case.build 2>&1 | tee ./log.case.buid 
+    qcmd -A UMIC0087 -- ./case.build 2>&1 | tee ./log.case.buid
     ./case.submit 2>&1 | tee ./log.case.submit
 else
     printf "\n\n========== CASE EXISTS; ABORTING ==========\n"

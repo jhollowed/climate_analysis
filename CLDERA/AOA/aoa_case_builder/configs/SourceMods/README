@@ -1,0 +1,8 @@
+src.cam.XX includes mods XX=0,1,2,3,4 as follows:
+
+Options XX:
+0: vanilla HS
+1: WHS mod
+2: WHS mod + RF sponge
+3: WHS mod + RF sponge + topography
+4: WHS mod + RF sponge + topography + solstice climatology
