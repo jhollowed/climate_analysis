@@ -18,4 +18,4 @@ aoa_read_from_ic_file = .FALSE.        ! activate built-in analytic init of aoa 
 interpolate_output = .true., .true.    ! interpolate from SE cubedsphere to lat-lon
 
 ! not stable enough with topography
-se_rsplit = 6
+!se_rsplit = 6

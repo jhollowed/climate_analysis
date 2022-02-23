@@ -51,7 +51,7 @@ elif [ "$RES" == "C48" ]; then
         GRID="ne16_ne16_mg17"
         LAB="ne16"
         PE=288
-        ATM_NCPL=96
+        #ATM_NCPL=96
     fi
 fi
 
