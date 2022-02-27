@@ -28,7 +28,7 @@ CONTAINS
     use constituents,  only: cnst_name
 
     !--JH--
-    use physconst,   only: gravit, pi
+    use physconst,   only: gravit, pi, rair
 
     !-----------------------------------------------------------------------
     !
@@ -68,12 +68,15 @@ CONTAINS
     !--JH--
     ! adding topography modification from Gerber+Polvani 2008 (GB08)
     real(r8), parameter :: deg2rad = pi / 180.0_r8
-    real(r8)            :: phi0     = 25.0_r8 * deg2rad   ! GB08 parameter phi_0 in radians
-    real(r8)            :: phi1     = 65.0_r8 * deg2rad   ! GB08 parameter phi_1 in radians
-    real(r8)            :: h0       = 3000.0_r8               ! GB08 parameter h0, in m
-    real(r8)            :: mm       = 2.0_r8                  ! GB08 parameter m; wavenumber of topo
+    real(r8)            :: phi0     = 25.0_r8 * deg2rad   ! GP08 parameter phi_0 in radians
+    real(r8)            :: phi1     = 65.0_r8 * deg2rad   ! GP08 parameter phi_1 in radians
+    real(r8)            :: h0       = 3000.0_r8           ! GP08 parameter h0, in m
+    real(r8)            :: mm       = 2.0_r8              ! GP08 parameter m; wavenumber of topo
     real(r8)            :: sinlat    
     real(r8)            :: sinlatsq
+    real(r8)            :: surface_pressure(size(latvals))
+    real(r8), parameter :: p00 = 1.e5_r8
+    real(r8), parameter :: T0 = 250._r8
 
 
     allocate(mask_use(size(latvals)))
@@ -122,7 +125,9 @@ CONTAINS
       nlev = size(T, 2)
       do k = 1, nlev
         where(mask_use)
-          T(:,k) = 250.0_r8
+          !--JH--
+          !T(:,k) = 250._r8
+          T(:,k) = T0
         end where
       end do
       if(masterproc .and. verbose_use) then
@@ -130,33 +135,44 @@ CONTAINS
       end if
     end if
 
-    if (present(PS)) then
-      where(mask_use)
-        PS = 100000.0_r8
-      end where
-      if(masterproc .and. verbose_use) then
-        write(iulog,*) '          PS initialized by "',subname,'"'
-      end if
-    end if
-
     if (present(PHIS)) then  
       !PHIS = 0.0_r8
+      
       !--JH--
-      ! insert GB08 topography in the NH
+      ! insert GB08 topography in the NH, SH
       ! assuming latvals, lonvals in radians, see comment above
       do i = 1, ncol
-          if(latvals(i) > phi0 .and. latvals(i) < phi1) then
+          if(abs(latvals(i)) > phi0 .and. abs(latvals(i)) < phi1) then
               sinlat = sin( (latvals(i) - phi0)/(phi1 - phi0) * pi )
               sinlatsq = sinlat * sinlat
               PHIS(i) = gravit * h0 * sinlatsq * cos(mm * lonvals(i))
-              !write(iulog,*) '--JH--: PHIS set to "',PHIS(i),'"'    !debug
+              surface_pressure(i) = p00 * exp(-PHIS(i)/(rair*T0))
+              write(iulog,*) '--JH--: PHIS set to "',PHIS(i),'"'    !debug
           else
               PHIS(i) = 0.0_r8
+              surface_pressure(i) = p00
+              write(iulog,*) '--JH--: PHIS set to "',PHIS(i),'"'    !debug
           end if
       end do 
 
       if(masterproc .and. verbose_use) then
         write(iulog,*) '          PHIS initialized by "',subname,'"'
+      end if
+    end if
+    
+    if (present(PS)) then
+      where(mask_use)
+        !--JH--
+        !PS = 100000.0_r8
+        PS(:) = surface_pressure(:)
+      end where
+    
+      do i = 1, ncol
+        write(iulog,*) '--JH--: PS set to "',PS(i),'"'    !debug
+      end do
+      
+      if(masterproc .and. verbose_use) then
+        write(iulog,*) '          PS initialized by "',subname,'"'
       end if
     end if
 
@@ -180,6 +196,7 @@ CONTAINS
         end if
       end do
     end if
+    
 
     deallocate(mask_use)
 
