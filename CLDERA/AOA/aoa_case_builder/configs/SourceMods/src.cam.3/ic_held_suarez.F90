@@ -75,6 +75,7 @@ CONTAINS
     real(r8)            :: sinlat    
     real(r8)            :: sinlatsq
     real(r8)            :: surface_pressure(size(latvals))
+    real(r8)            :: surface_height(size(latvals))
     real(r8), parameter :: p00 = 1.e5_r8
     real(r8), parameter :: T0 = 250._r8
 
@@ -135,46 +136,78 @@ CONTAINS
       end if
     end if
 
+    ! ===================== GP08 HS init =========================
+    !--JH--
+    ! insert GB08 topography in the NH, SH
+    ! assuming latvals, lonvals in radians, see comment above
+   
+    ! --------------- init topography --------------- 
+    do i = 1, ncol
+        if (mask_use(i)) then
+            if(abs(latvals(i)) > phi0 .and. abs(latvals(i)) < phi1) then
+                sinlat = sin( (latvals(i) - phi0)/(phi1 - phi0) * pi )
+                sinlatsq = sinlat * sinlat
+                surface_height(i) = h0 * sinlatsq * cos(mm * lonvals(i))
+                surface_pressure(i) = p00 * exp( -gravit*surface_height(i)/(rair*T0))
+            else
+                surface_height(i) = 0.0_r8
+                surface_pressure(i) = p00
+            end if
+            if(i == 10.0_r8) then
+                write(iulog,*) '--JH--: sh set to "',surface_height(i),'"'    !debug
+                write(iulog,*) '--JH--: sp set to "',surface_pressure(i),'"'    !debug
+                write(iulog,*) '--JH--: MASK is "',mask_use(i),'"'    !debug
+            end if
+        end if
+    end do 
+    
+   ! --------------- init PHIS --------------- 
     if (present(PHIS)) then  
-      !PHIS = 0.0_r8
+      !where(mask_use)
+      !  ! surface geopotential: topo height times gravity 
+      !  PHIS(:) = gravit*surface_height(:)
+      !end where
       
-      !--JH--
-      ! insert GB08 topography in the NH, SH
-      ! assuming latvals, lonvals in radians, see comment above
       do i = 1, ncol
-          if(abs(latvals(i)) > phi0 .and. abs(latvals(i)) < phi1) then
-              sinlat = sin( (latvals(i) - phi0)/(phi1 - phi0) * pi )
-              sinlatsq = sinlat * sinlat
-              PHIS(i) = gravit * h0 * sinlatsq * cos(mm * lonvals(i))
-              surface_pressure(i) = p00 * exp(-PHIS(i)/(rair*T0))
-              write(iulog,*) '--JH--: PHIS set to "',PHIS(i),'"'    !debug
-          else
-              PHIS(i) = 0.0_r8
-              surface_pressure(i) = p00
-              write(iulog,*) '--JH--: PHIS set to "',PHIS(i),'"'    !debug
+          if (mask_use(i)) then
+              PHIS(i) = gravit*surface_height(i)
+              if(i == 10.0_r8) then
+                  write(iulog,*) '--JH--: sh set to "',surface_height(i),'"'    !debug
+                  write(iulog,*) '--JH--: PHIS set to "',PHIS(i),'"'    !debug
+                  write(iulog,*) '--JH--: MASK is "',mask_use(i),'"'    !debug
+              end if
           end if
-      end do 
-
+      end do
+      
       if(masterproc .and. verbose_use) then
         write(iulog,*) '          PHIS initialized by "',subname,'"'
       end if
     end if
     
+   ! --------------- init PS --------------- 
     if (present(PS)) then
-      where(mask_use)
-        !--JH--
-        !PS = 100000.0_r8
-        PS(:) = surface_pressure(:)
-      end where
-    
+      !where(mask_use)
+      !  PS(:) = surface_pressure(:)
+      !end where
+      
+      !--JH--
       do i = 1, ncol
-        write(iulog,*) '--JH--: PS set to "',PS(i),'"'    !debug
+          if (mask_use(i)) then
+              PS(i) = surface_pressure(i)
+              if(i == 10.0_r8) then
+                  write(iulog,*) '--JH--: sp set to "',surface_pressure(i),'"'    !debug
+                  write(iulog,*) '--JH--: PS set to "',PS(i),'"'    !debug
+                  write(iulog,*) '--JH--: MASK is "',mask_use(i),'"'    !debug
+              end if
+          end if
       end do
       
       if(masterproc .and. verbose_use) then
         write(iulog,*) '          PS initialized by "',subname,'"'
       end if
     end if
+    
+    ! ===================== End GP08 HS init =========================
 
     if (present(Q)) then
       nlev = size(Q, 2)
