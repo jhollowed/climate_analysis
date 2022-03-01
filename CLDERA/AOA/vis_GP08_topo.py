@@ -20,28 +20,13 @@ phi0 = 25*deg2rad
 phi1 = 60*deg2rad
 m = 2
 
-GEO = g*h0*np.sin((LAT-phi0)/(phi1-phi0) * np.pi)**2 * np.cos(m*LON)
+GEO = g*h0*np.sin((np.abs(LAT)-phi0)/(phi1-phi0) * np.pi)**2 * np.cos(m*LON)
 
-mask = np.logical_and(LAT>phi0, LAT<phi1)
+mask = np.logical_and(np.abs(LAT)>phi0, np.abs(LAT)<phi1)
 GEO = np.ma.filled(np.ma.masked_array(GEO, ~mask), 0)
 
 d = { 'var':GEO, 
       'plotType':'contourf', 
-      'colorArgs':{'label':'Geopotential  [J/kg]', 'orientation':'horizontal'}
+      'colorArgs':{'label':'Geopotential  [m^2/s^2]', 'orientation':'horizontal'}
     }
 fig = plths(lon*rad2deg, lat*rad2deg, d, gridlines=True, gridlinesArgs={'rotate_labels':False}, savefig='./GP08.png')
-
-
-
-#fig = plt.figure()
-#ax = fig.add_subplot(111, projection=ccrs.Robinson())
-#C = ax.contourf(LON*rad2deg, LAT*rad2deg, GEO, levels=10, cmap='rainbow', transform=ccrs.PlateCarree())
-
-#cb = fig.colorbar(C, ax=ax, orientation='horizontal') 
-#cb.set_label(label='Geopotential  [J/kg]', fontsize=12)
-
-#ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False, color='k', lw=0.3, alpha=0.75)
-
-#plt.show()
-#plt.savefig('GP08.png', dpi=300o)
-

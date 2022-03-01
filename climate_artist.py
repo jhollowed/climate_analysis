@@ -69,7 +69,7 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
         Default is None, in which case the figsize is defaulted by matplotlib.
     savefig : string, optional
         String giving the destination to write out a png of the plot.
-        Defaults to None, in which case no plot if saved to file, and the plot is shown.
+        Defaults to None, in which case no plot if saved to file.
     inverty : bool, optional
         Whether or not to invert the y-axis (often used for a vertical pressure coordinate). 
         Defaults to true.
@@ -285,7 +285,7 @@ def horizontal_slice(x, y, var_dict, ax=None, savefig=None, projection=ccrs.Robi
         Default is None, in which case the figsize is defaulted by matplotlib.
     savefig : string, optional
         String giving the destination to write out a png of the plot.
-        Defaults to None, in which case no plot if saved to file, and the plot is shown
+        Defaults to None, in which case no plot if saved to file.
     ylim : list of length 2, optional
         ylimits to impose on figure.
         Defaults to None, in which case the default chosen by the plotting call is used.
