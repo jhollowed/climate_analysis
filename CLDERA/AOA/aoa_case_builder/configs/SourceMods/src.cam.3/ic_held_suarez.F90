@@ -53,8 +53,7 @@ CONTAINS
     real(r8), optional, intent(inout) :: Q(:,:,:)   ! tracer (ncol, lev, m)
     integer,  optional, intent(in)    :: m_cnst(:)  ! tracer indices (reqd. if Q)
     logical,  optional, intent(in)    :: mask(:)    ! Only init where .true.
-    !--JH-- !logical,  optional, intent(in)    :: verbose    ! For internal use
-    logical,  optional, intent(inout)    :: verbose    ! For internal use
+    logical,  optional, intent(in)    :: verbose    ! For internal use
 
     ! Local variables
     logical, allocatable              :: mask_use(:)
@@ -121,6 +120,11 @@ CONTAINS
         write(iulog,*) '          V initialized by "',subname,'"'
       end if
     end if
+    
+    ! ===================== GP08 HS init =========================
+    !--JH--
+    ! insert GB08 topography in the NH, SH
+    ! assuming latvals, lonvals in radians, see comment above
 
     if (present(T)) then
       nlev = size(T, 2)
@@ -136,16 +140,11 @@ CONTAINS
       end if
     end if
 
-    ! ===================== GP08 HS init =========================
-    !--JH--
-    ! insert GB08 topography in the NH, SH
-    ! assuming latvals, lonvals in radians, see comment above
-   
     ! --------------- init topography --------------- 
     do i = 1, ncol
         if (mask_use(i)) then
             if(abs(latvals(i)) > phi0 .and. abs(latvals(i)) < phi1) then
-                sinlat = sin( (latvals(i) - phi0)/(phi1 - phi0) * pi )
+                sinlat = sin( (abs(latvals(i)) - phi0)/(phi1 - phi0) * pi )
                 sinlatsq = sinlat * sinlat
                 surface_height(i) = h0 * sinlatsq * cos(mm * lonvals(i))
                 surface_pressure(i) = p00 * exp( -gravit*surface_height(i)/(rair*T0))

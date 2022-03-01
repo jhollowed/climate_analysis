@@ -59,10 +59,12 @@ if [ "$NLEV" == "72" ]; then NCDATA="cam_vcoords_L72_E3SM.nc"; fi
 if [ "$NLEV" == "93" ]; then NCDATA="cam_vcoords_L93_dz500m_high_top_86km.nc"; fi
 
 
-STOP_N=720        # total simulated time will be STOP_N * (RESUBMIT+1)
+#STOP_N=720        # total simulated time will be STOP_N * (RESUBMIT+1)
                   # here 2 years --> RESUBMIT=11 for 25 years
-RESUBMIT=11
-#CASENAME=${DYCORE}_${LAB}L${NLEV}_whs_aoa_N${STOP_N}
+#RESUBMIT=11
+STOP_N=60
+RESUBMIT=0
+
 CASENAME=${DYCORE}_${LAB}L${NLEV}_whs_aoa_mod${MOD_TYPE}
 CASE=${CASES}/${CASENAME}
 
