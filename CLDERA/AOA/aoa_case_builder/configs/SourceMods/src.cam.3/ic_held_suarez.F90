@@ -153,31 +153,15 @@ CONTAINS
                 surface_height(i) = 0.0_r8
                 surface_pressure(i) = p00
             end if
-            if(i == 10.0_r8) then
-                write(iulog,*) '--JH--: sh set to "',surface_height(i),'"'    !debug
-                write(iulog,*) '--JH--: sp set to "',surface_pressure(i),'"'    !debug
-                write(iulog,*) '--JH--: MASK is "',mask_use(i),'"'    !debug
-            end if
         end if
     end do 
     
    ! --------------- init PHIS --------------- 
     if (present(PHIS)) then  
-      !where(mask_use)
-      !  ! surface geopotential: topo height times gravity 
-      !  PHIS(:) = gravit*surface_height(:)
-      !end where
-      
-      do i = 1, ncol
-          if (mask_use(i)) then
-              PHIS(i) = gravit*surface_height(i)
-              if(i == 10.0_r8) then
-                  write(iulog,*) '--JH--: sh set to "',surface_height(i),'"'    !debug
-                  write(iulog,*) '--JH--: PHIS set to "',PHIS(i),'"'    !debug
-                  write(iulog,*) '--JH--: MASK is "',mask_use(i),'"'    !debug
-              end if
-          end if
-      end do
+      where(mask_use)
+        ! surface geopotential: topo height times gravity 
+        PHIS(:) = gravit*surface_height(:)
+      end where
       
       if(masterproc .and. verbose_use) then
         write(iulog,*) '          PHIS initialized by "',subname,'"'
@@ -186,21 +170,9 @@ CONTAINS
     
    ! --------------- init PS --------------- 
     if (present(PS)) then
-      !where(mask_use)
-      !  PS(:) = surface_pressure(:)
-      !end where
-      
-      !--JH--
-      do i = 1, ncol
-          if (mask_use(i)) then
-              PS(i) = surface_pressure(i)
-              if(i == 10.0_r8) then
-                  write(iulog,*) '--JH--: sp set to "',surface_pressure(i),'"'    !debug
-                  write(iulog,*) '--JH--: PS set to "',PS(i),'"'    !debug
-                  write(iulog,*) '--JH--: MASK is "',mask_use(i),'"'    !debug
-              end if
-          end if
-      end do
+      where(mask_use)
+        PS(:) = surface_pressure(:)
+      end where
       
       if(masterproc .and. verbose_use) then
         write(iulog,*) '          PS initialized by "',subname,'"'
