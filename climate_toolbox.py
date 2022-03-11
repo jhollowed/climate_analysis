@@ -9,6 +9,7 @@ import pdb
 import glob
 import numpy as np
 import xarray as xr
+from metpy import calc as mc
 from cftime import DatetimeNoLeap
 
 sys.path.append('/glade/u/home/jhollowed/repos/ncl_exports')
@@ -31,7 +32,7 @@ def check_data_inputs(data):
 
 def compute_climatology(data, ncdf_out=None):
     '''
-    Compute the monthly climatology on the data contained in file f
+    Compute the monthly climatology on the data
 
     Parameters
     ----------
@@ -39,9 +40,14 @@ def compute_climatology(data, ncdf_out=None):
         An xarray object containing the data, or path to the file as a string. 
         Must include times with at least monthly resolution.
     ncdf_out : string, optional
-        The file to write the resulting climatology data out to. Default is None,
-        in which case nothing is written out, and the result is instead returned 
-        as an xarray object.
+        The file to write the resulting climatology data out to.
+        Default is None, in which case nothing is written out. 
+        If the file exists, read it in and return, rather than computing 
+        the climatology, unless overwrite is True.
+    overwrite : bool
+        Whether or not to overwrite the contents of ncdf_out.
+        Defaults to False, in which case the contents of the
+        file area read in and returned instead of computing anything.
 
     Returns
     -------
@@ -49,15 +55,72 @@ def compute_climatology(data, ncdf_out=None):
             The monthly climatology from the input data
     '''
 
-    # check inputs
+    # --- check inputs
     data = check_data_inputs(data)
+        
+    if(ncdf_out is not None):
+        if(overwrite): 
+            try: os.remove(ncdf_out)
+            except OSError: pass
+        try: 
+            climatology = xr.open_dataset(ncdf_out)
+            print('Read climatology data from file {}'.format(ncdf_out.split('/')[-1]))
+            return climatology
+        except FileNotFoundError:
+            pass
 
-    # compute climatology 
+    # --- compute climatology 
     climatology = data.groupby('time.month').mean('time')
     if(ncdf_out is not None):
         climatology.to_netcdf(ncdf_out, format='NETCDF4')
-    else:
-        return climatology
+    return climatology
+
+
+# -------------------------------------------------------------
+
+
+def compute_vorticity(data, netcdf_out=None):
+    '''
+    Compute the vorticity from horizontal winds in the data, with derivatives
+    approximated with a second-order accurate central difference scheme.
+
+    Parameters
+    ----------
+    data : xarray Dataset, xarray DataArray, or string
+        An xarray object containing the data, or path to the file as a string. 
+        Must include times with at least monthly resolution.
+    ncdf_out : string, optional
+        The file to write the resulting vorticity data out to. 
+        Default is None, in which case nothing is written out.
+
+    Returns
+    -------
+        vorticity : xarray data object
+            The vorticity from the input data
+    '''
+    
+    # --- check inputs
+    data = check_data_inputs(data)
+    
+    if(ncdf_out is not None):
+        if(overwrite): 
+            try: os.remove(ncdf_out)
+            except OSError: pass
+        try: 
+            vort = xr.open_dataset(ncdf_out)
+            print('Read vorticity data from file {}'.format(ncdf_out.split('/')[-1]))
+            return vort
+        except FileNotFoundError:
+            pass
+    
+    #--- compute vorticity via MetPy
+    u = data['U']
+    v = data['V']
+    vort = mc.vorticity(u, v)
+    
+    if(ncdf_out is not None):
+        vort.to_netcdf(ncdf_out)
+    return vort
 
 
 # -------------------------------------------------------------
@@ -365,7 +428,7 @@ def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=Fa
     if(std): ensStd = ens.std('ensemble_member')
 
     # ---- write out, return
-    if(outFile is not None)
+    if(outFile is not None):
         ensMean.to_netcdf(outFile)
         print('Wrote data to file {}'.format(outFile.split('/')[-1]))
         if(std):
@@ -382,7 +445,7 @@ def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=Fa
 # -------------------------------------------------------------
 
 
-def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False, sfx=None, 
+def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False, 
                   histnum=0, regridded=None):
     '''
     Concatenates netCDF data along the time dimension. Intended to be used to combine outputs of
@@ -410,8 +473,6 @@ def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False, sfx=None,
         files previously written by this function at outFIle. 
         Defaults to False, in which case the result is read from file if already previously 
         computed and written out.
-    sfx : str
-        Suffix to append to the end of the file written out containing the concatenated data
     histnum : int
         hsitory file group to concatenate. Defaults to 0, in which case h0 files will
         be targeted.

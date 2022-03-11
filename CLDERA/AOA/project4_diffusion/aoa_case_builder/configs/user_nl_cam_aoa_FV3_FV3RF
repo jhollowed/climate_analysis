@@ -1,0 +1,24 @@
+
+! ========== AOA settings ==========
+
+empty_htapes     = .TRUE.              ! output only the varibales listed below
+avgflag_pertape  = 'A','A'             ! hist file 1 is avg, 2 is instant
+
+! output a few quantities for frequently on their instantaneous values for SSW quantification
+fincl1           = 'U','V','OMEGA','T','AOA1','AOA2','TT_LW'
+
+NHTFRQ           = -720,-306600            ! output frequency every 30 days, suppress h1
+MFILT            = 48,1              ! allow 48 time samples per hist file (4 years)
+NDENS            = 2,2               ! single-precision for each hist file
+
+aoa_read_from_ic_file = .FALSE.        ! activate built-in analytic init of aoa tracers
+
+
+! ========== Dycore-specific settings ==========
+
+fv3_n_split = 3                        ! number of acoustic timesteps between vertical remapping
+
+! these match Christiane's implementation; use these to enable the builtin FV3 RF, which
+! includes frictional heating
+fv3_tau = 3
+fv3_rf_cutoff = 100
