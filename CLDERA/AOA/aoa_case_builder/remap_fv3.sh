@@ -16,7 +16,7 @@ for d in ${CASES}/*/; do
         griddir=/glade/u/home/cjablono/ncl/regrid/
         #file=$(ls $d/run/*h0* | head -n 1)
 
-        for file in $d/run/*h0*.nc; do
+        for file in $d/run/*h[0-1]*.nc; do
             srcinitfile=${file%.*}.nc
             dstinitfile=${file%.*}.regrid.${dstgrid}.nc
             

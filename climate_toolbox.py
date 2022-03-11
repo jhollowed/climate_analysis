@@ -141,6 +141,44 @@ def Nino34_index(data, sst_var_name='tos', time_samples_mon=1):
     
 
 # -------------------------------------------------------------
+
+
+def ssw_events(dat, lat=60, lev=10):
+    '''
+    Returns SSW events in a dataset, defined as sign flips of the zonal-mean zonal wind
+    at lat,lev
+
+    Parameters
+    ----------
+    data : xarray Dataset, xarray DataArray, or string
+        An xarray object containing the data, or path to the file as a string. 
+        Must contain at least the variable 'U'
+    lat : float, optional
+        Latitude at which to take the zonal-mean wind measurement in degrees. 
+        Defaults to 60 degrees, which is the latitude used for SSW classification by the WMO
+    lev : float, optional
+        Pressure at which to take the zonal-mean wind measurement in hPa.
+        Defaults to 10hPa, which is the pressure used for SSW classification by the WMO
+
+    Returns
+    -------
+    ssw_data : xarray Dataset or DataArray
+        The zonal-mean data, selected on the provided lat,lev positions, and filtered for times 
+        when the zonal-mean zonal wind U<0. If the length of any of the field varibales in this
+        returned dataset is zero, there were no SSWs present in the input as defined for this 
+        lat,lev
+    '''
+    
+    # check inputs
+    data = check_data_inputs(data)
+
+    ssw_data = data.sel({'lat':lat, 'lev':lev}, method='nearest')
+    ssw_data = ssw_data.mean('lon')
+    ssw_data = data.where(data['U'] < 0, drop=True)
+    return ssw_data
+    
+
+# -------------------------------------------------------------
     
     
 def l2_norm(dat, varname='U', norm_type=15, compdat=None, compMean=False):
@@ -240,6 +278,229 @@ def l2_norm(dat, varname='U', norm_type=15, compdat=None, compMean=False):
             norm[i] = np.sqrt(num/den)
     
     return norm
+
+
+# -------------------------------------------------------------
+
+
+def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=False):
+    '''
+    Returns the mean of an ensemble for all variables included in the input ensemble members.
+    Each member is expected as an xarray DataWet, and must have the same dimensions and coordinates.
+
+    Parameters
+    ----------
+    ens : list of datasets
+        The ensemble members. Each entry can be a xarray Dataset, Datarray, or string giving 
+        a file location
+    std : bool, optional
+        Whether or not to compute and also return the standard deviation of the ensemble members,
+        in addition to the mean.
+        Defaults to False, in which case only the mean will be computed and returned.
+    avg_vars : list of strings, optional
+        A list of variables to average over, in the case that it is not desired to average
+        all varibales present, or if all members varibales match only for this list.
+        Defaults to None, in which case all ensemble members will be expected to have identical
+        variables.
+    outFile : str, optional
+        File location to write out the ensemble mean and std files in netcdf format.
+        Default is None, in which case nothing is written out, and the ensemble mean and std
+        is returned to the caller. If this file exists already, it will be read in, and the 
+        data returned, rather than computing anything.
+        If std==True and outFile is provided, a second file will also be written with an 
+        extension '.std' to contain this information.
+    overwrite : bool
+        whether or not to force a recalculation of the ensemble mean, deleting any netcdf 
+        files previously written by this function at outFile. 
+        Defaults to False, in which case the result is read from file if already previously 
+        computed and written out.
+
+    Returns
+    -------
+    ensembleMean : xarray Dataset or list of xarray Datasets
+        If std==False, the ensemble mean of the input ensemble members
+        If std==True, a list of two elements. Item at position 0 is the ensemble
+        mean of the inpit ensemble membersm, item at position 1 is the standard 
+        deviation of the ensemble members
+    '''
+    
+    # ---- read mean,std from file if exists and return
+    if(outFile is not None):
+        outFile_std = '{}.std'.format(outFile)
+        if(overwrite): 
+            try: os.remove(outFile)
+            except OSError: pass
+            try: os.remove(outFile_std)
+            except OSError: pass
+        try: 
+            ensMean = xr.open_dataset(outFile)
+            print('Read data from file {}'.format(outFile.split('/')[-1]))
+            if(std):
+                ensStd = xr.open_dataset(outFile_std)
+                print('Read data from file {}'.format(outFile_std.split('/')[-1]))
+                return [ensMean, ensStd]
+            else:
+                return ensMean
+        except FileNotFoundError:
+            pass
+    
+    # ---- check input
+    N = len(ensemble)
+    ens = np.empty(N, dtype=object)
+    ens[0] = check_data_inputs(ensemble[0])
+
+    if(avg_vars is None):
+        all_vars = sorted(list(ens[0].keys()))
+    else:
+        all_vars = avg_vars
+    
+    for i in range(N-1):
+        ens[i+1] = check_data_inputs(ensemble[i+1])
+        assert sorted(list(ens[i+1].keys())) == all_vars, \
+                'not all ensemble members contain these variables:\n{}'.format(all_vars)
+
+    # ---- concat and take mean
+    ens = xr.concat(ens, dim='ensemble_member', data_vars = all_vars)
+    ensMean = ens.mean('ensemble_member')
+    if(std): ensStd = ens.std('ensemble_member')
+
+    # ---- write out, return
+    if(outFile is not None)
+        ensMean.to_netcdf(outFile)
+        print('Wrote data to file {}'.format(outFile.split('/')[-1]))
+        if(std):
+            ensStd.to_netcdf(outFile_std)
+            print('Wrote data to file {}'.format(outFile.split('/')[-1]))
+
+    if(std):    
+        return ensMean, ensStd
+    else:
+        return ensMean
+    
+
+
+# -------------------------------------------------------------
+
+
+def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False, sfx=None, 
+                  histnum=0, regridded=None):
+    '''
+    Concatenates netCDF data along the time dimension. Intended to be used to combine outputs of
+    run periods sequentislly resubmitted by restart states.
+
+    Parameters
+    ----------
+    run : str list
+        CIME run directory contining output to be concatenated. It is assumed
+        that the contents of this directory is from a run of a model through CIME
+        that generated multiple history files of the same number (e.g. there are >1
+        h0 files). Select varaiables are read from the history files and concatenated 
+        across time
+    sel : dict
+        indexers to pass to data.sel(), where data is each history file opened via xarray
+    mean : list
+        list of dimensions along which to take the mean
+    outFile : str
+        File location to write out the concatenated file in netcdf format.
+        Default is None, in which case nothing is written out, and the concatenated data 
+        is returned to the caller. If this file exists already, it will be read in, and 
+        the data returned, rather than any concatenation actually being performed.
+    overwrite : bool
+        whether or not to force a recalculation of the reduced data, deleting any netcdf 
+        files previously written by this function at outFIle. 
+        Defaults to False, in which case the result is read from file if already previously 
+        computed and written out.
+    sfx : str
+        Suffix to append to the end of the file written out containing the concatenated data
+    histnum : int
+        hsitory file group to concatenate. Defaults to 0, in which case h0 files will
+        be targeted.
+    regridded : bool
+        Whether or not to look for regridded versions of each history file (i.e. ones for 
+        which the substring "regrid" appears after the header number "h0"). 
+        Defaults to None, in which case this will be set to True if the run directory contains
+        the substring 'FV3', else False.
+    '''
+    
+    run_name = run.split('/')[-2]
+    if(regridded is None):
+        if('FV3' in run_name):  regridded = True
+        else:                   regridded = False
+ 
+    print('\n\n========== Concatenating data at {} =========='.format(run_name))
+  
+    if(regridded):
+        hist = sorted(glob.glob('{}/*h{}*regrid*'.format(run, histnum)))
+    else:
+        hist = sorted(glob.glob('{}/*h{}*.nc'.format(run, histnum)))
+    
+    # remove outFile from glob results, if present
+    hist.remove(outFile)
+    hist = np.array(hist)
+    
+    print('Found {} files for history group h{}'.format(len(hist), histnum))
+    
+    # --- read concatenation from file if exists
+    if(outFIle is not None):
+        if(overwrite): 
+            try: os.remove(outFile)
+            except OSError: pass
+        try: 
+            allDat = xr.open_dataset(outFile)
+            print('Read data from file {}'.format(outFile.split('/')[-1]))
+            return allDat
+        except FileNotFoundError:
+            pass
+        
+    # ---- concatenate
+    allDat_set = False
+    for j in range(len(hist)):
+        print('---------- working on file {} ----------'.format(hist[j].split('/')[-1]))
+        skip=False
+
+        # open dataset, select data
+        with warnings.catch_warnings():  # temporary because of annoying xarray warning
+            warnings.simplefilter('ignore', FutureWarning)
+            dat = xr.open_dataset(hist[j])
+            
+            # ------ sel
+            for dim in sel.keys():
+                try:
+                    dat = dat.sel({dim:sel[dim]}, method='nearest')
+                except NotImplementedError:
+                    dat = dat.sel({dim:sel[dim]})
+                # if all data was removed after the slice, continue
+                if(len(dat[dim]) == 0):
+                    skip=True
+                    break
+            if(skip==True): continue
+
+        if(not allDat_set): 
+            allDat = dat
+            allDat_set = True
+        else:       
+            allDat = xr.concat([allDat, dat], 'time')
+    
+    # ------ take means
+    for dim in mean:
+        allDat = allDat.mean(dim)
+   
+    # ------ done; write out and return
+    if(outFile is not None):
+        allDat.to_netcdf(outFile)
+        print('Wrote data to file {}'.format(outFile.split('/')[-1]))
+
+    return allDat
+        
+
+# -----------------------------------------------------------------
+
+
+
+
+
+
+
 
 
 
