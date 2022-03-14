@@ -7,9 +7,11 @@ import os
 import sys
 import pdb
 import glob
+import warnings
 import numpy as np
 import xarray as xr
 from metpy import calc as mc
+from metpy.units import units
 from cftime import DatetimeNoLeap
 
 sys.path.append('/glade/u/home/jhollowed/repos/ncl_exports')
@@ -18,11 +20,11 @@ from wrappers import dpres_hybrid_ccm
 # ==========================================================================================
 
 def check_data_inputs(data):
-    acceptable_types = [xr.core.dataset.Dataset, xr.core.dataarray.DataArray, str]
+    acceptable_types = [xr.core.dataset.Dataset, xr.core.dataarray.DataArray, str, np.str_]
     if(type(data) not in acceptable_types):
         raise RuntimeError('data must be provided as an xarray Dataset, DataArray, '\
                            'or a string to the file')
-    if(type(data) == str):
+    if(type(data) == str or type(data) == np.str_):
         data = xr.open_dataset(data)
     return data
 
@@ -79,7 +81,7 @@ def compute_climatology(data, ncdf_out=None):
 # -------------------------------------------------------------
 
 
-def compute_vorticity(data, netcdf_out=None):
+def compute_vorticity(data, ncdf_out=None, overwrite=False):
     '''
     Compute the vorticity from horizontal winds in the data, with derivatives
     approximated with a second-order accurate central difference scheme.
@@ -112,12 +114,14 @@ def compute_vorticity(data, netcdf_out=None):
             return vort
         except FileNotFoundError:
             pass
-    
-    #--- compute vorticity via MetPy
-    u = data['U']
-    v = data['V']
-    vort = mc.vorticity(u, v)
-    
+   
+    #--- compute vorticity via MetPy; assume input is dimensionless
+    u = data['U'] * units.m/units.s
+    v = data['V'] * units.m/units.s
+    # REMOVE MEAN HERE LATER
+    vort = mc.vorticity(u, v).mean('lon')
+    vort = vort.to_dataset(name='VORT')
+   
     if(ncdf_out is not None):
         vort.to_netcdf(ncdf_out)
     return vort
@@ -419,22 +423,22 @@ def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=Fa
     
     for i in range(N-1):
         ens[i+1] = check_data_inputs(ensemble[i+1])
-        assert sorted(list(ens[i+1].keys())) == all_vars, \
+        assert np.sum([vv in sorted(list(ens[i+1].keys())) for vv in all_vars]) == len(all_vars), \
                 'not all ensemble members contain these variables:\n{}'.format(all_vars)
 
     # ---- concat and take mean
-    ens = xr.concat(ens, dim='ensemble_member', data_vars = all_vars)
+    ens = xr.concat(ens, dim='ensemble_member', data_vars=all_vars, compat='override', coords='minimal')
     ensMean = ens.mean('ensemble_member')
     if(std): ensStd = ens.std('ensemble_member')
 
     # ---- write out, return
     if(outFile is not None):
         ensMean.to_netcdf(outFile)
-        print('Wrote data to file {}'.format(outFile.split('/')[-1]))
+        print('Wrote ensemble data to file {}'.format(outFile.split('/')[-1]))
         if(std):
             ensStd.to_netcdf(outFile_std)
-            print('Wrote data to file {}'.format(outFile.split('/')[-1]))
-
+            print('Wrote ensemble std data to file {}'.format(outFile.split('/')[-1]))
+    pdb.set_trace()
     if(std):    
         return ensMean, ensStd
     else:
@@ -470,7 +474,7 @@ def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False,
         the data returned, rather than any concatenation actually being performed.
     overwrite : bool
         whether or not to force a recalculation of the reduced data, deleting any netcdf 
-        files previously written by this function at outFIle. 
+        files previously written by this function at outFile. 
         Defaults to False, in which case the result is read from file if already previously 
         computed and written out.
     histnum : int
@@ -496,13 +500,14 @@ def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False,
         hist = sorted(glob.glob('{}/*h{}*.nc'.format(run, histnum)))
     
     # remove outFile from glob results, if present
-    hist.remove(outFile)
+    try: hist.remove(outFile)
+    except ValueError: pass
     hist = np.array(hist)
     
     print('Found {} files for history group h{}'.format(len(hist), histnum))
     
     # --- read concatenation from file if exists
-    if(outFIle is not None):
+    if(outFile is not None):
         if(overwrite): 
             try: os.remove(outFile)
             except OSError: pass
@@ -531,7 +536,8 @@ def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False,
                 except NotImplementedError:
                     dat = dat.sel({dim:sel[dim]})
                 # if all data was removed after the slice, continue
-                if(len(dat[dim]) == 0):
+                # !!! generalize this at some point, for data that has no U
+                if(len(dat['U']) == 0):
                     skip=True
                     break
             if(skip==True): continue
