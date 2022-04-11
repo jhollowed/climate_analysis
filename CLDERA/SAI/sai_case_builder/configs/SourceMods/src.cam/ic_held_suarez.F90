@@ -41,14 +41,7 @@ CONTAINS
     ! --JH--: While comments here specify that these should be in degrees, the
     ! ic's in SE and FV3 are set in dyn_comp.F90 via a call to "analytic_ic_set_ic", an 
     ! interface defined in dynamics/tests/inic_analytic.F90 which aliases 
-    ! "dyn_set_inic_cblock". 
-    ! The comments in that function also state that it expects lat,lon in
-    ! degrees, but still, dyn_comp for FV3 and SE pass them as radians.
-    ! So here they also show up as radians, at least for FV3 and SE. My
-    ! implementation will make this assumption, and so this will not work for
-    ! any dycores for which the dyn_comp implementation actually *does* respect
-    ! the expected input units for analytic_ic_set_ic...
-    
+    ! "dyn_set_inic_cblock". There, latvals and lonvals are passed as radians!
     real(r8),           intent(in)    :: latvals(:) ! lat in degrees (ncol)
     real(r8),           intent(in)    :: lonvals(:) ! lon in degrees (ncol)
 

@@ -290,20 +290,19 @@ def aoa_levels(inFiles, errFiles, colors=None, sfx=None):
         String to add as suffix to figure filename
     '''
    
-    fig = plt.figure()
+    fig = plt.figure(figsize=(5,10))
     ax1 = fig.add_subplot(311)
     ax2 = fig.add_subplot(312)
     ax3= fig.add_subplot(313)
     axes = [ax1, ax2, ax3]
 
-    inFiles = sorted(inFiles)
     if(colors is None):
-        colors = ['r', 'orange', 'm', 'g', 'b', 'c']
+        colors = ['g', 'b', 'c', 'k', 'r', 'orange', 'm']
     linestyles = {'FV3':'-', 'SE':'--'}
 
     for i in range(len(inFiles)):
         inFile = inFiles[i]
-    
+   
         # --- extract metadata
         run_name = inFile.split('.nc')[0].split('/')[-1]
         dycore = run_name.split('_')[0]
@@ -331,16 +330,16 @@ def aoa_levels(inFiles, errFiles, colors=None, sfx=None):
             else:
                 ens = ''
         nl_str = ''
-        for i in range(len(nl_names)):
-            if(i == len(nl_names)-1): pp=''
+        for k in range(len(nl_names)):
+            if(k == len(nl_names)-1): pp=''
             else: pp=', '
-            nl_str = nl_str + '{}={}{}'.format(nl_names[i], nl_vals[i],pp)
+            nl_str = nl_str + '{}={}{}'.format(nl_names[k], nl_vals[k],pp)
         
         # --- compute or read data
         print('\n\n---------- working on run {} ----------'.format(run_name))
         dat = xr.open_dataset(inFile)
         if(errFiles[i] is not None): 
-            err = xr.open_dataset(inFile)
+            err = xr.open_dataset(errFiles[i])
         else:
             err = None
         
@@ -356,28 +355,40 @@ def aoa_levels(inFiles, errFiles, colors=None, sfx=None):
             AOA_lev3_err = err['AOA1'].sel({'lev':150}, method='nearest')
             AOA_allErr = [AOA_lev1_err, AOA_lev2_err, AOA_lev3_err]
         
+        print('PLOTTING {} with COLOR {} at i={}'.format(inFile.split('/')[-1], colors[i], i))
         for j in range(len(axes)):
-            line = axes[j].plot(lat, AOA_allLev[j]/365, ls=linestyles[dycore], color=colors[i])[0]
-            if(j == 1):             
-                line.set_label('{} {}'.format(dycore, nl_str))
             if(err is not None):
-                age_err = [AOA_allLev[j] + AOA_allErr[j], AOA_allLev[j] - AOA1_allErr[j]]
-                axes[j].fill_between(lat, age_err[0], age_err[1], color=colors[i], alpha=0.33)
+                age_err = [AOA_allLev[j] + AOA_allErr[j], AOA_allLev[j] - AOA_allErr[j]]
+                axes[j].fill_between(lat, age_err[0]/365, age_err[1]/365, color=colors[i], alpha=0.33)
+            line = axes[j].plot(lat, AOA_allLev[j]/365, ls=linestyles[dycore], color=colors[i])[0]
+            if(j == 0):             
+                line.set_label('{} {}'.format(dycore, nl_str))
 
     ax1.set_title('AOA at different pressure levels, 20 year mean')
     
     ax1.set_ylabel('age  [years]', fontsize=12)
-    ax1.text(0.9, 0.1, '10 hPa', fontsize=12)
-    
+    ax1.annotate('10 hPa', xy=(0.95, 0.05), xycoords='axes fraction', fontsize=10,
+                          horizontalalignment='right', verticalalignment='bottom')
+    ax1.tick_params(labelbottom=False)
+    ax1.set_xlim([-90, 90])
+    lgd=ax1.legend(fontsize=9, bbox_to_anchor=(0, 1.1))
+
     ax2.set_ylabel('age  [years]', fontsize=12)
-    ax2.text(0.9, 0.1, '30 hPa', fontsize=12)
-    ax2.legend(ncol=1, fontsize=9, bbox_to_anchor=(1, 0.5))
+    ax2.annotate('30 hPa', xy=(0.95, 0.05), xycoords='axes fraction', fontsize=10,
+                           horizontalalignment='right', verticalalignment='bottom')
+    ax2.tick_params(labelbottom=False)
+    ax2.set_xlim([-90, 90])
     
     ax3.set_ylabel('age  [years]', fontsize=12)
-    ax3.text(0.9, 0.1, '150 hPa', fontsize=12)
+    ax3.annotate('150 hPa', xy=(0.95, 0.05), xycoords='axes fraction', fontsize=10,
+                            horizontalalignment='right', verticalalignment='bottom')
     ax3.set_xlabel('lat  [deg]', fontsize=12)
+    ax3.set_xlim([-90, 90])
 
-    plt.savefig('./figs/aoaLevels{}.png'.format(sfx), dpi=300)
+    plt.tight_layout()
+
+    plt.savefig('./figs/aoaLevels{}.png'.format(sfx), dpi=300, 
+                bbox_extra_artists=(lgd,), bbox_inches='tight')
 
     
 # =============================================================================

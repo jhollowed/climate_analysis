@@ -450,7 +450,7 @@ def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=Fa
 
 
 def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False, 
-                  histnum=0, regridded=None):
+                  histnum=0, regridded=None, component='cam'):
     '''
     Concatenates netCDF data along the time dimension. Intended to be used to combine outputs of
     run periods sequentislly resubmitted by restart states.
@@ -485,8 +485,11 @@ def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False,
         which the substring "regrid" appears after the header number "h0"). 
         Defaults to None, in which case this will be set to True if the run directory contains
         the substring 'FV3', else False.
+    component : string
+        Concatenate data for this component (will look for files with [component].h[histnum]).
+        Defaults to 'cam'
     '''
-    
+   
     run_name = run.split('/')[-2]
     if(regridded is None):
         if('FV3' in run_name):  regridded = True
@@ -495,9 +498,9 @@ def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False,
     print('\n\n========== Concatenating data at {} =========='.format(run_name))
   
     if(regridded):
-        hist = sorted(glob.glob('{}/*h{}*regrid*'.format(run, histnum)))
+        hist = sorted(glob.glob('{}/*{}.h{}*regrid*.nc'.format(run, component, histnum)))
     else:
-        hist = sorted(glob.glob('{}/*h{}*.nc'.format(run, histnum)))
+        hist = sorted(glob.glob('{}/*{}.h{}*.nc'.format(run, component, histnum)))
     
     # remove outFile from glob results, if present
     try: hist.remove(outFile)
@@ -545,7 +548,7 @@ def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False,
         if(not allDat_set): 
             allDat = dat
             allDat_set = True
-        else:       
+        else: 
             allDat = xr.concat([allDat, dat], 'time')
     
     # ------ take means
