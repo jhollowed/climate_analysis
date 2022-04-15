@@ -24,7 +24,7 @@ CASES=/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/sai_case_builder
 CONFIGS=/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/sai_case_builder/configs
 VGRIDS=/glade/u/home/cjablono/CESM_vertical_grids
 DATA=/glade/u/home/jhollowed/CAM/inputdata
-SRCMODS=${CONFIGS}/SourceMods/src.cam
+SRCMODS=${CONFIGS}/SourceMods
 
 # =============== configure based on dycore, resolution ===============
 if [ "$RES" == "C24" ]; then
@@ -55,7 +55,7 @@ if [ "$NLEV" == "93" ]; then NCDATA="cam_vcoords_L93_dz500m_high_top_86km.nc"; f
 
 STOP_N=60
 
-CASENAME=${DYCORE}_${LAB}L${NLEV}_whs_sai
+CASENAME=${DYCORE}_${LAB}L${NLEV}_whs_saiv2
 CASE=${CASES}/${CASENAME}
 
 
@@ -81,7 +81,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     cd $CASE
     ./xmlchange DEBUG=FALSE,DOUT_S=FALSE,STOP_OPTION=ndays,STOP_N=$STOP_N
     ./xmlchange --file env_build.xml --id CAM_CONFIG_OPTS --val "-phys held_suarez -analytic_ic"
-    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-age_of_air_trcs -nadv_tt=1"
+    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-age_of_air_trcs "
     ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "--nlev=$NLEV "
     ./xmlchange JOB_WALLCLOCK_TIME=02:00:00
     ./xmlchange SAVE_TIMING=TRUE
