@@ -7,12 +7,15 @@ import os
 import sys
 import pdb
 import glob
+import cftime
 import warnings
 import numpy as np
 import xarray as xr
 from metpy import calc as mc
 from metpy.units import units
+import metpy.constants as const
 from cftime import DatetimeNoLeap
+from matplotlib.colors import ListedColormap
 
 sys.path.append('/glade/u/home/jhollowed/repos/ncl_exports')
 from wrappers import dpres_hybrid_ccm
@@ -29,6 +32,109 @@ def check_data_inputs(data):
     return data
 
 
+# -------------------------------------------------------------
+
+
+def time2day(time):
+    '''
+    Converts cftime times to number of days since first timestamp
+
+    Parameters
+    ----------
+    time : array of type from cftime
+        array of times, e.g. an xarray DataSet, DataArray, numpy.array...
+
+    Returns
+    -------
+    Number of days since time 0, for all times in the input
+    '''
+    if(type(time) == xr.core.dataarray.DataArray):
+        time = np.array(time)
+    start = '{}-{}-{}'.format(time[0].year, time[0].month, time[0].day)
+    return cftime.date2num(time, 'days since {}'.format(start))
+
+
+# -------------------------------------------------------------
+
+
+def ncar_rgb_to_cmap(rgb, hdrl=2, norm=False):
+    '''
+    Constructs matplotlib colormap object from NCAR .rgb file
+
+    Parameters
+    ----------
+    rgb : string
+        location of the rgb file
+    hdrl : int, optional
+        header length of file; first color will be searched for at line hdrl+1 of the file 
+        (where the first line is line 1). Defaults to 2
+    norm : bool, optional
+        whether or not to normalize the colors by 256. Defaults to False
+
+    Returns
+    -------
+    matplotlib ListedColormap object
+    '''
+    with open(rgb) as f:
+        colors = f.readlines()
+    colors = colors[hdrl:]
+    for i in range(len(colors)):
+        colors[i] = [float(c) for c in colors[i].strip('\n').split()]
+    if(norm):
+        colors /= 256
+    return ListedColormap(colors)
+
+        
+# -------------------------------------------------------------
+
+def ptoz(p):
+    '''
+    Converts pressure to geootential height assuming an isothermal atmosphere
+
+    Parameters
+    ----------
+    p : float or float array
+        pressure in hPa
+
+    Returns
+    -------
+    z : float or flaot array
+        the geopotential height in m
+    '''
+    try: _ = p.m
+    except: p = p*units.hPa
+    P0 = 1000*units.hPa
+    T0 = 250*units.K
+    H = const.Rd*T0/const.g 
+    return H * np.log(P0/p)
+
+
+# -------------------------------------------------------------
+
+
+def ztop(z):
+    '''
+    Converts geootential height to pressure assuming an isothermal atmosphere
+
+    Parameters
+    ----------
+    z : float or flaot array
+        the geopotential height
+
+    Returns
+    -------
+    p : float or float array
+        pressure in hPa
+    '''
+    try: _ = z.m
+    except: z = z*units.m
+    P0 = 1000*units.hPa
+    T0 = 250*units.K
+    H = const.Rd*T0/const.g 
+    return P0 * np.exp(-z/H)
+    
+
+        
 # -------------------------------------------------------------
 
 

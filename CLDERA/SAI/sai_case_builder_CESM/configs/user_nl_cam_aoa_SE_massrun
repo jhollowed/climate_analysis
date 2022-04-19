@@ -10,7 +10,7 @@ avgflag_pertape  = 'A','I'             ! hist file 1 is avg, 2 is instant
 fincl1           = 'U','V','OMEGA','T','SAI_SO2','SAI_ASH','SAI_PT', 'SAI_AOA', 'SAI_MASS', 'PS','PHIS','Z3'
 fincl2           = 'T','U','SAI_SO2'
 
-NHTFRQ           = -12,-9999       ! output frequency every 12 hours, suppress
+NHTFRQ           = -1,-9999        ! output frequency every hour, suppress
 MFILT            = 200,200         ! allow 48,144 time samples per hist file (4 years)
 NDENS            = 2,2             ! single-precision for each hist file
 
