@@ -195,13 +195,13 @@ contains
     if (.not. aoa_tracers_flag) return
 
     ! Set names of tendencies and declare them as history variables
+   
     call addfld('SAI_MASS',  (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
     call add_default('SAI_MASS', 1, ' ')
 
     do m = 1, ncnst
        mm = ifirst+m-1
        call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'kg/kg', cnst_longname(mm))
-       !call addfld(src_names(m),  (/ 'lev' /), 'A', 'kg/kg/s', trim(cnst_name(mm))//' source/sink')
        
        call add_default(cnst_name(mm), 1, ' ')
        !call add_default (src_names(m),  1, ' ')
@@ -263,7 +263,7 @@ contains
     use ref_pres,     only: pref_mid_norm
     use time_manager, only: get_curr_time
     use physconst,    only: pi, rearth, cpair, rair 
-    use phys_grid,    only: get_area_all_p
+    use phys_grid,    only : get_area_all_p
 
     ! Arguments
     !type(physics_state), intent(in)   :: state              ! state variables
@@ -308,8 +308,14 @@ contains
     real(r8) :: k_ash                 
     real(r8) :: P0             
     real(r8) :: alpha 
+    real(r8) :: tmin 
+    real(r8) :: tmmin 
     real(r8) :: Hint 
-    real(r8) :: Vint  
+    real(r8) :: Vint 
+    ! for mass correction
+    real(r8) :: rhoi 
+    real(r8) :: ksol_so2 
+    real(r8) :: ksol_ash  
     ! for mass estiamte
     real(r8) :: area(ncol), mass(ncol,pver)
     
@@ -334,11 +340,11 @@ contains
     !--JH--
     ! get current time in seconds
     call get_curr_time(day,sec)
-    t      = (day*24.0*60.0*60.0) + sec ! need to subtract model time at start of injection for this...
+    t      = (day*24.0*60.0*60.0) + sec
     lat0   = 15.15 * deg2rad
     lon0   = 120.35 * deg2rad
     z0     = 25000.0
-    dz     = 5000.0                
+    dz     = 7500.0                
     dr     = 100000.0                
     rs     = 3.0*dr
     zs     = 3.0*dz                
@@ -349,7 +355,14 @@ contains
     k_so2  = 1.0/2592000.0
     k_ash  = 1.0/86400.0
     P0     = 100000.0
-    alpha  = tf  ! constant T(t)
+    ! select exponential time decay
+    !alpha  = tf  ! constant T(t)
+    alpha  = (1/tau) * (1 - EXP(-tau*tf))  ! exponential T(t)
+    ! modified value of k to use for integral solution below
+    ! ksol_so2 = k_so2  ! constant T(t)
+    ! ksol_ash = k_so2  ! constant T(t)
+    ksol_so2 = k_so2-tau  ! exponential T(t)
+    ksol_ash = k_so2-tau  ! exponential T(t)
 
     Hint = 1.0 - EXP(-rs**2.0/(2.0*dr**2.0))
     Vint = ERF(z0/(SQRT(2.0)*dz)) - ERF((z0-zs)/(SQRT(2.0)*dz))
@@ -357,8 +370,8 @@ contains
     A_so2 = M_so2 / (alpha * SQRT(2.0*pi**3.0) * dr**2.0 * dz) 
     A_so2 = A_so2 * 1.0/(Hint * Vint)     
     A_ash = M_ash / (alpha * SQRT(2.0*pi**3.0) * dr**2.0 * dz) 
-    A_ash = A_ash * 1.0/(Hint * Vint)     
-    
+    A_ash = A_ash * 1.0/(Hint * Vint)
+
     ! get area of column (assume height ~ a)
     call get_area_all_p(lchnk, ncol, area)
     area = area * rearth**2
@@ -371,32 +384,51 @@ contains
           zz  = state%zm(i, k)
           rr = (rearth+z0) * ACOS( SIN(lat)*SIN(lat0) + COS(lat)*COS(lat0) * COS(ABS(lon-lon0)))
           rhoatm = state%pmid(i, k) / (rair * state%t(i, k))
+          
+          if(t <= tf) then
+              tmin = t
+          else
+              tmin = tf
+          end if
+          if((t-dt) <= tf) then
+              tmmin = t-dt
+          else
+              tmmin = tf
+          end if
+          rhoi = state%q(i, k, ixsai1) * rhoatm ! current density (before injection)
 
           ! ---------- SAI_SO2 ----------
-          ptend%q(i,k,ixsai1) = -k_so2 * (state%q(i, k, ixsai1)*rhoatm) + &
+          ptend%q(i,k,ixsai1) = EXP(-k_so2*t) / ksol_so2 * &             ! rho(t_i)
+                                (rhoi*ksol_so2 + &
                                  A_so2 * EXP(-(1.0/2.0) * (rr/dr)**2.0) * &
-                                         EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0)
-          ! add temporal dependence
-          if(t <= tf) then
-              ptend%q(i,k,ixsai1) = ptend%q(i,k,ixsai1) * 1
-          else
-              ptend%q(i,k,ixsai1) = -k_so2 * (state%q(i, k, ixsai1)*rhoatm)
-          end if
-
+                                         EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0) * &
+                                         (EXP(ksol_so2 * tmin) - 1))
+          ptend%q(i,k,ixsai1) = ptend%q(i,k,ixsai1) - &           ! rho(t_i-1)
+                                EXP(-k_so2*(t-dt)) / ksol_so2 * &
+                                (rhoi*ksol_so2 + &
+                                 A_so2 * EXP(-(1.0/2.0) * (rr/dr)**2.0) * &
+                                         EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0) * &
+                                         (EXP(ksol_so2 * tmmin) - 1))
+          ptend%q(i,k,ixsai1) = ptend%q(i,k,ixsai1) / dt           ! divide Delta rho / Delta t
+          
           ! scale density to concentration
           ptend%q(i,k,ixsai1) = ptend%q(i,k,ixsai1) / rhoatm
 
 
           ! ---------- SAI_ASH ----------
-          ptend%q(i,k,ixsai2) = -k_ash * (state%q(i, k, ixsai2)*rhoatm) + &
+          ptend%q(i,k,ixsai2) = EXP(-k_ash*t) / ksol_ash * &             ! rho(t_i)
+                                (rhoi*ksol_ash + &
                                  A_ash * EXP(-(1.0/2.0) * (rr/dr)**2.0) * &
-                                         EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0)
-          if(t <= tf) then
-              ptend%q(i,k,ixsai2) = ptend%q(i,k,ixsai2) * 1.0
-          else
-              ptend%q(i,k,ixsai2) = -k_ash * (state%q(i, k, ixsai2)*rhoatm)
-          end if
-
+                                         EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0) * &
+                                         (EXP(ksol_ash * tmin) - 1))
+          ptend%q(i,k,ixsai2) = ptend%q(i,k,ixsai2) - &           ! rho(t_i-1)
+                                EXP(-k_ash*(t-dt)) / ksol_ash * &
+                                (rhoi*ksol_ash + &
+                                 A_ash * EXP(-(1.0/2.0) * (rr/dr)**2.0) * &
+                                         EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0) * &
+                                         (EXP(ksol_ash * tmmin) - 1))
+          ptend%q(i,k,ixsai2) = ptend%q(i,k,ixsai2) / dt           ! divide Delta rho / Delta t
+          
           ! scale density to concentration
           ptend%q(i,k,ixsai2) = ptend%q(i,k,ixsai2) / rhoatm
 
@@ -421,14 +453,9 @@ contains
        end do
     end do
 
+
     ! record tracer mass on history files
     call outfld('SAI_MASS', mass(:,:), ncol, lchnk)
-    
-    ! record tendencies on history files
-    !call outfld (src_names(1), ptend%q(:,:,ixsai1), pcols, lchnk)
-    !call outfld (src_names(2), ptend%q(:,:,ixsai2), pcols, lchnk)
-    !call outfld (src_names(3), ptend%q(:,:,ixsai3),   pcols, lchnk)
-    !call outfld (src_names(4), ptend%q(:,:,ixsai4),   pcols, lchnk)
 
     ! Set tracer fluxes
     do i = 1, ncol
