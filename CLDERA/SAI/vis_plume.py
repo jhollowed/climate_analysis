@@ -10,11 +10,22 @@ import matplotlib.ticker as mticker
 import metpy.calc as mc
 from matplotlib.ticker import ScalarFormatter
 import scipy
+import matplotlib as mpl
+from climate_toolbox import climate_artist as cla
 
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "sans-serif",
     "font.sans-serif": ["Helvetica"]})
+#mpl.rcParams['text.latex.preamble'] = [
+#       r'\usepackage{siunitx}',   # i need upright \micro symbols, but you need...
+#       r'\sisetup{detect-all}',   # ...this to force siunitx to actually use your fonts
+#       r'\usepackage{helvet}',    # set the normal font here
+#       r'\usepackage{sansmath}',  # load up the sansmath so that math -> helvet
+#       r'\sansmath'               # <- tricky! -- gotta actually tell tex to use!
+#]
+params = {'text.usetex': False, 'mathtext.fontset': 'stixsans'}
+plt.rcParams.update(params)
 
 # ========== define parameters ==========
 d2r = np.pi/180                
@@ -25,7 +36,8 @@ lon0 = 120.35 * d2r
 z0 = 25000 * u.m
 
 dr = 100000 * u.m
-dz = 7500 * u.m
+#dz = 7500 * u.m
+dz = 5000 * u.m
 rs = dr*3
 zs = dz*3
 
@@ -147,10 +159,11 @@ P0 = 1000*u.hPa
 T0 = 250*u.K
 H = const.Rd*T0/const.g
 p = P0 * np.exp(-Z/H)
+pmid = P0 * np.exp(-z[zmid]/H)
 
 cmap = plt.cm.OrRd
 #levels = [4, 3, 2, 2.5, 1, 0.5]
-levels = [0, 0.5, 1, 1.5, 2, 3, 4, 4.5]
+levels = [0, 0.5, 1, 1.5, 2, 3, 4]
 poww = math.ceil(-np.log10(np.max(fe_SO2[:,latmid,:]).m))
 vmin=-10**-poww
 
@@ -168,8 +181,9 @@ gl.ylocator = mticker.FixedLocator(latlim)
 gl.right_labels = []
 gl.top_labels = []
 ax1.coastlines(resolution='50m', color='k', linestyle='-', alpha=1, zorder=9)
-ax1.set_xlabel(r'lat [deg]')
-ax1.set_ylabel(r'lon [deg]')
+#ax1.set_xlabel(r'lat [deg]')
+#ax1.set_ylabel(r'lon [deg]')
+ax1.set_title('{:.0f} km, $\sim$40 hPa'.format(z[zmid].to(u.km).m))
 
 ax2.set_xlabel(r'r [km]')
 ax2.set_ylabel(r'p [hPa]')
@@ -194,7 +208,7 @@ ax22.set_ylim( (H * np.log(P0/(ax2.get_ylim()*u.hPa))).to(u.km).m )
 
 ax3.plot(t.m/3600, fpe_SO2.m, '-k', label=r'exponential $T(t)$')
 ax3.plot(t.m/3600, fpc_SO2.m, '--k', label=r'constant $T(t)$')
-ax3.set_ylabel(r'peak $f(t)$ [kg/kg/s]', fontsize=11)
+ax3.set_ylabel(r'peak $f(t)$ [kg/m$^3$/s]', fontsize=11)
 ax3.set_xticklabels([])
 ax3.yaxis.tick_right()
 ax3.yaxis.set_label_position("right")
@@ -202,10 +216,9 @@ ax3.legend(frameon=False)
 yy = ax3.get_ylim()
 yy = [yy[0], yy[1]]
 tftf = [tf.to(u.hr).m, tf.to(u.hr).m]
-ax3.plot(tftf, yy, '-k', lw=0.5)
+ax3.plot(tftf, yy, ':k', lw=0.8)
 ax3.set_ylim(yy)
-ax3.set_xlim(-0.5, np.max(t.m/3600))
-ax3.text(tf.to(u.hr).m-0.5, -0.7e-10, r'$t_f$')
+#ax3.text(tf.to(u.hr).m-0.5, -0.7e-10, r'$t_f$')
 
 ax4.plot(t.m/3600, rho_peak_eSO2, '-r', label='SO2')
 ax4.plot(t.m/3600, rho_peak_cSO2, '--r')
@@ -224,13 +237,29 @@ ax4.yaxis.set_label_position("right")
 ax4.legend(frameon=False)
 yy = ax4.get_ylim()
 yy = [yy[0], yy[1]]
-ax4.plot(tftf, yy, '-k', lw=0.5)
+ax4.plot(tftf, yy, ':k', lw=0.8)
 ax4.set_ylim([0, yy[1]])
+
+ticks = ax3.get_xticks().tolist()
+ticklabs = ax3.get_xticklabels()
+ticks.insert(np.searchsorted(ticks, tf.m/3600), tf.m/3600)
+ticklabs.insert(np.searchsorted(ticks, tf.m/3600), '$t_f$')
+ax4.set_xticks(ticks)
+ax4.set_xticklabels(ticklabs)
+ax3.set_xticks(ticks)
+
+for ax in [ax2, ax3, ax4]:
+    ax.xaxis.set_ticks_position('both')
+    ax.xaxis.set_tick_params(direction='in')
+    if(ax != ax2):
+        ax.yaxis.set_ticks_position('both')
+    ax.yaxis.set_tick_params(direction='in')
+ax3.set_xlim(-0.5, np.max(t.m/3600))
 ax4.set_xlim(-0.5, np.max(t.m/3600))
 
-#plt.subplots_adjust(left=0.07, bottom=0.1, right=0.88, top=0.9, wspace=None, hspace=None)
 plt.tight_layout()
-plt.savefig('plume.png', dpi=300)
+#plt.savefig('plume.png', dpi=300)
+plt.show()
 
 
 
