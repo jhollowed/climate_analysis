@@ -9,7 +9,9 @@ import artist_utils as aut
 import cartopy.crs as ccrs
 import climate_toolbox as ctb
 import matplotlib.pyplot as plt
-import cartopy.feature as cfeature
+import matplotlib.ticker as ticker
+from cartopy.util import add_cyclic_point
+from matplotlib.offsetbox import AnchoredText
 
 cmap = plt.cm.rainbow
 
@@ -19,7 +21,7 @@ cmap = plt.cm.rainbow
 
 def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True, center_x=None,
                    xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, gridlines=False, 
-                   gridlinesArgs=None):
+                   gridlinesArgs=None, cyclic=True, slice_at=None):
     '''
     Plot the 2D vertical slice of a variable
 
@@ -84,10 +86,10 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         Defaults to None, in which case the default chosen by the plotting call is used.
     xlabel : string
         The label fot the x-axis. Fontsize will default to 12.
-        Defaults to 'x'
+        Defaults to 'x'. Set to an empty string '' to disable. 
     ylabel : string
         The label for the y-axis. Fontsize will default to 12.
-        Default to 'y'
+        Default to 'y'. Set to an empty string '' to disable.
     title : string
         The title for the axis. Fontsize will default to 14. 
         Default is None, in which case the title is blank.
@@ -96,6 +98,13 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         Default is False
     gridlinesArgs : dict, optional 
         Args sent to cartopy gridlines, as a dict.
+    cyclic : bool
+        Whether or not to add a cyclic point to the data, to avoid gaps in any contour plots.
+        Defaults to True.
+    slice_at : string
+        String to print in a text box in a plot corner, giving the position of the slice 
+        (or stating a mean, etc). Defaults to 'SLICE AT' as a placeholder. Set to an empty
+        string '' to disable the text box.
     '''
     
     # -------- prepare --------
@@ -109,7 +118,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
                     'colorbar' :  {'ax':ax, 'location':'right', 'orientation':'vertical',
                                    'extend':'both', 'extendrect':True, 'format':'%.0f'},
                     'gridlines':  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
-                                   'color':'k', 'lw':0.3, 'alpha':0.5}
+                                   'color':'k', 'lw':0.3, 'alpha':0.5, 'xformatter':aut.LON_WEST_FORMATTER}
                    }
     color_formatters = {
                         'contour'  : 'clabel',
@@ -117,6 +126,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
                        }
     if(xlabel is None): xlabel = 'x'
     if(ylabel is None): ylabel = 'y'
+    if(slice_at is None): slice_at = 'SLICE AT ?'
 
     
     # -------- check inputs, add missing dict fields --------
@@ -172,25 +182,24 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
             gridlinesArgs = default_args['gridlines']
   
     # -------- plot variables --------
+    if(cyclic):
+        d['var'], x = add_cyclic_point(d['var'], coord=x, axis=1)
     
     if(center_x is not None):
-        # recenter on center_x in degrees assuming periodicity in x
-        #xmax = center_x + 180
-        #xroll = np.searchsorted(x, xmax)
-        #xorig = x
-        #x = x - center_x
-        #xmin = np.min(x)
+        # recenter on center_x in degrees, assuming periodicity in x
+        xcen = x - center_x  # shifted coords only used to find rolling index
+        shift_right, shift_left = False, False
+        if(np.max(xcen) >= 180): shift_right = True
+        if(np.min(xcen) <= -180): shift_left = True
+        assert not(shift_left & shift_right), 'FAILED on centering at center_x;\
+                                               data nonunique? x not in degrees? bug here?'
+        if(shift_right): xroll = np.searchsorted(xcen, 180)
+        if(shift_left): xroll = np.searchsorted(xcen, -180)
+        x = np.roll(x, -xroll)                       # center x on x_center via a matrix "roll"
+        x[x > (center_x + 180)] -= 360
+        d['var'] = np.roll(d['var'], -xroll, axis=1) # also the data
+        xlim = [center_x - 180, center_x + 180]     
 
-        #shift_x_origin   = lambda x: np.hstack([x[xmax:], x[xmax:] - 360])
-        #unshift_x_origin = lambda x: np.hstack([ (x+center_x)[x>180], [x>180] + 360])
-        
-        #x = shift_x_origin(x)
-        #x = np.roll(x, -xroll)
-        pass
-    else:
-        #xlabs = None
-        pass
-    
     X, Y = np.meshgrid(x, y)
     
     plots = np.empty(len(var_dict), dtype=object)
@@ -217,10 +226,12 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
     # -------- format figure -------- 
     if(inverty): ax.invert_yaxis()
     if(logy): ax.set_yscale('log')
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: \
+                                 ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
     if(xlim is not None): ax.set_xlim(xlim)
     if(ylim is not None): ax.set_ylim(ylim)
-    ax.set_xlabel(xlabel, fontsize=12)
-    ax.set_ylabel(ylabel, fontsize=12)
+    if(xlabel != ''): ax.set_xlabel(xlabel, fontsize=12)
+    if(ylabel != ''): ax.set_ylabel(ylabel, fontsize=12)
     ax.set_title(title, fontsize=14)
     if(gridlines):
         ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False, 
@@ -232,10 +243,11 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         plotterz(X, ctb.ptoz(Y).m, d['var'], **d['plotArgs'], alpha=0)  # pressure must be in hPa
         axz.set_ylim(ylimz)
         axz.set_ylabel(r'Z [km]')
-    if(center_x is not None):
-        pdb.set_trace()
-        ax.set_xticks(xlabs)
-        ax.set_xticklabels(xlabs)
+    if(slice_at != ''): 
+        text_box = AnchoredText(slice_at, frameon=True, loc='lower left', pad=0.5)
+        text_box.set_zorder(100)
+        plt.setp(text_box.patch, facecolor='white', alpha=1)
+        ax.add_artist(text_box)
     
     
 # -------------------------------------------------------------
@@ -243,7 +255,8 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
 
 def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),  
                      xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, 
-                     gridlines=True, gridlinesArgs=None, coastlines=True, costlinesArgs=None):
+                     gridlines=True, gridlinesArgs=None, coastlines=True, coastlinesArgs=None, 
+                     cyclic=True, slice_at=None):
     '''
     Plot the 2D horizontal slice of a variable
 
@@ -297,12 +310,12 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     xlim : list of length 2, optional
         xlimits to impose on figure.
         Defaults to None, in which case the default chosen by the plotting call is used.
-    xlabel : string, optional
+    xlabel : string
         The label fot the x-axis. Fontsize will default to 12.
-        Default is None, in which case the label is blank.
-    ylabel : string, optional
+        Defaults to 'x'. Set to an empty string '' to disable. 
+    ylabel : string
         The label for the y-axis. Fontsize will default to 12.
-        Default is None, in which case the label is blank.
+        Default to 'y'. Set to an empty string '' to disable.
     title : string, optional
         The title for the axis. Fontsize will default to 14. 
         Default is None, in which case the title is blank.
@@ -315,11 +328,18 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
         Whether or not to plot coastlines. Defaults to True
     coastlinesArgs : dict, optional 
         Args sent to cartopy coastlines, as a dict.
+    cyclic : bool
+        Whether or not to add a cyclic point to the data, to avoid gaps in any contour plots.
+        Defaults to True.
+    slice_at : string
+        String to print in a text box in a plot corner, giving the position of the slice 
+        (or stating a mean, etc). Defaults to 'SLICE AT' as a placeholder. Set to an empty
+        string '' to disable the text box.
     '''
     
     # -------- prepare --------
     fig = ax.get_figure()
-    transform = ccrs.PlateCarree
+    transform = ccrs.PlateCarree()
 
     
     # -------- define default plot args --------
@@ -330,7 +350,8 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
                            'colorbar' :  {'ax':ax, 'orientation':'vertical', 'extend':'both', 
                            'extendrect':True, 'format':'%.0f', 'transform':transform},
             'gridlines' :  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
-                           'color':'k', 'lw':0.5, 'alpha':0.5, 'linestyle':':', 'crs':transform}
+                            'color':'k', 'lw':0.5, 'alpha':0.5, 'linestyle':':', 'crs':transform,
+                            'xformatter':aut.LON_WEST_FORMATTER},
             'coastlines':  {'resolution':'110m', 'color':'k', 'linestyle':'-', 'alpha':0.75}
                    }
     color_formatters = {
@@ -339,6 +360,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
                        }
     if(xlabel is None): xlabel = 'x'
     if(ylabel is None): ylabel = 'y'
+    if(slice_at is None): slice_at = 'SLICE AT ?'
     
     # -------- check inputs, add missing dict fields --------
     valid_keys = ['var', 'plotType', 'plotArgs', 'colorArgs', 'colorFormatter']
@@ -398,13 +420,16 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
 
     # -------- plot variables --------
     
+    if(cyclic):
+        d['var'], x = add_cyclic_point(d['var'], coord=x, axis=1)
+    
     X, Y = np.meshgrid(x, y)
     
     plots = np.empty(len(var_dict), dtype=object)
     for i in range(len(var_dict)):
         d = var_dict[i]
         plotter = getattr(ax, d['plotType'])
-        plots[i] = plotter(X, Y, d['var'], transform=transform, **d['plotArgs'])
+        plots[i] = plotter(X, Y, d['var'], **d['plotArgs'])
         
     # -------- format colors --------
     for i in range(len(var_dict)):
@@ -422,13 +447,20 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     
     # -------- format figure --------
     if(xlim is not None): ax.set_xlim(xlim)
-    if(ylim is not None): ax.set_ylim(ylim)
-    ax.set_xlabel(xlabel, fontsize=12)
-    ax.set_ylabel(ylabel, fontsize=12)
-    ax.set_title(title, fontsize=14)
+    if(ylim is not None): ax.set_ylim(ylim) 
+    if(xlabel != ''): ax.set_xlabel(xlabel, fontsize=12)
+    if(ylabel != ''): ax.set_ylabel(ylabel, fontsize=12)
     if(gridlines):
        gl = ax.gridlines(**gridlinesArgs)
        gl.xlabels_top = False
        gl.ylabels_right = False
     if(coastlines):
-        ax.coastlines(**coastlineArgsres)
+        ax.coastlines(**coastlinesArgs) 
+    if(slice_at != ''): 
+        text_box = AnchoredText(slice_at, frameon=True, loc='lower left', pad=0.5)
+        text_box.set_zorder(100)
+        plt.setp(text_box.patch, facecolor='white', alpha=1)
+        ax.add_artist(text_box)
+    ax.set_xlabel(xlabel, fontsize=12)
+    ax.set_ylabel(ylabel, fontsize=12)
+    ax.set_title(title, fontsize=14)

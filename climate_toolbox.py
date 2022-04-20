@@ -15,7 +15,6 @@ from metpy import calc as mc
 from metpy.units import units
 import metpy.constants as const
 from cftime import DatetimeNoLeap
-from matplotlib.colors import ListedColormap
 
 sys.path.append('/glade/u/home/jhollowed/repos/ncl_exports')
 from wrappers import dpres_hybrid_ccm

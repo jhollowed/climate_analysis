@@ -9,7 +9,10 @@ import cartopy.crs as ccrs
 import climate_toolbox as ctb
 import matplotlib.pyplot as plt
 import cartopy.feature as cfeature
+import matplotlib.ticker as mticker
+from matplotlib.colors import ListedColormap
 
+_DEGREE_SYMBOL = u'\u00B0'
 
 # ==========================================================================================
 
@@ -36,8 +39,9 @@ def ncar_rgb_to_cmap(rgb, hdrl=2, norm=False):
         colors = f.readlines()
     colors = colors[hdrl:]
     for i in range(len(colors)):
-        colors[i] = [float(c) for c in colors[i].strip('\n').split()]
-    if(norm):
+        colors[i] = [float(c) for c in colors[i].strip('\n').split('#')[0].split()]
+    colors = np.array(colors)
+    if(norm): 
         colors /= 256
     return ListedColormap(colors)
 
@@ -110,3 +114,15 @@ def insert_labelled_tick(ax, axis, value, label=None):
 
 
 # -------------------------------------------------------------
+
+def _lon_west_formatted(longitude, num_format='g'):
+    fmt_string = u'{longitude:{num_format}}{degree}W'
+    longitude += int(longitude < 0) * 360
+    return fmt_string.format(longitude=abs(longitude), num_format=num_format, degree=_DEGREE_SYMBOL)
+LON_WEST_FORMATTER = mticker.FuncFormatter(lambda v, pos: _lon_west_formatted(v))
+
+def _lon_east_formatted(longitude, num_format='g'):
+    fmt_string = u'{longitude:{num_format}}{degree}E'
+    longitude -= int(longitude > 0) * 360
+    return fmt_string.format(longitude=abs(longitude), num_format=num_format, degree=_DEGREE_SYMBOL)
+LON_EAST_FORMATTER = mticker.FuncFormatter(lambda v, pos: _lon_east_formatted(v))
