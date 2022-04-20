@@ -57,36 +57,6 @@ def time2day(time):
 # -------------------------------------------------------------
 
 
-def ncar_rgb_to_cmap(rgb, hdrl=2, norm=False):
-    '''
-    Constructs matplotlib colormap object from NCAR .rgb file
-
-    Parameters
-    ----------
-    rgb : string
-        location of the rgb file
-    hdrl : int, optional
-        header length of file; first color will be searched for at line hdrl+1 of the file 
-        (where the first line is line 1). Defaults to 2
-    norm : bool, optional
-        whether or not to normalize the colors by 256. Defaults to False
-
-    Returns
-    -------
-    matplotlib ListedColormap object
-    '''
-    with open(rgb) as f:
-        colors = f.readlines()
-    colors = colors[hdrl:]
-    for i in range(len(colors)):
-        colors[i] = [float(c) for c in colors[i].strip('\n').split()]
-    if(norm):
-        colors /= 256
-    return ListedColormap(colors)
-
-        
-# -------------------------------------------------------------
-
 def ptoz(p):
     '''
     Converts pressure to geootential height assuming an isothermal atmosphere
