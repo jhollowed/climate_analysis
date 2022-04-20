@@ -18,7 +18,8 @@ cmap = plt.cm.rainbow
 
 def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=True, 
                    plot_zscale=True, yscale='log', xscale='linear', xlabel=None, ylabel=None, 
-                   title=None, xlim=None, ylim=None, gridlines=False, gridlinesArgs=None):
+                   title=None, xlim=None, ylim=None, gridlines=False, gridlinesArgs=None, 
+                   center_x=None):
     '''
     Plot the 2D vertical slice of a variable
 
@@ -104,6 +105,9 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
         Default is False
     gridlinesArgs : dict, optional 
         Args sent to cartopy gridlines, as a dict.
+    center_x: float
+        x-coordiante on which to center the data. It will be assumed that the x-data is
+        periodic, and defined in degrees. 
         
     Returns
     -------
@@ -121,8 +125,7 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
         fig = ax.get_figure()
         return_fig = False
 
-    X, Y = np.meshgrid(x, y)
-    
+
     # -------- define default plot args --------
     default_args = {
                     'contour'  :  {'levels':12, 'colors':'k', 'extend':'both'},
@@ -191,6 +194,27 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
             gridlinesArgs = default_args['gridlines']
   
     # -------- plot variables --------
+    
+    if(center_x is not None):
+        # recenter on center_x in degrees assuming periodicity in x
+        #xmax = center_x + 180
+        #xroll = np.searchsorted(x, xmax)
+        #xorig = x
+        #x = x - center_x
+        #xmin = np.min(x)
+
+        #shift_x_origin   = lambda x: np.hstack([x[xmax:], x[xmax:] - 360])
+        #unshift_x_origin = lambda x: np.hstack([ (x+center_x)[x>180], [x>180] + 360])
+        
+        #x = shift_x_origin(x)
+        #x = np.roll(x, -xroll)
+        pass
+    else:
+        #xlabs = None
+        pass
+    
+    X, Y = np.meshgrid(x, y)
+    
     plots = np.empty(len(var_dict), dtype=object)
     for i in range(len(var_dict)):
         d = var_dict[i]
@@ -212,7 +236,7 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
                                           type(ax), type(fig), d['colorFormatter']))
             colorFormatter(plots[i], **d['colorArgs'])
     
-    # -------- format figure --------
+    # -------- format figure -------- 
     if(inverty): ax.invert_yaxis()
     if(xlim is not None): ax.set_xlim(xlim)
     if(ylim is not None): ax.set_ylim(ylim)
@@ -232,6 +256,10 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
         plotterz(X, ctb.ptoz(Y).m, d['var'], **d['plotArgs'], alpha=0)
         axz.set_ylim(ylimz)
         axz.set_ylabel(r'Z [km]')
+    if(center_x is not None):
+        pdb.set_trace()
+        ax.set_xticks(xlabs)
+        ax.set_xticklabels(xlabs)
 
     if(savefig is not None):
         plt.savefig(savefig, dpi=300)
@@ -444,7 +472,7 @@ def horizontal_slice(x, y, var_dict, ax=None, savefig=None, projection=ccrs.Robi
        gl.xlabels_top = False
        gl.ylabels_right = False
     if(coastlines):
-        ax.coastlines(resolution='50m', color='k', linestyle='-', alpha=0.75, zorder=0)
+        ax.coastlines(resolution='110m', color='k', linestyle='-', alpha=0.5)
 
     if(savefig is not None):
         plt.savefig(savefig, dpi=300)
