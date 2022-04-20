@@ -3,18 +3,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 import metpy.constants as const
 from metpy.units import units as u
-import pdb
+from pdb import set_trace as st
 import math
 import cartopy.crs as ccrs
 import matplotlib.ticker as mticker
 import metpy.calc as mc
 from matplotlib.ticker import ScalarFormatter
 import scipy
+import matplotlib as mpl
+import climate_artist as cla
+import artist_utils as clau
 
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "sans-serif",
-    "font.sans-serif": ["Helvetica"]})
+#plt.rcParams.update({
+#    "text.usetex": True,
+#    "font.family": "sans-serif",
+#    "font.sans-serif": ["Helvetica"]})
+#mpl.rcParams['text.latex.preamble'] = [
+#       r'\usepackage{siunitx}',   # i need upright \micro symbols, but you need...
+#       r'\sisetup{detect-all}',   # ...this to force siunitx to actually use your fonts
+#       r'\usepackage{helvet}',    # set the normal font here
+#       r'\usepackage{sansmath}',  # load up the sansmath so that math -> helvet
+#       r'\sansmath'               # <- tricky! -- gotta actually tell tex to use!
+#]
+params = {'text.usetex': False, 'mathtext.fontset': 'stixsans'}
+plt.rcParams.update(params)
 
 # ========== define parameters ==========
 d2r = np.pi/180                
@@ -25,11 +37,13 @@ lon0 = 120.35 * d2r
 z0 = 25000 * u.m
 
 dr = 100000 * u.m
-dz = 7500 * u.m
+#dz = 7500 * u.m
+dz = 5000 * u.m
 rs = dr*3
 zs = dz*3
 
 tf = 172800 * u.s
+tfh = (172800 * u.s).to(u.hr)
 tau = -np.log(0.05)/tf
 a = const.Re.to(u.m)
 
@@ -48,6 +62,7 @@ LAT,LON = np.meshgrid(lat, lon)
 
 z = np.linspace(0, 50000, 303) * u.m
 t = np.linspace(0, 2*tf.m, 100) * u.s
+th = (np.linspace(0, 2*tf.m, 100) * u.s).to(u.hr)
 
 LAT, LON, Z = np.meshgrid(lat, lon, z.m)
 Z = Z * u.m
@@ -130,6 +145,7 @@ rho_peak_cSO2 = (Ac_SO2 * np.exp(-k_SO2*t) * ( -1+np.exp(tbound*k_SO2))) / k_SO2
 
 # ========== plot ==========
 
+plt.ion()
 data_crs = ccrs.PlateCarree()
 fig = plt.figure(figsize=(8.2,6))
 spec = fig.add_gridspec(2, 5)
@@ -147,10 +163,11 @@ P0 = 1000*u.hPa
 T0 = 250*u.K
 H = const.Rd*T0/const.g
 p = P0 * np.exp(-Z/H)
+pmid = P0 * np.exp(-z[zmid]/H)
 
 cmap = plt.cm.OrRd
 #levels = [4, 3, 2, 2.5, 1, 0.5]
-levels = [0, 0.5, 1, 1.5, 2, 3, 4, 4.5]
+levels = [0, 0.5, 1, 2, 3, 4]
 poww = math.ceil(-np.log10(np.max(fe_SO2[:,latmid,:]).m))
 vmin=-10**-poww
 
@@ -168,8 +185,9 @@ gl.ylocator = mticker.FixedLocator(latlim)
 gl.right_labels = []
 gl.top_labels = []
 ax1.coastlines(resolution='50m', color='k', linestyle='-', alpha=1, zorder=9)
-ax1.set_xlabel(r'lat [deg]')
-ax1.set_ylabel(r'lon [deg]')
+#ax1.set_xlabel(r'lat [deg]')
+#ax1.set_ylabel(r'lon [deg]')
+ax1.set_title('{:.0f} km, $\sim$40 hPa'.format(z[zmid].to(u.km).m))
 
 ax2.set_xlabel(r'r [km]')
 ax2.set_ylabel(r'p [hPa]')
@@ -192,9 +210,9 @@ ax22.set_ylim( (H * np.log(P0/(ax2.get_ylim()*u.hPa))).to(u.km).m )
 #ztick = (H * np.log(P0/(ptick*u.hPa))).to(u.km).m
 #ax22.set_yticklabels(['{:.0f}'.format(ztick[i]) for i in range(len(ztick))])
 
-ax3.plot(t.m/3600, fpe_SO2.m, '-k', label=r'exponential $T(t)$')
-ax3.plot(t.m/3600, fpc_SO2.m, '--k', label=r'constant $T(t)$')
-ax3.set_ylabel(r'peak $f(t)$ [kg/kg/s]', fontsize=11)
+ax3.plot(th.m, fpe_SO2.m, '-k', label=r'exponential $T(t)$')
+ax3.plot(th.m, fpc_SO2.m, '--k', label=r'constant $T(t)$')
+ax3.set_ylabel(r'peak $f(t)$ [kg/m$^3$/s]', fontsize=11)
 ax3.set_xticklabels([])
 ax3.yaxis.tick_right()
 ax3.yaxis.set_label_position("right")
@@ -202,20 +220,19 @@ ax3.legend(frameon=False)
 yy = ax3.get_ylim()
 yy = [yy[0], yy[1]]
 tftf = [tf.to(u.hr).m, tf.to(u.hr).m]
-ax3.plot(tftf, yy, '-k', lw=0.5)
+ax3.plot(tftf, yy, ':k', lw=0.8)
 ax3.set_ylim(yy)
-ax3.set_xlim(-0.5, np.max(t.m/3600))
-ax3.text(tf.to(u.hr).m-0.5, -0.7e-10, r'$t_f$')
+#ax3.text(tf.to(u.hr).m-0.5, -0.7e-10, r'$t_f$')
 
-ax4.plot(t.m/3600, rho_peak_eSO2, '-r', label='SO2')
-ax4.plot(t.m/3600, rho_peak_cSO2, '--r')
-ax4.plot(t.m/3600, rho_peak_eash, '-c', label='Ash')
-ax4.plot(t.m/3600, rho_peak_cash, '--c')
+ax4.plot(th.m, rho_peak_eSO2, '-r', label='SO2')
+ax4.plot(th.m, rho_peak_cSO2, '--r')
+ax4.plot(th.m, rho_peak_eash, '-c', label='Ash')
+ax4.plot(th.m, rho_peak_cash, '--c')
 
-ax4.plot(t.m/3600, rho_peak_eSO2_num, '-k', lw=0.6, label='numerical')
-ax4.plot(t.m/3600, rho_peak_cSO2_num, '-k', lw=0.6)
-ax4.plot(t.m/3600, rho_peak_eash_num, '-k', lw=0.6)
-ax4.plot(t.m/3600, rho_peak_cash_num, '-k', lw=0.6)
+ax4.plot(th.m, rho_peak_eSO2_num, '-k', lw=0.6, label='numerical')
+ax4.plot(th.m, rho_peak_cSO2_num, '-k', lw=0.6)
+ax4.plot(th.m, rho_peak_eash_num, '-k', lw=0.6)
+ax4.plot(th.m, rho_peak_cash_num, '-k', lw=0.6)
 
 ax4.set_xlabel(r'time [hr]')
 ax4.set_ylabel(r'peak $\rho(t)$ [kg/m$^3$]', fontsize=11)
@@ -224,13 +241,35 @@ ax4.yaxis.set_label_position("right")
 ax4.legend(frameon=False)
 yy = ax4.get_ylim()
 yy = [yy[0], yy[1]]
-ax4.plot(tftf, yy, '-k', lw=0.5)
+ax4.plot(tftf, yy, ':k', lw=0.8)
 ax4.set_ylim([0, yy[1]])
-ax4.set_xlim(-0.5, np.max(t.m/3600))
 
-#plt.subplots_adjust(left=0.07, bottom=0.1, right=0.88, top=0.9, wspace=None, hspace=None)
+#ticks = ax3.get_xticks()
+#ticks = np.append(ticks, tfh.m)
+#ticklabs = ticks.tolist()
+#ticklabs = ['%.0f'%lab for lab in ticklabs]
+#ticklabs[-1] = '$t_f$'
+#ax4.set_xticks(ticks)
+#ax4.set_xticklabels(ticklabs)
+#ax3.set_xticks(ticks)
+#st()
+st()
+clau.insert_labelled_tick(ax4, 'x', tfh.m, '$t_f$')
+
+clau.format_ticks([ax2, ax3, ax4])
+#for ax in [ax2, ax3, ax4]:
+#    ax.xaxis.set_ticks_position('both')
+#    ax.xaxis.set_tick_params(direction='in', which='both')
+#    if(ax != ax2):
+#        ax.yaxis.set_ticks_position('both')
+#    ax.yaxis.set_tick_params(direction='in', which='both')
+#ax22.yaxis.set_tick_params(direction='in', which='both')
+ax3.set_xlim(-0.5, np.max(th.m))
+ax4.set_xlim(-0.5, np.max(th.m))
+
 plt.tight_layout()
-plt.savefig('plume.png', dpi=300)
+#plt.savefig('plume.png', dpi=300)
+plt.show()
 
 
 
