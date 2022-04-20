@@ -17,10 +17,9 @@ cmap = plt.cm.rainbow
 # ==========================================================================================
 
 
-def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=True, 
-                   plot_zscale=True, yscale='log', xscale='linear', xlabel=None, ylabel=None, 
-                   title=None, xlim=None, ylim=None, gridlines=False, gridlinesArgs=None, 
-                   center_x=None):
+def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True, center_x=None,
+                   xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, gridlines=False, 
+                   gridlinesArgs=None):
     '''
     Plot the 2D vertical slice of a variable
 
@@ -63,41 +62,32 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
             if included in the dict.
         Any optional items not included in the dict will be inserted and set to their stated
         default values. If var_dict is a list of dicts, each variable will be overlain on the axis.
-    ax : pyplot axis object, optional
+    ax : pyplot axis object
         The axis on which to render the plot.
-        Defaults to None, in which case a new single-axis figure will be generated and
-        returned.
-    figsize : tuple
-        tuple giving the figure size width, height in inches (same as matplotlib figsize arg to Figure).
-        Default is None, in which case the figsize is defaulted by matplotlib.
-    savefig : string, optional
-        String giving the destination to write out a png of the plot.
-        Defaults to None, in which case no plot if saved to file.
-    inverty : bool, optional
-        Whether or not to invert the y-axis (often used for a vertical pressure coordinate). 
-        Defaults to true.
     plot_zscale : bool, optional
         Whether or not to include a second y axis of values converting the original y-axis 
         values from pressure to height, assuming an isothermal atmosphere. Assumed that the
         original y-axis in pressure. Defaults to true.
-    yscale : string, optional
-        String giving the yscale, matching a valid option for pyplot.yscale(). 
-        Defautls to 'log',
-    xscale : string, optional
-        String giving the zscale, matching a valid option for pyplot.yscale(). 
-        Defautls to 'linear'.
-    ylim : list of length 2
-        ylimits to impose on figure.
-        Defaults to None, in which case the default chosen by the plotting call is used.
+    inverty : bool, optional
+        Whether or not to invert the y-axis (often used for a vertical pressure coordinate). 
+        Defaults to true.
+    logy : string, optional
+        Whether or not to set the yscale to 'log'. Defaults to True.
+    center_x: float
+        x-coordiante on which to center the data. It will be assumed that the x-data is
+        periodic, and defined in degrees. 
     xlim : list of length 2
         xlimits to impose on figure.
         Defaults to None, in which case the default chosen by the plotting call is used.
+    ylim : list of length 2
+        ylimits to impose on figure.
+        Defaults to None, in which case the default chosen by the plotting call is used.
     xlabel : string
         The label fot the x-axis. Fontsize will default to 12.
-        Default is None, in which case the label is blank.
+        Defaults to 'x'
     ylabel : string
         The label for the y-axis. Fontsize will default to 12.
-        Default is None, in which case the label is blank.
+        Default to 'y'
     title : string
         The title for the axis. Fontsize will default to 14. 
         Default is None, in which case the title is blank.
@@ -106,26 +96,10 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
         Default is False
     gridlinesArgs : dict, optional 
         Args sent to cartopy gridlines, as a dict.
-    center_x: float
-        x-coordiante on which to center the data. It will be assumed that the x-data is
-        periodic, and defined in degrees. 
-        
-    Returns
-    -------
-    matplotlib Figure object
-        Returns a figure if ax=None.
     '''
     
     # -------- prepare --------
-    if ax is None:
-        if figsize is None: fig = plt.figure()
-        else: fig = plt.figure(figsize)
-        ax = fig.add_subplot(111)
-        return_fig = True
-    else:
-        fig = ax.get_figure()
-        return_fig = False
-
+    fig = ax.get_figure()
 
     # -------- define default plot args --------
     default_args = {
@@ -141,6 +115,9 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
                         'contour'  : 'clabel',
                         'contourf' : 'colorbar'
                        }
+    if(xlabel is None): xlabel = 'x'
+    if(ylabel is None): ylabel = 'y'
+
     
     # -------- check inputs, add missing dict fields --------
     valid_keys = ['var', 'plotType', 'plotArgs', 'colorArgs', 'colorFormatter']
@@ -239,10 +216,9 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
     
     # -------- format figure -------- 
     if(inverty): ax.invert_yaxis()
+    if(logy): ax.set_yscale('log')
     if(xlim is not None): ax.set_xlim(xlim)
     if(ylim is not None): ax.set_ylim(ylim)
-    ax.set_yscale(yscale)
-    ax.set_xscale(xscale)
     ax.set_xlabel(xlabel, fontsize=12)
     ax.set_ylabel(ylabel, fontsize=12)
     ax.set_title(title, fontsize=14)
@@ -253,28 +229,21 @@ def vertical_slice(x, y, var_dict, ax=None, savefig=None, figsize=None, inverty=
         ylimz = ctb.ptoz(ax.get_ylim()).m/1000
         axz = ax.twinx()
         plotterz = getattr(axz, d['plotType'])
-        # pressure must be in hPa
-        plotterz(X, ctb.ptoz(Y).m, d['var'], **d['plotArgs'], alpha=0)
+        plotterz(X, ctb.ptoz(Y).m, d['var'], **d['plotArgs'], alpha=0)  # pressure must be in hPa
         axz.set_ylim(ylimz)
         axz.set_ylabel(r'Z [km]')
     if(center_x is not None):
         pdb.set_trace()
         ax.set_xticks(xlabs)
         ax.set_xticklabels(xlabs)
-
-    if(savefig is not None):
-        plt.savefig(savefig, dpi=300)
-    if(return_fig):
-        return fig
     
     
 # -------------------------------------------------------------
 
 
-def horizontal_slice(x, y, var_dict, ax=None, savefig=None, projection=ccrs.Robinson(), 
-                     transform=ccrs.PlateCarree(), 
-                     figsize=None, xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, 
-                     gridlines=True, gridlinesArgs=None, coastlines=True):
+def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),  
+                     xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, 
+                     gridlines=True, gridlinesArgs=None, coastlines=True, costlinesArgs=None):
     '''
     Plot the 2D horizontal slice of a variable
 
@@ -317,22 +286,11 @@ def horizontal_slice(x, y, var_dict, ax=None, savefig=None, projection=ccrs.Robi
             if included in the dict.
         Any optional items not included in the dict will be inserted and set to their stated
         default values. If var_dict is a list of dicts, each variable will be overlain on the axis.
-    ax : pyplot axis object, optional
+    ax : pyplot axis object
         The axis on which to render the plot
-        Defaults to None, in which case a new single-axis figure will be generated and
-        returned.
     projection : cartopy ccrs object, optional
         Projection to apply to the slice, as a catropy.ccrs object instance.
         Default is ccrs.Robinson.
-    transform : cartopy ccrs object, optional
-        Transform to apply to plots on the slice, as a catropy.ccrs object instance.
-        Default is ccrs.PlateCarree.
-    figsize : tuple
-        tuple giving the figure size width, height in inches
-        Default is None, in which case the figsize is defaulted by matplotlib.
-    savefig : string, optional
-        String giving the destination to write out a png of the plot.
-        Defaults to None, in which case no plot if saved to file.
     ylim : list of length 2, optional
         ylimits to impose on figure.
         Defaults to None, in which case the default chosen by the plotting call is used.
@@ -355,39 +313,32 @@ def horizontal_slice(x, y, var_dict, ax=None, savefig=None, projection=ccrs.Robi
         Args sent to cartopy gridlines, as a dict.
     coastlines : bool, optional 
         Whether or not to plot coastlines. Defaults to True
-
-    Returns
-    -------
-    matplotlib Figure object
-        Returns a figure if ax=None.
+    coastlinesArgs : dict, optional 
+        Args sent to cartopy coastlines, as a dict.
     '''
     
     # -------- prepare --------
-    if ax is None:
-        if figsize is None: fig = plt.figure()
-        else: fig = plt.figure(figsize)
-        ax = fig.add_subplot(111, projection=projection)
-        return_fig = True
-    else:
-        fig = ax.get_figure()
-        return_fig = False
+    fig = ax.get_figure()
+    transform = ccrs.PlateCarree
 
-    X, Y = np.meshgrid(x, y)
     
     # -------- define default plot args --------
     default_args = {
-                    'contour'  :  {'levels':12, 'colors':'k', 'extend':'both'},
-                    'contourf' :  {'levels':12, 'cmap':'rainbow', 'extend':'both'},
-                    'clabel'   :  {'inline':True, 'fmt':'%.2f', 'fontsize':9},
-                    'colorbar' :  {'ax':ax, 'orientation':'vertical', 'extend':'both', 
-                                   'extendrect':True, 'format':'%.0f'},
-                    'gridlines':  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
-                                   'color':'k', 'lw':0.5, 'alpha':0.5, 'linestyle':':', 'crs':transform}
+            'contour'   :  {'levels':12, 'colors':'k', 'extend':'both', 'transform':transform},
+            'contourf'  :  {'levels':12, 'cmap':'rainbow', 'extend':'both', 'transform':transform},
+            'clabel'    :  {'inline':True, 'fmt':'%.2f', 'fontsize':9, 'transform':transform},
+                           'colorbar' :  {'ax':ax, 'orientation':'vertical', 'extend':'both', 
+                           'extendrect':True, 'format':'%.0f', 'transform':transform},
+            'gridlines' :  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
+                           'color':'k', 'lw':0.5, 'alpha':0.5, 'linestyle':':', 'crs':transform}
+            'coastlines':  {'resolution':'110m', 'color':'k', 'linestyle':'-', 'alpha':0.75}
                    }
     color_formatters = {
                         'contour'  : 'clabel',
                         'contourf' : 'colorbar',
                        }
+    if(xlabel is None): xlabel = 'x'
+    if(ylabel is None): ylabel = 'y'
     
     # -------- check inputs, add missing dict fields --------
     valid_keys = ['var', 'plotType', 'plotArgs', 'colorArgs', 'colorFormatter']
@@ -440,8 +391,15 @@ def horizontal_slice(x, y, var_dict, ax=None, savefig=None, projection=ccrs.Robi
             gridlinesArgs = {**default_args['gridlines'], **gridlinesArgs}
         else:
             gridlinesArgs = default_args['gridlines']
+        if coastlinesArgs is not None:
+            coastlinesArgs = {**default_args['coastlines'], **coastlinesArgs}
+        else:
+            coastlinesArgs = default_args['coastlines']
 
     # -------- plot variables --------
+    
+    X, Y = np.meshgrid(x, y)
+    
     plots = np.empty(len(var_dict), dtype=object)
     for i in range(len(var_dict)):
         d = var_dict[i]
@@ -473,9 +431,4 @@ def horizontal_slice(x, y, var_dict, ax=None, savefig=None, projection=ccrs.Robi
        gl.xlabels_top = False
        gl.ylabels_right = False
     if(coastlines):
-        ax.coastlines(resolution='110m', color='k', linestyle='-', alpha=0.5)
-
-    if(savefig is not None):
-        plt.savefig(savefig, dpi=300)
-    if(return_fig):
-        return fig
+        ax.coastlines(**coastlineArgsres)
