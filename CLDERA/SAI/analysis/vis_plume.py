@@ -12,6 +12,7 @@ from matplotlib.ticker import ScalarFormatter
 import scipy
 import matplotlib as mpl
 import climate_artist as cla
+import artist_utils as clau
 
 #plt.rcParams.update({
 #    "text.usetex": True,
@@ -144,6 +145,7 @@ rho_peak_cSO2 = (Ac_SO2 * np.exp(-k_SO2*t) * ( -1+np.exp(tbound*k_SO2))) / k_SO2
 
 # ========== plot ==========
 
+plt.ion()
 data_crs = ccrs.PlateCarree()
 fig = plt.figure(figsize=(8.2,6))
 spec = fig.add_gridspec(2, 5)
@@ -242,23 +244,26 @@ yy = [yy[0], yy[1]]
 ax4.plot(tftf, yy, ':k', lw=0.8)
 ax4.set_ylim([0, yy[1]])
 
-ticks = ax3.get_xticks()
-ticks = np.append(ticks, tfh.m)
-ticklabs = ticks.tolist()
-ticklabs = ['%.0f'%lab for lab in ticklabs]
-ticklabs[-1] = '$t_f$'
-ax4.set_xticks(ticks)
-ax4.set_xticklabels(ticklabs)
-ax3.set_xticks(ticks)
+#ticks = ax3.get_xticks()
+#ticks = np.append(ticks, tfh.m)
+#ticklabs = ticks.tolist()
+#ticklabs = ['%.0f'%lab for lab in ticklabs]
+#ticklabs[-1] = '$t_f$'
+#ax4.set_xticks(ticks)
+#ax4.set_xticklabels(ticklabs)
+#ax3.set_xticks(ticks)
+#st()
 st()
+clau.insert_labelled_tick(ax4, 'x', tfh.m, '$t_f$')
 
-for ax in [ax2, ax3, ax4]:
-    ax.xaxis.set_ticks_position('both')
-    ax.xaxis.set_tick_params(direction='in', which='both')
-    if(ax != ax2):
-        ax.yaxis.set_ticks_position('both')
-    ax.yaxis.set_tick_params(direction='in', which='both')
-ax22.yaxis.set_tick_params(direction='in', which='both')
+clau.format_ticks([ax2, ax3, ax4])
+#for ax in [ax2, ax3, ax4]:
+#    ax.xaxis.set_ticks_position('both')
+#    ax.xaxis.set_tick_params(direction='in', which='both')
+#    if(ax != ax2):
+#        ax.yaxis.set_ticks_position('both')
+#    ax.yaxis.set_tick_params(direction='in', which='both')
+#ax22.yaxis.set_tick_params(direction='in', which='both')
 ax3.set_xlim(-0.5, np.max(th.m))
 ax4.set_xlim(-0.5, np.max(th.m))
 
