@@ -22,3 +22,4 @@ aoa_read_from_ic_file = .FALSE.        ! activate built-in analytic init of aoa 
 interpolate_output = .true., .true.    ! interpolate from SE cubedsphere to lat-lon
 
 se_nsplit = 1
+pertlim = 0.0

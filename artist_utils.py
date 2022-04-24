@@ -17,7 +17,7 @@ _DEGREE_SYMBOL = u'\u00B0'
 # ==========================================================================================
 
 
-def ncar_rgb_to_cmap(rgb, hdrl=2, norm=False):
+def ncar_rgb_to_cmap(rgb, hdrl=2):
     '''
     Constructs matplotlib colormap object from NCAR .rgb file
 
@@ -28,8 +28,6 @@ def ncar_rgb_to_cmap(rgb, hdrl=2, norm=False):
     hdrl : int, optional
         Header length of file; first color will be searched for at line hdrl+1 of the file 
         (where the first line is line 1). Defaults to 2
-    norm : bool, optional
-        Whether or not to normalize the colors by 256. Defaults to False
 
     Returns
     -------
@@ -41,7 +39,7 @@ def ncar_rgb_to_cmap(rgb, hdrl=2, norm=False):
     for i in range(len(colors)):
         colors[i] = [float(c) for c in colors[i].strip('\n').split('#')[0].split()]
     colors = np.array(colors)
-    if(norm): 
+    if(np.max(colors) > 1):
         colors /= 256
     return ListedColormap(colors)
 

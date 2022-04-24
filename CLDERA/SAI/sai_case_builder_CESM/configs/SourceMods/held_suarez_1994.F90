@@ -137,8 +137,32 @@ contains
     real(kind_phys)   :: lapsec           ! lapse rate
     real(kind_phys)   :: constc           ! constant
     real(kind_phys)   :: acoslat          ! abs(acos(coslat))
-    real(kind_phys)   :: pih                 ! 0.5*pi
 
+    
+    ! CJ add
+    ! FV3-type Rayleigh friction
+    !
+    real(kind_phys)              :: pih                 ! 0.5*pi
+    real(kind_phys)              :: kr                  ! RF friction coefficient
+    real(kind_phys)              :: num                 ! kr definition numerator
+    real(kind_phys)              :: den                 ! kr definition denominator
+    
+    ! --- Rayleight friction applied above fv3_rf_cutoff
+    ! --- fv3_tau_rev is damping timescale
+    ! real(kind_phys), parameter :: fv3_rf_cutoff = 0.00001_kind_phys  
+                                                    ! 1 Pa in sigma coordinate, 
+    real(kind_phys), parameter   :: fv3_rf_cutoff = 0.001_kind_phys    
+                                                    ! 100 Pa in sigma coordinate
+    ! real(kind_phys), parameter :: fv3_tau_rev = 1._kind_phys/(86400._kind_phys*1._kind_phys)  
+                                                    ! 1/(1 day)
+    real(kind_phys), parameter   :: fv3_tau_rev   = 1._kind_phys/(86400._kind_phys*3._kind_phys)  
+                                                    ! 1/(3 days)
+    
+    ! --- for time-implicit scheme; code currently not included below 
+    logical                    :: implicit_scheme = .FALSE. ! off by defualt;
+    real(kind_phys)            :: coeff                     ! coefficient for time-implicit scheme, 
+    real(kind_phys)            :: u_tmp, v_tmp              ! updated u and v
+    
     
     !
     !-----------------------------------------------------------------------
@@ -244,6 +268,22 @@ contains
           dv(i,k) = -kv*v(i,k)
         end do
       end if
+
+      ! -- JH--
+      ! CJ, add Rayleigh friction in sponge layer
+      ! pref_mid_norm(1) serves as the position of the model top 
+      ! (full level, actual half level has lower pressure)
+      ! apply RF above the cutoff sigma level
+      if (pref_mid_norm(k) < fv3_rf_cutoff) then
+         num = pih*log(fv3_rf_cutoff/pref_mid_norm(k))
+         den = log(fv3_rf_cutoff/pref_mid_norm(1))
+         kr = fv3_tau_rev * (sin(num/den))**2._kind_phys    ! FV3 RF coefficient
+         
+         do i = 1, ncol
+           du(i,k) = -kr*u(i,k)               ! tendency via explicit time stepping
+           dv(i,k) = -kr*v(i,k)               ! tendency via explicit time stepping
+         end do
+       endif
     end do
 
   end subroutine held_suarez_1994_run

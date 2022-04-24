@@ -262,7 +262,7 @@ contains
     !--JH--
     use ref_pres,     only: pref_mid_norm
     use time_manager, only: get_curr_time
-    use physconst,    only: pi, rearth, cpair, rair 
+    use physconst,    only: pi, rearth, cpair, rair, rgrav=>rga
     use phys_grid,    only: get_area_all_p
 
     ! Arguments
@@ -413,9 +413,9 @@ contains
           ! ---------- SAI_AOA ----------
           ptend%q(i,k,ixsai4) = 0.0_r8
           
-          ! ---------- MASS ----------
-          ! mass(i,k) = state%pdel(i,k) * area(i) * 1/(rair * state%t(i,k))
-          mass(i,k) = state%pdel(i,k)
+          ! ---------- SAI_MASS ---------
+          ! via hydrostatic approximation
+          mass(i,k) = state%pdel(i,k) * area(i) * rgrav 
 
 
        end do

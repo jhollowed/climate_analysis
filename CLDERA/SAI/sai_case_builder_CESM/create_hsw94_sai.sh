@@ -10,18 +10,17 @@ pause(){
 # 2/9/22
 # script for performing WHS forced runs with AOA tracers via CAM modifications by Gupta+
 
-DYCORE=$1
-RES=$2
-NLEV=$3
-BUILD_FLAG=$4  # either 0,1,or 2; 
+BUILD_FLAG=$1  # either 0,1,or 2; 
                # 0 throws error if case exists, 
                # 1 will rebuild (without clean-all) and submit,e.g. for namelist changes 
                # 2 will nuke the case and create from scratch
+FIX=$2      # turn on mass fix?
+SPINUP=$3   # is spinup?
+STOP_N=$4
+
 TAUPHYS=$5  # injection timescale to match phys timestep?
-FIX=$6      # turn on mass fix?
-NSPLIT=$7   # nsplit
-SPINUP=$8   # is spinup?
-NODIFF=$9   # turn off diffusion?
+NSPLIT=$6   # nsplit
+NODIFF=$7   # turn off diffusion?
 
 MODEL=/glade/u/home/jhollowed/CAM/CAM_dev/cime/scripts/create_newcase
 OUT=/glade/scratch/jhollowed/CAM/cases/sai_runs
@@ -29,57 +28,30 @@ CASES=/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/sai_case_builder
 CONFIGS=/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/sai_case_builder_CESM/configs
 VGRIDS=/glade/u/home/cjablono/CESM_vertical_grids
 DATA=/glade/u/home/jhollowed/CAM/inputdata
-SPUN=/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_saiv2_spinup/run/SE_ne16L72_whs_saiv2_spinup.cam.i.0001-12-27-00000.nc
+SPUN=/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_sai_spinup/run/SE_ne16L72_whs_saiv2_spinup.cam.i.0001-12-27-00000.nc
 
-# =============== configure based on dycore, resolution ===============
-if [ "$RES" == "C24" ]; then
-    if [ "$DYCORE" == "FV3" ]; then 
-        GRID="C24_C24_mg17"
-        LAB="C24"
-        PE=144
-        #ATM_NCPL=48
-        ATM_DOMAIN_MESH="/glade/p/cesmdata/cseg/inputdata/share/scripgrids/C24_SCRIP_desc.181018.nc"
-    fi 
-elif [ "$RES" == "C48" ]; then
-    if [ "$DYCORE" == "FV3" ]; then 
-        GRID="C48_C48_mg17"
-        LAB="C48"
-        PE=144
-        ATM_DOMAIN_MESH="/glade/p/cesmdata/cseg/inputdata/share/scripgrids/C48_SCRIP_desc.181018.nc"
-    elif [ "$DYCORE" == "SE" ]; then 
-        GRID="ne16_ne16_mg17"
-        LAB="ne16"
-        PE=288
-        #ATM_NCPL=96
-    fi
-fi
-
-if [ "$NLEV" == "72" ]; then NCDATA="cam_vcoords_L72_E3SM.nc"; fi
-if [ "$NLEV" == "93" ]; then NCDATA="cam_vcoords_L93_dz500m_high_top_86km.nc"; fi
-
+GRID="ne16_ne16_mg17"
+COMPSET="FHS94"
+LEVFILE="cam_vcoords_L72_E3SM.nc"
+PROJECT="UMIC0087"
+PE=288
 
 
 if [ "$SPINUP" == '1' ]; then
-    CASENAME=${DYCORE}_${LAB}L${NLEV}_whs_saiv2_spinup
-    STOP_N=360
+    CASENAME=SE_ne16L72_whs_sai_spinup
+    IC='-analytic_ic'
 fi
 if [ "$SPINUP" == '0' ]; then
-    CASENAME=${DYCORE}_${LAB}L${NLEV}_whs_saiv2_fix${FIX}_tau${TAUPHYS}_qsplit${NSPLIT}
-    STOP_N=60
-    if [ "$NODIFF" == '1' ]; then
-        CASENAME=${DYCORE}_${LAB}L${NLEV}_whs_saiv2_fix${FIX}_tau${TAUPHYS}_qsplit${NSPLIT}_NODIFF
-        STOP_N=4
-    fi
+    CASENAME=SE_ne16L72_whs_sai_fix${FIX}_tau${TAUPHYS}_nsplit${NSPLIT}_nodiff${NODIFF}
+    IC=''
 fi
 CASE=${CASES}/${CASENAME}
 
 if [ "$FIX" == '1' ]; then
     SRCMODS=${CONFIGS}/SourceMods_massCorrect
-    TAULINE=348
 fi
 if [ "$FIX" == '0' ]; then
     SRCMODS=${CONFIGS}/SourceMods
-    TAULINE=342
 fi
 
 
@@ -97,32 +69,32 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     fi
 
     printf "\n\n========== CREATING CASE ==========\n"
-    $MODEL --compset FHS94 --res ${GRID} --case $CASE --run-unsupported --project UMIC0087 \
+    $MODEL --compset $COMPSET --res $GRID --case $CASE --run-unsupported --project $PROJECT \
            --pecount $PE --output-root $OUT
 
     # ---------- configure case
     # nadv_11 = 1 for passive clock tracer
     cd $CASE
     ./xmlchange DEBUG=FALSE,DOUT_S=FALSE,STOP_OPTION=ndays,STOP_N=$STOP_N
-    ./xmlchange --file env_build.xml --id CAM_CONFIG_OPTS --val "-phys held_suarez -analytic_ic"
+    ./xmlchange --file env_build.xml --id CAM_CONFIG_OPTS --val "-phys held_suarez $IC"
     ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-age_of_air_trcs "
-    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "--nlev=$NLEV "
+    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "--nlev=72 "
     ./xmlchange JOB_WALLCLOCK_TIME=02:00:00
     ./xmlchange SAVE_TIMING=TRUE
     
     printf "\n\n========== COPYING NAMELISTS ==========\n"
     # ---------- copy namelist settings, append vertical levels
     if [ "$SPINUP" == '1' ]; then
-        cp --verbose ${CONFIGS}/user_nl_cam_aoa_${DYCORE}_spinup ./user_nl_cam
-        sed -i '$a NCDATA = '"\"${VGRIDS}/${NCDATA}\""'' ./user_nl_cam
+        cp --verbose ${CONFIGS}/user_nl_cam_aoa_SE_spinup ./user_nl_cam
+        sed -i '$a NCDATA = '"\"${VGRIDS}/${LEVFILE}\""'' ./user_nl_cam
     fi
     if [ "$NODIFF" == '1' ]; then
-        cp --verbose ${CONFIGS}/user_nl_cam_aoa_${DYCORE}_massrun ./user_nl_cam
+        cp --verbose ${CONFIGS}/user_nl_cam_aoa_SE_massrun ./user_nl_cam
         sed -i '$a NCDATA = '"\"${SPUN}\""'' ./user_nl_cam
     fi
     if [ "$SPINUP" == '0' ]; then
         if [ "$NODIFF" == '0' ]; then
-            cp --verbose ${CONFIGS}/user_nl_cam_aoa_${DYCORE} ./user_nl_cam
+            cp --verbose ${CONFIGS}/user_nl_cam_aoa_SE ./user_nl_cam
             sed -i '$a NCDATA = '"\"${SPUN}\""'' ./user_nl_cam
         fi
     fi
@@ -134,16 +106,16 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     cp --verbose ${SRCMODS}/* ./SourceMods/src.cam/
     if [ "$TAUPHYS" == '1' ]; then
         if [ "$FIX" == '1' ]; then
-            sed -i '348s/.*/    tau    = 1.0\/dt/' ./SourceMods/src.cam/aoa_tracers.F90
+            sed -i '346s/.*/    tau    = 1.0\/dt/' ./SourceMods/src.cam/aoa_tracers.F90
         fi
         if [ "$FIX" == '0' ]; then
-            sed -i '342s/.*/    tau    = 1.0\/dt/' ./SourceMods/src.cam/aoa_tracers.F90
+            sed -i '352s/.*/    tau    = 1.0\/dt/' ./SourceMods/src.cam/aoa_tracers.F90
         fi
     fi
     if [ "$NODIFF" == '1' ]; then
         if [ "$FIX" == '0' ]; then
-            sed -i '345s/.*/    k_so2    = 0.0/' ./SourceMods/src.cam/aoa_tracers.F90
-            sed -i '346s/.*/    k_ash    = 0.0/' ./SourceMods/src.cam/aoa_tracers.F90
+            sed -i '349s/.*/    k_so2    = 0.0/' ./SourceMods/src.cam/aoa_tracers.F90
+            sed -i '350s/.*/    k_ash    = 0.0/' ./SourceMods/src.cam/aoa_tracers.F90
         fi
         if [ "$FIX" == '1' ]; then
             sed -i '355s/.*/    k_so2    = 0.0/' ./SourceMods/src.cam/aoa_tracers.F90

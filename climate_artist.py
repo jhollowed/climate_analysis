@@ -116,7 +116,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
                     'contourf' :  {'levels':12, 'cmap':'rainbow','extend':'both'},
                     'clabel'   :  {'inline':True, 'fmt':'%.2f', 'fontsize':9},
                     'colorbar' :  {'ax':ax, 'location':'right', 'orientation':'vertical',
-                                   'extend':'both', 'extendrect':True, 'format':'%.0f'},
+                                   'extend':'both', 'extendrect':False, 'format':'%.0f'},
                     'gridlines':  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
                                    'color':'k', 'lw':0.3, 'alpha':0.5, 'xformatter':aut.LON_WEST_FORMATTER}
                    }
@@ -207,6 +207,14 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         d = var_dict[i]
         plotter = getattr(ax, d['plotType'])
         plots[i] = plotter(X, Y, d['var'], **d['plotArgs'])
+        # bold zero contour if exists
+        if d['plotType'] == 'contour':
+            try: 
+                zero = plots[i].levels.tolist().index(0)
+                bold = plots[i].collections[zero].get_linewidth() * 1.5
+                plots[i].collections[zero].set_linewidth(bold)
+            except ValueError:
+                pass
         
         
     # -------- format colors --------
@@ -348,7 +356,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
             'contourf'  :  {'levels':12, 'cmap':'rainbow', 'extend':'both', 'transform':transform},
             'clabel'    :  {'inline':True, 'fmt':'%.2f', 'fontsize':9, 'transform':transform},
                            'colorbar' :  {'ax':ax, 'orientation':'vertical', 'extend':'both', 
-                           'extendrect':True, 'format':'%.0f', 'transform':transform},
+                           'extendrect':False, 'format':'%.0f', 'transform':transform},
             'gridlines' :  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
                             'color':'k', 'lw':0.5, 'alpha':0.5, 'linestyle':':', 'crs':transform,
                             'xformatter':aut.LON_WEST_FORMATTER},
@@ -430,6 +438,14 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
         d = var_dict[i]
         plotter = getattr(ax, d['plotType'])
         plots[i] = plotter(X, Y, d['var'], **d['plotArgs'])
+        # bold zero contour if exists
+        if d['plotType'] == 'contour':
+            try: 
+                zero = plots[i].levels.tolist().index(0)
+                bold = plots[i].collections[zero].get_linewidth() * 1.5
+                plots[i].collections[zero].set_linewidth(bold)
+            except ValueError:
+                pass
         
     # -------- format colors --------
     for i in range(len(var_dict)):

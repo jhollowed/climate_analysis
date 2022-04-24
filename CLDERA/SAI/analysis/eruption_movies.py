@@ -80,8 +80,8 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True):
             ax3 = fig.add_subplot(spec[:,1], projection=ccrs.AzimuthalEquidistant(lon0, 90)) # pole
         else:
             fig = plt.figure(figsize=(8,10))
-            ax1 = fig.add_subplot(211, projection=ccrs.PlateCarree(lon0)) # horizontal
-            ax2 = fig.add_subplot(212) # vertical
+            ax1 = fig.add_subplot(212, projection=ccrs.PlateCarree(lon0)) # horizontal
+            ax2 = fig.add_subplot(211) # vertical
 
         # ----- horizontal
         pltargs = {'levels':levels, 'cmap':cmap}
@@ -138,15 +138,15 @@ if(__name__ == '__main__'):
     #gmt = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/WhBlGrYeRe.rgb'
     whs = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_saiv2_fix0_tau0_qsplit1/'\
           'run/SE_ne16L72_whs_saiv2_fix0_tau0_qsplit1.cam.h0.0001-01-01-00000.nc'
-    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/whs'
+    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs2/whs'
     whsgdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs2/whsg'
     whs_massfix = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1/'\
                   'SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1.cam.h0.0001-01-01-00000.nc'
     amip = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI/'\
            'AMIPcase_ne30_L72_SAI.eam.h0.0001-01-01-00000.nc.regrid.2x2.nc'
-    amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/amip'
+    amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs2/amip'
     
-    animate_eruption(whs, 'SE ne30L72, CAM HSW', whsgdest, globe=True)
-    #animate_eruption(whs, 'SE ne30L72, CAM WHS', whsdest, globe=False)
-    #animate_eruption(amip, 'SE ne30L72, EAM AMIP', amipdest, globe=False)
+    #animate_eruption(whs, 'SE ne30L72, CAM HSW', whsgdest, globe=True)
+    animate_eruption(whs, 'SE ne30L72, CAM WHS', whsdest, globe=False)
+    animate_eruption(amip, 'SE ne30L72, EAM AMIP', amipdest, globe=False)
     
