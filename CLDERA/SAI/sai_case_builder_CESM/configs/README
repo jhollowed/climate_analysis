@@ -1,0 +1,5 @@
+source mods here include HSW+RF, no topography (copied from mods at
+/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/AOA/project3_implementation/aoa_case_builder/configs/SourceMods/src.cam.2; see README there)
+
+
+the _massCorrect mods are a second implenentaiton of the plume density evolution that, in theory, should correct for drift in the total plume mass with the first-order explicit time solver that the model uses to update tracer conentations via tendencies
