@@ -21,7 +21,7 @@ cmap = plt.cm.rainbow
 
 def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True, center_x=None,
                    xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, gridlines=False, 
-                   gridlinesArgs=None, cyclic=True, slice_at=None):
+                   gridlinesArgs=None, cyclic=True, slice_at=None, slice_at_loc='lower left'):
     '''
     Plot the 2D vertical slice of a variable
 
@@ -182,8 +182,10 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
             gridlinesArgs = default_args['gridlines']
   
     # -------- plot variables --------
-    if(cyclic):
-        d['var'], x = add_cyclic_point(d['var'], coord=x, axis=1)
+    for i in range(len(var_dict)):
+        if(cyclic):
+            d['var'], xcyc = add_cyclic_point(d['var'], coord=x, axis=1)
+    x = xcyc
     
     if(center_x is not None):
         # recenter on center_x in degrees, assuming periodicity in x
@@ -193,11 +195,10 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         if(np.min(xcen) <= -180): shift_left = True
         assert not(shift_left & shift_right), 'FAILED on centering at center_x;\
                                                data nonunique? x not in degrees? bug here?'
-        if(shift_right): xroll = np.searchsorted(xcen, 180)
-        if(shift_left): xroll = np.searchsorted(xcen, -180)
+        if(shift_right): xroll = np.searchsorted(xcen, 180, side='right')
+        if(shift_left): xroll = np.searchsorted(xcen, -180, side='left')
         x = np.roll(x, -xroll)                       # center x on x_center via a matrix "roll"
         x[x > (center_x + 180)] -= 360
-        d['var'] = np.roll(d['var'], -xroll, axis=1) # also the data
         xlim = [center_x - 180, center_x + 180]     
 
     X, Y = np.meshgrid(x, y)
@@ -205,6 +206,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
     plots = np.empty(len(var_dict), dtype=object)
     for i in range(len(var_dict)):
         d = var_dict[i]
+        d['var'] = np.roll(d['var'], -xroll, axis=1) # roll the data for center_x
         plotter = getattr(ax, d['plotType'])
         plots[i] = plotter(X, Y, d['var'], **d['plotArgs'])
         # bold zero contour if exists
@@ -260,7 +262,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         axz.set_ylim(ylimz)
         axz.set_ylabel(r'Z [km]')
     if(slice_at != ''): 
-        text_box = AnchoredText(slice_at, frameon=True, loc='lower left', pad=0.5)
+        text_box = AnchoredText(slice_at, frameon=True, loc=slice_at_loc, pad=0.5)
         text_box.set_zorder(100)
         plt.setp(text_box.patch, facecolor='white', alpha=1)
         ax.add_artist(text_box)
@@ -436,7 +438,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
             coastlinesArgs = default_args['coastlines']
 
     # -------- plot variables --------
-    
+     
     if(cyclic):
         d['var'], x = add_cyclic_point(d['var'], coord=x, axis=1)
     

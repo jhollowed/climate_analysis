@@ -100,8 +100,8 @@ def circulation_snapshot(runf, tsnap, title, savedest, inclTracers=True):
     cf[0].set_ticks(ulev)
    
     if inclTracers:
-        #pltargs_c = {'levels':[-5, -4], 'colors':'m', 'linewidths':1.6, "linestyles":'-'}
-        pltargs_c = {'levels':[-6, -5], 'colors':'m', 'linewidths':1.6, "linestyles":'-'}
+        pltargs_c = {'levels':[-5, -4], 'colors':'m', 'linewidths':1.6, "linestyles":'-'}
+        #pltargs_c = {'levels':[-6, -5], 'colors':'m', 'linewidths':1.6, "linestyles":'-'}
         cargs = {'fmt':'%.0f', 'manual':[(18.8, 201), (14.89, 26.2)]} 
         var_dict_c = [{'var':np.log10(C), 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cargs}]
         pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False,inverty=False,slice_at='',xlabel='')
@@ -135,7 +135,6 @@ def circulation_snapshot(runf, tsnap, title, savedest, inclTracers=True):
     #fig.suptitle('{}, {}'.format(title, ttitle), fontsize=14)
     fig.suptitle('{}, day 150'.format(title, ttitle), fontsize=14)
     plt.tight_layout()
-    plt.show()
     plt.savefig('{}/{}_t{}.png'.format(savedest, title, tsnap), dpi=150)
         
 
@@ -158,7 +157,7 @@ if(__name__ == '__main__'):
           'run/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0.cam.h0.0001-01-01-00000.nc'
     #whs_massfix = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1/'\
     #              'SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1.cam.h0.0001-01-01-00000.nc'
-    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs2/whs'
+    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/'
     whsgdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs2/whsg'
     
     

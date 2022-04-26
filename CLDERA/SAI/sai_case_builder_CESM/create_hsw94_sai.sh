@@ -28,8 +28,7 @@ CASES=/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/sai_case_builder
 CONFIGS=/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/sai_case_builder_CESM/configs
 VGRIDS=/glade/u/home/cjablono/CESM_vertical_grids
 DATA=/glade/u/home/jhollowed/CAM/inputdata
-# THIS NEEDED FOR EXTENDED SPINUP; UPDATE THIS TO POINT TO 2 YR OUTPUT
-SPUN=/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_sai_spinup_FIRSTYEAR/run/SE_ne16L72_whs_sai_spinup.cam.i.0001-12-27-00000.nc
+SPUN=/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_sai_spinup/run/SE_ne16L72_whs_sai_spinup.cam.i.0001-11-01-00000.nc
 
 GRID="ne16_ne16_mg17"
 COMPSET="FHS94"
@@ -40,9 +39,7 @@ PE=288
 
 if [ "$SPINUP" == '1' ]; then
     CASENAME=SE_ne16L72_whs_sai_spinup
-    # DISABLING TEMPORARILY TO EXTEND SPINUP
-    #IC='-analytic_ic'
-    IC=''
+    IC='-analytic_ic'
 fi
 if [ "$SPINUP" == '0' ]; then
     CASENAME=SE_ne16L72_whs_sai_fix${FIX}_tau${TAUPHYS}_nsplit${NSPLIT}_nodiff${NODIFF}
@@ -93,9 +90,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # ---------- copy namelist settings, append vertical levels
     if [ "$SPINUP" == '1' ]; then
         cp --verbose ${CONFIGS}/user_nl_cam_aoa_SE_spinup ./user_nl_cam
-        # TEMPORAY for continuing spinup for extra year
-        #sed -i '$a NCDATA = '"\"${VGRIDS}/${LEVFILE}\""'' ./user_nl_cam
-        sed -i '$a NCDATA = '"\"${SPUN}\""'' ./user_nl_cam
+        sed -i '$a NCDATA = '"\"${VGRIDS}/${LEVFILE}\""'' ./user_nl_cam
     fi
     if [ "$NODIFF" == '1' ]; then
         cp --verbose ${CONFIGS}/user_nl_cam_aoa_SE_massrun ./user_nl_cam

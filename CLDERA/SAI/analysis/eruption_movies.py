@@ -25,6 +25,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
     # params
     lat0 = 15.15
     lon0 = 120.35
+    lon_center = 0
     dlat = 0.5
     psel = 45
     minc = -12
@@ -69,19 +70,20 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
 
     for k in range(len(td)):
 
-        if(demo): k+= 110
-        if(k%2 != 0): continue
+        if(demo): k+= 10
+        #if(k%2 != 0): continue     # every other time sample
+        if(td[k] > 40): continue    # stop after day 40
 
         print('--------- {}'.format(k)) 
         if(globe):
             fig = plt.figure(figsize=(10,6))
             spec = fig.add_gridspec(2, 2)
-            ax1 = fig.add_subplot(spec[1,0], projection=ccrs.PlateCarree(lon0)) # horizontal
+            ax1 = fig.add_subplot(spec[1,0], projection=ccrs.PlateCarree(lon_center)) # horizontal
             ax2 = fig.add_subplot(spec[0,0]) # vertical
             ax3 = fig.add_subplot(spec[:,1], projection=ccrs.AzimuthalEquidistant(lon0, 90)) # pole
         else:
             fig = plt.figure(figsize=(8,10))
-            ax1 = fig.add_subplot(212, projection=ccrs.PlateCarree(lon0)) # horizontal
+            ax1 = fig.add_subplot(212, projection=ccrs.PlateCarree(lon_center)) # horizontal
             ax2 = fig.add_subplot(211) # vertical
 
         # ----- horizontal
@@ -96,20 +98,20 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
         
         # ----- vertical
         
-        # recenter on lon0
-        
         pltargs = {'levels':levels, 'cmap':cmap, 'zorder':0}
         pltargs_c = {'levels':levels, 'colors':'k', 'linewidths':0.6, 'linestyles':'-', 'zorder':1}
         cArgs = {'orientation':'horizontal', 'location':'top', 'label':'log10(concentration)', 'format':'%.1f'}
         var_dict = [{'var':cvert[k], 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
         var_dict_c = [{'var':cvert[k], 'plotType':'contour', 'plotArgs':pltargs_c, \
                        'colorFormatter':None}]    
-        pltvert(lon, lev, var_dict, ax=ax2, plot_zscale=True, center_x=120, slice_at='lat=5.15 deg', xlabel='')
-        pltvert(lon, lev, var_dict_c, ax=ax2, plot_zscale=False, inverty=False, center_x=120, slice_at='', xlabel='')
+        pltvert(lon, lev, var_dict, ax=ax2, plot_zscale=True, center_x=lon_center, slice_at='lat=15.15 deg', xlabel='', slice_at_loc='upper left')
+        pltvert(lon, lev, var_dict_c, ax=ax2, plot_zscale=False, inverty=False, center_x=lon_center, slice_at='', xlabel='')
         ax2.set_ylabel('p  [hPa]')
         
-        ax2.set_xticks([0, 60, 120, 180, 240])
-        ax2.set_xlim(np.array(ax1.get_xlim()) + 120)
+        #ax2.set_xticks([0, 60, 120, 180, 240])
+        #ax2.set_xlim(np.array(ax1.get_xlim()) - 120)
+        ax2.set_xticks(np.array([-180, -120, -60, 0, 60, 120, 180]))
+        #ax2.set_xlim(np.array(ax1.get_xlim())+120)
         #ax2.set_xticklabels([])
         #ax2.xaxis.set_tick_params(direction='in', which='both')
         #ax2.xaxis.set_ticks_position('both')
@@ -145,13 +147,13 @@ if(__name__ == '__main__'):
     #gmt = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/WhBlGrYeRe.rgb'
     whs = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0/'\
           'run/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0.cam.h0.0001-01-01-00000.nc'
-    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/whs'
-    whsgdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/whsg'
-    whs_massfix = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1/'\
-                  'SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1.cam.h0.0001-01-01-00000.nc'
-    amip = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI/'\
-           'AMIPcase_ne30_L72_SAI.eam.h0.0001-01-01-00000.nc.regrid.2x2.nc'
-    amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/amip'
+    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/whsg_symm_init'
+    #whsgdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/whsg'
+    #whs_massfix = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1/'\
+    #              'SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1.cam.h0.0001-01-01-00000.nc'
+    #amip = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI/'\
+    #       'AMIPcase_ne30_L72_SAI.eam.h0.0001-01-01-00000.nc.regrid.2x2.nc'
+    #amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/amip'
     
     #animate_eruption(whs, 'SE ne30L72, CAM HSW', whsgdest, globe=True)
     animate_eruption(whs, 'SE ne30L72, CAM WHS, SO2', whsdest, globe=True, demo=False)

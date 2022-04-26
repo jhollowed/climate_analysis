@@ -25,7 +25,8 @@ fi
 
 # ---- runs 
 if [ "${RUN}" == '1' ]; then
-    ./create_hsw94_sai.sh 1 0 0 $2 0 1 $3
+    ./create_hsw94_sai.sh 1 0 0 60 0 1 0
+    #./create_hsw94_sai.sh 1 0 0 $2 0 1 $3
 fi
 if [ "${RUN}" == '2' ]; then
     ./create_hsw94_sai.sh 1 1 0 $2 0 1 $3
