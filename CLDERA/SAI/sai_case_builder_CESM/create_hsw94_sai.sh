@@ -28,7 +28,8 @@ CASES=/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/sai_case_builder
 CONFIGS=/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/sai_case_builder_CESM/configs
 VGRIDS=/glade/u/home/cjablono/CESM_vertical_grids
 DATA=/glade/u/home/jhollowed/CAM/inputdata
-SPUN=/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_sai_spinup/run/SE_ne16L72_whs_saiv2_spinup.cam.i.0001-12-27-00000.nc
+# THIS NEEDED FOR EXTENDED SPINUP; UPDATE THIS TO POINT TO 2 YR OUTPUT
+SPUN=/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_sai_spinup_FIRSTYEAR/run/SE_ne16L72_whs_sai_spinup.cam.i.0001-12-27-00000.nc
 
 GRID="ne16_ne16_mg17"
 COMPSET="FHS94"
@@ -39,7 +40,9 @@ PE=288
 
 if [ "$SPINUP" == '1' ]; then
     CASENAME=SE_ne16L72_whs_sai_spinup
-    IC='-analytic_ic'
+    # DISABLING TEMPORARILY TO EXTEND SPINUP
+    #IC='-analytic_ic'
+    IC=''
 fi
 if [ "$SPINUP" == '0' ]; then
     CASENAME=SE_ne16L72_whs_sai_fix${FIX}_tau${TAUPHYS}_nsplit${NSPLIT}_nodiff${NODIFF}
@@ -61,8 +64,12 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # ---------- do cleaning if requested
     printf "\n\n========== CLEANING ==========\n"
     if [ "$BUILD_FLAG" != "0" ]; then
-        rm -rfv ${CASE}
-        rm -rfv ${OUT}/${CASENAME}/run
+        read -p "Press Y/y to CLEAN case ${CASE}, INCLUDING OUTPUT" -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            rm -rfv ${CASE}
+            rm -rfv ${OUT}/${CASENAME}/run
+        fi
     fi
     if [ "$BUILD_FLAG" == "2" ]; then
         rm -rfv ${OUT}/${CASENAME}
@@ -86,7 +93,9 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # ---------- copy namelist settings, append vertical levels
     if [ "$SPINUP" == '1' ]; then
         cp --verbose ${CONFIGS}/user_nl_cam_aoa_SE_spinup ./user_nl_cam
-        sed -i '$a NCDATA = '"\"${VGRIDS}/${LEVFILE}\""'' ./user_nl_cam
+        # TEMPORAY for continuing spinup for extra year
+        #sed -i '$a NCDATA = '"\"${VGRIDS}/${LEVFILE}\""'' ./user_nl_cam
+        sed -i '$a NCDATA = '"\"${SPUN}\""'' ./user_nl_cam
     fi
     if [ "$NODIFF" == '1' ]; then
         cp --verbose ${CONFIGS}/user_nl_cam_aoa_SE_massrun ./user_nl_cam

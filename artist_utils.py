@@ -124,3 +124,9 @@ def _lon_east_formatted(longitude, num_format='g'):
     longitude -= int(longitude > 0) * 360
     return fmt_string.format(longitude=abs(longitude), num_format=num_format, degree=_DEGREE_SYMBOL)
 LON_EAST_FORMATTER = mticker.FuncFormatter(lambda v, pos: _lon_east_formatted(v))
+
+def _lon_deg_formatted(longitude, num_format='g'):
+    # same as the west formatter right of zero, symmetric negative to the left of zero
+    fmt_string = u'{longitude:{num_format}}{degree}'
+    return fmt_string.format(longitude=longitude, num_format=num_format, degree=_DEGREE_SYMBOL)
+LON_DEG_FORMATTER = mticker.FuncFormatter(lambda v, pos: _lon_deg_formatted(v))

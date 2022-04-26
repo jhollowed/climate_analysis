@@ -20,14 +20,14 @@ from climate_artist import horizontal_slice as plthor
 # ============================================================
 
 
-def animate_eruption(runf, title, savedest, tracer='SO2', globe=True):
+def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False):
    
     # params
     lat0 = 15.15
     lon0 = 120.35
     dlat = 0.5
     psel = 45
-    minc = -8
+    minc = -12
     clipc = -15
     maxc = -4
     clevels = 9
@@ -69,6 +69,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True):
 
     for k in range(len(td)):
 
+        if(demo): k+= 110
         if(k%2 != 0): continue
 
         print('--------- {}'.format(k)) 
@@ -99,7 +100,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True):
         
         pltargs = {'levels':levels, 'cmap':cmap, 'zorder':0}
         pltargs_c = {'levels':levels, 'colors':'k', 'linewidths':0.6, 'linestyles':'-', 'zorder':1}
-        cArgs = {'orientation':'horizontal', 'location':'top', 'label':'log10(c_SO2 [kg/kg])', 'format':'%.1f'}
+        cArgs = {'orientation':'horizontal', 'location':'top', 'label':'log10(concentration)', 'format':'%.1f'}
         var_dict = [{'var':cvert[k], 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
         var_dict_c = [{'var':cvert[k], 'plotType':'contour', 'plotArgs':pltargs_c, \
                        'colorFormatter':None}]    
@@ -109,9 +110,9 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True):
         
         ax2.set_xticks([0, 60, 120, 180, 240])
         ax2.set_xlim(np.array(ax1.get_xlim()) + 120)
-        ax2.set_xticklabels([])
-        ax2.xaxis.set_tick_params(direction='in', which='both')
-        ax2.xaxis.set_ticks_position('both')
+        #ax2.set_xticklabels([])
+        #ax2.xaxis.set_tick_params(direction='in', which='both')
+        #ax2.xaxis.set_ticks_position('both')
 
 
         if(globe):
@@ -125,7 +126,13 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True):
             #plthor(lat, lon, var_dict_c, ax=ax1)
         
         fig.suptitle('{}, day {}'.format(title, round(td[k]+0.)), fontsize=14)
-        plt.savefig('{}/{:03d}.png'.format(savedest, k), dpi=150)
+        ax2.set_aspect('auto')
+        plt.subplots_adjust(hspace=0)
+
+        if(demo):
+            plt.show()
+        else:
+            plt.savefig('{}/{:03d}.png'.format(savedest, k), dpi=150)
         
 
 
@@ -136,17 +143,17 @@ if(__name__ == '__main__'):
 
     gmt = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/GMT_no_green.rgb'
     #gmt = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/WhBlGrYeRe.rgb'
-    whs = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_saiv2_fix0_tau0_qsplit1/'\
-          'run/SE_ne16L72_whs_saiv2_fix0_tau0_qsplit1.cam.h0.0001-01-01-00000.nc'
-    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs2/whs'
-    whsgdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs2/whsg'
+    whs = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0/'\
+          'run/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0.cam.h0.0001-01-01-00000.nc'
+    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/whs'
+    whsgdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/whsg'
     whs_massfix = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1/'\
                   'SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1.cam.h0.0001-01-01-00000.nc'
     amip = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI/'\
            'AMIPcase_ne30_L72_SAI.eam.h0.0001-01-01-00000.nc.regrid.2x2.nc'
-    amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs2/amip'
+    amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/amip'
     
     #animate_eruption(whs, 'SE ne30L72, CAM HSW', whsgdest, globe=True)
-    animate_eruption(whs, 'SE ne30L72, CAM WHS', whsdest, globe=False)
-    animate_eruption(amip, 'SE ne30L72, EAM AMIP', amipdest, globe=False)
+    animate_eruption(whs, 'SE ne30L72, CAM WHS, SO2', whsdest, globe=True, demo=False)
+    #animate_eruption(amip, 'SE ne30L72, EAM AMIP', amipdest, globe=False, demo=True)
     

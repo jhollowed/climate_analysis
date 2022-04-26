@@ -118,7 +118,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
                     'colorbar' :  {'ax':ax, 'location':'right', 'orientation':'vertical',
                                    'extend':'both', 'extendrect':False, 'format':'%.0f'},
                     'gridlines':  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
-                                   'color':'k', 'lw':0.3, 'alpha':0.5, 'xformatter':aut.LON_WEST_FORMATTER}
+                                   'color':'k', 'lw':0.3, 'alpha':0.5, 'xformatter':aut.LON_DEG_FORMATTER}
                    }
     color_formatters = {
                         'contour'  : 'clabel',
@@ -209,8 +209,11 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         plots[i] = plotter(X, Y, d['var'], **d['plotArgs'])
         # bold zero contour if exists
         if d['plotType'] == 'contour':
-            try: 
-                zero = plots[i].levels.tolist().index(0)
+            try:
+                if(not isinstance(plots[i].levels, list)):
+                    zero = plots[i].levels.tolist().index(0)
+                else:
+                    zero = plots[i].levels.index(0)
                 bold = plots[i].collections[zero].get_linewidth() * 1.5
                 plots[i].collections[zero].set_linewidth(bold)
             except ValueError:
@@ -218,6 +221,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         
         
     # -------- format colors --------
+    cf = np.empty(len(var_dict), dtype=object)
     for i in range(len(var_dict)):
         d = var_dict[i]
         if d['colorFormatter'] is not None:
@@ -229,18 +233,22 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
                 except AttributeError:
                     raise AttributeError('Neither object {} or {} has attribute {}'.format(
                                           type(ax), type(fig), d['colorFormatter']))
-            colorFormatter(plots[i], **d['colorArgs'])
+            cf[i] = colorFormatter(plots[i], **d['colorArgs'])
     
     # -------- format figure -------- 
     if(inverty): ax.invert_yaxis()
     if(logy): ax.set_yscale('log')
-    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: \
-                                 ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
     if(xlim is not None): ax.set_xlim(xlim)
     if(ylim is not None): ax.set_ylim(ylim)
     if(xlabel != ''): ax.set_xlabel(xlabel, fontsize=12)
     if(ylabel != ''): ax.set_ylabel(ylabel, fontsize=12)
     ax.set_title(title, fontsize=14)
+    
+    # x, y tick labels formats assuming pressure vs. degrees
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: \
+                                 ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
+    ax.xaxis.set_major_formatter(aut.LON_DEG_FORMATTER)
+    
     if(gridlines):
         ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False, 
                      color='k', lw=0.3, alpha=0.75)
@@ -256,6 +264,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         text_box.set_zorder(100)
         plt.setp(text_box.patch, facecolor='white', alpha=1)
         ax.add_artist(text_box)
+    return cf
     
     
 # -------------------------------------------------------------
@@ -359,7 +368,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
                            'extendrect':False, 'format':'%.0f', 'transform':transform},
             'gridlines' :  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
                             'color':'k', 'lw':0.5, 'alpha':0.5, 'linestyle':':', 'crs':transform,
-                            'xformatter':aut.LON_WEST_FORMATTER},
+                            'xformatter':aut.LON_DEG_FORMATTER},
             'coastlines':  {'resolution':'110m', 'color':'k', 'linestyle':'-', 'alpha':0.75}
                    }
     color_formatters = {
@@ -441,7 +450,10 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
         # bold zero contour if exists
         if d['plotType'] == 'contour':
             try: 
-                zero = plots[i].levels.tolist().index(0)
+                if(not isinstance(plots[i].levels, list)):
+                    zero = plots[i].levels.tolist().index(0)
+                else:
+                    zero = plots[i].levels.index(0)
                 bold = plots[i].collections[zero].get_linewidth() * 1.5
                 plots[i].collections[zero].set_linewidth(bold)
             except ValueError:

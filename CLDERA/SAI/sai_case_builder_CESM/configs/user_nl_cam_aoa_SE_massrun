@@ -5,7 +5,7 @@ empty_htapes     = .TRUE.              ! output only the varibales listed below
 avgflag_pertape  = 'A','I'             ! hist file 1 is avg, 2 is instant
 
 ! output a few quantities for frequently on their instantaneous values for SSW quantification
-fincl1           = 'SAI_MASS'
+fincl1           = 'SAI_MASS', 'SAI_SO2', 'SAI_ASH'
 fincl2           = 'SAI_MASS'
 
 NHTFRQ           = -4,-9999        ! output frequency every 4 hours, suppress

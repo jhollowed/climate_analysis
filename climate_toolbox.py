@@ -524,11 +524,11 @@ def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=Fa
 # -------------------------------------------------------------
 
 
-def concat_resubs(run, sel={}, mean=[], outFile=None, overwrite=False, 
-                  histnum=0, regridded=None, component='cam'):
+def concat_run_outputs(run, sel={}, mean=[], outFile=None, overwrite=False, 
+                       histnum=0, regridded=None, component='cam'):
     '''
     Concatenates netCDF data along the time dimension. Intended to be used to combine outputs of
-    run periods sequentislly resubmitted by restart states.
+    a single run.
 
     Parameters
     ----------

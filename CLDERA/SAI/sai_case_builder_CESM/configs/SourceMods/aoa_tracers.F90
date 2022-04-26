@@ -262,7 +262,7 @@ contains
     !--JH--
     use ref_pres,     only: pref_mid_norm
     use time_manager, only: get_curr_time
-    use physconst,    only: pi, rearth, cpair, rair, rgrav=>rga
+    use physconst,    only: pi, rearth, cpair, rair, rgrav=>rga, rearth
     use phys_grid,    only: get_area_all_p
 
     ! Arguments
@@ -334,7 +334,7 @@ contains
     !--JH--
     ! get current time in seconds
     call get_curr_time(day,sec)
-    t      = (day*24.0*60.0*60.0) + sec ! need to subtract model time at start of injection for this...
+    t      = (day*24.0*60.0*60.0) + sec  ! assume we start at day 0
     lat0   = 15.15 * deg2rad
     lon0   = 120.35 * deg2rad
     z0     = 25000.0
@@ -344,9 +344,9 @@ contains
     zs     = 3.0*dz                
     tf     = 172800.0        
     tau    = -LOG(0.05)/tf                
-    M_so2  = 2.0e10
-    M_ash  = 2.0e10
-    k_so2  = 1.0/2592000.0
+    M_so2  = 1.7e10
+    M_ash  = 5.0e10
+    k_so2  = 1.0/2160000.0
     k_ash  = 1.0/86400.0
     P0     = 100000.0
     alpha  = tf  ! constant T(t)
@@ -362,6 +362,13 @@ contains
     ! get area of column (assume height ~ a)
     call get_area_all_p(lchnk, ncol, area)
     area = area * rearth**2
+    
+    do k = 1,pver
+        ! ---------- SAI_MASS ---------
+        ! via hydrostatic approximation
+        ! pdel = Pa, area = rad^2, rearth = m, rgrav = s**2/m ===> mass = kg
+        mass(:ncol,k) = state%pdel(:ncol,k) * area(:ncol) * rgrav 
+    enddo
 
     do k = 1, pver
        do i = 1, ncol
@@ -369,7 +376,10 @@ contains
           lat = state%lat(i)
           lon = state%lon(i)
           zz  = state%zm(i, k)
+          ! great circle distance
           rr = (rearth+z0) * ACOS( SIN(lat)*SIN(lat0) + COS(lat)*COS(lat0) * COS(ABS(lon-lon0)))
+          ! density of air in grid cell
+          ! pmid = Pa, rair = J/K/kg, t = K, ===> rho = kg/m^3
           rhoatm = state%pmid(i, k) / (rair * state%t(i, k))
 
           ! ---------- SAI_SO2 ----------
@@ -380,7 +390,7 @@ contains
           if(t <= tf) then
               ptend%q(i,k,ixsai1) = ptend%q(i,k,ixsai1) * 1
           else
-              ptend%q(i,k,ixsai1) = -k_so2 * (state%q(i, k, ixsai1)*rhoatm)
+              ptend%q(i,k,ixsai1) = -k_so2 * (state%q(i, k, ixsai1) * rhoatm)
           end if
 
           ! scale density to concentration
@@ -394,7 +404,7 @@ contains
           if(t <= tf) then
               ptend%q(i,k,ixsai2) = ptend%q(i,k,ixsai2) * 1.0
           else
-              ptend%q(i,k,ixsai2) = -k_ash * (state%q(i, k, ixsai2)*rhoatm)
+              ptend%q(i,k,ixsai2) = -k_ash * (state%q(i, k, ixsai2) * rhoatm)
           end if
 
           ! scale density to concentration
@@ -413,9 +423,6 @@ contains
           ! ---------- SAI_AOA ----------
           ptend%q(i,k,ixsai4) = 0.0_r8
           
-          ! ---------- SAI_MASS ---------
-          ! via hydrostatic approximation
-          mass(i,k) = state%pdel(i,k) * area(i) * rgrav 
 
 
        end do
