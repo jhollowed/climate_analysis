@@ -193,6 +193,8 @@ contains
     if (.not. aoa_tracers_flag) return
 
     ! Set names of tendencies and declare them as history variables
+    call addfld('SAI_MASS',  (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
+    call add_default('SAI_MASS', 1, ' ')
 
     do m = 1, ncnst
        mm = ifirst+m-1
@@ -249,7 +251,7 @@ contains
 
 !===============================================================================
 
-  subroutine aoa_tracers_timestep_tend(state, ptend, cflx, landfrac, dt)
+  subroutine aoa_tracers_timestep_tend(state, ptend, cflx, landfrac, dt, ncol)
 
     use physics_types, only: physics_state, physics_ptend, physics_ptend_init
     use phys_grid,     only: get_rlat_all_p , get_lat_all_p
@@ -259,7 +261,8 @@ contains
     !--JH--
     use ref_pres,     only: pref_mid_norm
     use time_manager, only: get_curr_time
-    use physconst,    only: pi, rearth, cpair, rair 
+    use physconst,    only: pi, rearth, cpair, rair, rgrav=>rga, rearth
+    use phys_grid,    only: get_area_all_p
 
     ! Arguments
     !type(physics_state), intent(in)   :: state              ! state variables
@@ -268,12 +271,12 @@ contains
     real(r8),            intent(inout) :: cflx(pcols,pcnst)  ! Surface constituent flux (kg/m^2/s)
     real(r8),            intent(in)    :: landfrac(pcols)    ! Land fraction
     real(r8),            intent(in)    :: dt                 ! timestep
+    integer,             intent(in)    :: ncol               ! no. of column in chunk
 
     !----------------- Local workspace-------------------------------
 
     integer  :: i, k
     integer  :: lchnk             ! chunk identifier
-    integer  :: ncol              ! no. of column in chunk
     integer  :: nstep             ! current timestep number
     logical  :: lq(pcnst)
 
@@ -306,6 +309,8 @@ contains
     real(r8) :: alpha 
     real(r8) :: Hint 
     real(r8) :: Vint 
+    ! for mass estiamte
+    real(r8) :: area(ncol), mass(ncol,pver)
     
 
     !------------------------------------------------------------------
@@ -320,11 +325,10 @@ contains
     lq(ixsai2) = .TRUE.
     lq(ixsai3)   = .TRUE.
     lq(ixsai4)   = .TRUE.
-    call physics_ptend_init(ptend, state%psetcols, 'sai_tracers', lq=lq)
+    call physics_ptend_init(ptend, state%psetcols, 'aoa_tracers', lq=lq)
 
     nstep = get_nstep()
     lchnk = state%lchnk
-    ncol  = state%ncol
 
     !--JH--
     ! get current time in seconds
@@ -333,15 +337,15 @@ contains
     lat0   = 15.15 * deg2rad
     lon0   = 120.35 * deg2rad
     z0     = 25000.0
-    dz     = 7500.0                
+    dz     = 5000.0                
     dr     = 100000.0                
     rs     = 3.0*dr
     zs     = 3.0*dz                
     tf     = 172800.0        
     tau    = -LOG(0.05)/tf                
-    M_so2  = 2.0e10
-    M_ash  = 2.0e10
-    k_so2  = 1.0/2592000.0
+    M_so2  = 1.7e10
+    M_ash  = 5.0e10
+    k_so2  = 1.0/2160000.0
     k_ash  = 1.0/86400.0
     P0     = 100000.0
     alpha  = tf  ! constant T(t)
@@ -353,6 +357,17 @@ contains
     A_so2 = A_so2 * 1.0/(Hint * Vint)     
     A_ash = M_ash / (alpha * SQRT(2.0*pi**3.0) * dr**2.0 * dz) 
     A_ash = A_ash * 1.0/(Hint * Vint)     
+    
+    ! get area of column (assume height ~ a)
+    call get_area_all_p(lchnk, ncol, area)
+    area = area * rearth**2
+    
+    do k = 1,pver
+        ! ---------- SAI_MASS ---------
+        ! via hydrostatic approximation
+        ! pdel = Pa, area = rad^2, rearth = m, rgrav = s**2/m ===> mass = kg
+        mass(:ncol,k) = state%pdel(:ncol,k) * area(:ncol) * rgrav 
+    enddo
 
     do k = 1, pver
        do i = 1, ncol
@@ -364,14 +379,14 @@ contains
           rhoatm = state%pmid(i, k) / (rair * state%t(i, k))
 
           ! ---------- SAI_SO2 ----------
-          ptend%q(i,k,ixsai1) = -k_so2 * state%q(i, k, ixsai1) + &
+          ptend%q(i,k,ixsai1) = -k_so2 * (state%q(i, k, ixsai1)*rhoatm) + &
                                  A_so2 * EXP(-(1.0/2.0) * (rr/dr)**2.0) * &
                                          EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0)
           ! add temporal dependence
           if(t <= tf) then
               ptend%q(i,k,ixsai1) = ptend%q(i,k,ixsai1) * 1
           else
-              ptend%q(i,k,ixsai1) = -k_so2 * state%q(i, k, ixsai1)
+              ptend%q(i,k,ixsai1) = -k_so2 * (state%q(i, k, ixsai1)*rhoatm)
           end if
 
           ! scale density to concentration
@@ -379,13 +394,13 @@ contains
 
                                                                    
           ! ---------- SAI_ASH ----------
-          ptend%q(i,k,ixsai1) = -k_ash * state%q(i, k, ixsai1) + &
+          ptend%q(i,k,ixsai1) = -k_ash * (state%q(i, k, ixsai1)*rhoatm) + &
                                  A_ash * EXP(-(1.0/2.0) * (rr/dr)**2.0) * &
                                          EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0)
           if(t <= tf) then
               ptend%q(i,k,ixsai1) = ptend%q(i,k,ixsai1) * 1.0
           else
-              ptend%q(i,k,ixsai1) = -k_ash * state%q(i, k, ixsai1)
+              ptend%q(i,k,ixsai1) = -k_ash * (state%q(i, k, ixsai1)*rhoatm)
           end if
           
           ! scale density to concentration
@@ -406,6 +421,9 @@ contains
 
        end do
     end do
+    
+    ! record tracer mass on history files
+    call outfld('SAI_MASS', mass(:,:), ncol, lchnk)
 
     ! Set tracer fluxes
     do i = 1, ncol

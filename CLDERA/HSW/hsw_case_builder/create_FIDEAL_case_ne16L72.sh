@@ -13,49 +13,29 @@ pause(){
 MACHINE=cori-knl
 COMPILER=intel
 PROJECT=m4014
-COMPSET=$1
-SPINUP=$2
-BUILD_FLAG=$3
-RES=$4
-
-MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/E3SM"
-OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases"
-CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cases"
-CONFIGS="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs"
-MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
-
-if [ "$RES"=="ne30" ]; then   GRID="ne30_ne30"
-elif [ "$RES"=="ne16" ]; then GRID="ne16_ne16"; fi
-
-
-PECOUNT=288
+COMPSET=FIDEAL
+GRID=ne16_ne16
 NLEV=72
 
-if [ "$COMPSET" == "aqp" ]; then
-    COMPSETNAME='F-EAM-AQP1'
-elif [ "$COMPSET" == "amip" ]; then
-    COMPSETNAME='F2010-CICE'
-fi
+BUILD_FLAG=$1
 
-if [ "$SPINUP" == "1" ]; then
-    # a run without the plume for writing init files every month
-    STOP_N=30
-    RESUBMIT=11
-    NL=${CONFIGS}/user_nl_cam_aoa_SE_spinup
-    CASENAME="E3SM_case_${RES}_L72_SAI_${COMPSET}"
-    WALLCLOCK=04:00:00
-elif [ "$SPINUP" == "0" ]; then
-    # 2 month plume run
-    #STOP_N=60 
-    #WALLCLOCK=06:00:00
-    # 1 month plume run
-    STOP_N=30 
-    WALLCLOCK=03:00:00
-    NL=${CONFIGS}/user_nl_cam_aoa_SE
-    #CASENAME="E3SM_case_${RES}_L72_SAI_${COMPSET}_juneclimo"
-    CASENAME="E3SM_case_${RES}_L72_SAI_${COMPSET}_juneclimo_inclmass"
-fi
+# ----- for debug queueing -----
+PECOUNT=$2
+QUEUE=debug
+WALLCLOCK=00:30:00
+
+MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/E3SM_FIDEAL"      # ------------  important!
+OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases"
+CONFIGS="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder/configs"
+MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
+
+CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder/cases"
+CASENAME="E3SM_${RES}_L72_${COMPSET}_pecount${PECOUNT}"
 CASE=${CASES}/${CASENAME}
+
+STOP_N=30
+NL=${CONFIGS}/user_nl_eam
+
 
 # -------------- Define case, Build model ---------------
 
@@ -73,7 +53,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     fi
 
     printf "\n\n========== CREATING CASE ==========\n"
-    $MODEL --compset $COMPSETNAME --res $GRID --case $CASE --pecount $PECOUNT \
+    $MODEL --compset $COMPSET --res $GRID --case $CASE --pecount $PECOUNT \
            --output-root $OUTROOT --machine $MACHINE --compiler $COMPILER --project $PROJECT
     
     # ---------- configure case
@@ -83,12 +63,6 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-age_of_air_trcs "
     ./xmlchange JOB_WALLCLOCK_TIME=$WALLCLOCK
     ./xmlchange SAVE_TIMING=TRUE
-    if [ "$SPINUP" == "1" ]; then
-        # turn on resubmits each month if spinup run
-        ./xmlchange RESUBMIT=$RESUBMIT
-        ./xmlchange REST_OPTION=ndays
-        ./xmlchange REST_N=$STOP_N
-    fi
     
     printf "\n\n========== COPYING NAMELISTS,SOURCEMODS ==========\n"
     # ---------- copy namelist settings

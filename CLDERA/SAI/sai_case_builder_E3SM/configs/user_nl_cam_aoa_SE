@@ -5,10 +5,8 @@ empty_htapes     = .TRUE.              ! output only the varibales listed below
 avgflag_pertape  = 'A','I'             ! hist file 1 is avg, 2 is instant
 
 ! output a few quantities for frequently on their instantaneous values for SSW quantification
-!fincl1           = 'U','V','OMEGA','AOA1','AOA2','TT_LW','T', 'HORZ', 'VERT'
-!fincl2           = 'T','U','AOA2'
-fincl1           = 'U','V','OMEGA','T','SAI_SO2','SAI_ASH','SAI_PT', 'SAI_AOA'
-fincl2           = 'T','U','SAI_SO2'
+fincl1           = 'U','V','OMEGA','T','PS','Z3','PHIS','SAI_SO2','SAI_ASH','SAI_PT', 'SAI_AOA','SAI_MASS'
+fincl2           = 'U'
 
 NHTFRQ           = -12,-9999       ! output frequency every 12 hours, suppress
 MFILT            = 200,200         ! allow 48,144 time samples per hist file (4 years)
@@ -16,7 +14,5 @@ NDENS            = 2,2             ! single-precision for each hist file
 
 aoa_read_from_ic_file = .FALSE.        ! activate built-in analytic init of aoa tracers
 
-
-! ========== Dycore-specific settings ==========
-
-!interpolate_output = .true., .true.    ! interpolate from SE cubedsphere to lat-lon
+NCDATA='/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/E3SM_case_ne30_L72_SAI_amip/run/E3SM_case_ne30_L72_SAI_amip.eam.i.0001-05-31-00000.nc'
+inithist='ENDOFRUN'
