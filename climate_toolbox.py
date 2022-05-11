@@ -7,19 +7,26 @@ import os
 import sys
 import pdb
 import glob
+import cftime
+import warnings
 import numpy as np
 import xarray as xr
-import Nio, Ngl
+from metpy import calc as mc
+from metpy.units import units
+import metpy.constants as const
 from cftime import DatetimeNoLeap
+
+sys.path.append('/glade/u/home/jhollowed/repos/ncl_exports')
+from wrappers import dpres_hybrid_ccm
 
 # ==========================================================================================
 
 def check_data_inputs(data):
-    acceptable_types = [xr.core.dataset.Dataset, xr.core.dataarray.DataArray, str]
+    acceptable_types = [xr.core.dataset.Dataset, xr.core.dataarray.DataArray, str, np.str_]
     if(type(data) not in acceptable_types):
         raise RuntimeError('data must be provided as an xarray Dataset, DataArray, '\
                            'or a string to the file')
-    if(type(data) == str):
+    if(type(data) == str or type(data) == np.str_):
         data = xr.open_dataset(data)
     return data
 
@@ -27,9 +34,82 @@ def check_data_inputs(data):
 # -------------------------------------------------------------
 
 
+def time2day(time):
+    '''
+    Converts cftime times to number of days since first timestamp
+
+    Parameters
+    ----------
+    time : array of type from cftime
+        array of times, e.g. an xarray DataSet, DataArray, numpy.array...
+
+    Returns
+    -------
+    Number of days since time 0, for all times in the input
+    '''
+    if(type(time) == xr.core.dataarray.DataArray):
+        time = np.array(time)
+    start = '{}-{}-{}'.format(time[0].year, time[0].month, time[0].day)
+    return cftime.date2num(time, 'days since {}'.format(start))
+
+
+# -------------------------------------------------------------
+
+
+def ptoz(p):
+    '''
+    Converts pressure to geootential height assuming an isothermal atmosphere
+
+    Parameters
+    ----------
+    p : float or float array
+        pressure in hPa
+
+    Returns
+    -------
+    z : float or flaot array
+        the geopotential height in m
+    '''
+    try: _ = p.m
+    except: p = p*units.hPa
+    P0 = 1000*units.hPa
+    T0 = 250*units.K
+    H = const.Rd*T0/const.g 
+    return H * np.log(P0/p)
+
+
+# -------------------------------------------------------------
+
+
+def ztop(z):
+    '''
+    Converts geootential height to pressure assuming an isothermal atmosphere
+
+    Parameters
+    ----------
+    z : float or flaot array
+        the geopotential height
+
+    Returns
+    -------
+    p : float or float array
+        pressure in hPa
+    '''
+    try: _ = z.m
+    except: z = z*units.m
+    P0 = 1000*units.hPa
+    T0 = 250*units.K
+    H = const.Rd*T0/const.g 
+    return P0 * np.exp(-z/H)
+    
+
+        
+# -------------------------------------------------------------
+
+
 def compute_climatology(data, ncdf_out=None):
     '''
-    Compute the monthly climatology on the data contained in file f
+    Compute the monthly climatology on the data
 
     Parameters
     ----------
@@ -37,9 +117,14 @@ def compute_climatology(data, ncdf_out=None):
         An xarray object containing the data, or path to the file as a string. 
         Must include times with at least monthly resolution.
     ncdf_out : string, optional
-        The file to write the resulting climatology data out to. Default is None,
-        in which case nothing is written out, and the result is instead returned 
-        as an xarray object.
+        The file to write the resulting climatology data out to.
+        Default is None, in which case nothing is written out. 
+        If the file exists, read it in and return, rather than computing 
+        the climatology, unless overwrite is True.
+    overwrite : bool
+        Whether or not to overwrite the contents of ncdf_out.
+        Defaults to False, in which case the contents of the
+        file area read in and returned instead of computing anything.
 
     Returns
     -------
@@ -47,15 +132,74 @@ def compute_climatology(data, ncdf_out=None):
             The monthly climatology from the input data
     '''
 
-    # check inputs
+    # --- check inputs
     data = check_data_inputs(data)
+        
+    if(ncdf_out is not None):
+        if(overwrite): 
+            try: os.remove(ncdf_out)
+            except OSError: pass
+        try: 
+            climatology = xr.open_dataset(ncdf_out)
+            print('Read climatology data from file {}'.format(ncdf_out.split('/')[-1]))
+            return climatology
+        except FileNotFoundError:
+            pass
 
-    # compute climatology 
+    # --- compute climatology 
     climatology = data.groupby('time.month').mean('time')
     if(ncdf_out is not None):
         climatology.to_netcdf(ncdf_out, format='NETCDF4')
-    else:
-        return climatology
+    return climatology
+
+
+# -------------------------------------------------------------
+
+
+def compute_vorticity(data, ncdf_out=None, overwrite=False):
+    '''
+    Compute the vorticity from horizontal winds in the data, with derivatives
+    approximated with a second-order accurate central difference scheme.
+
+    Parameters
+    ----------
+    data : xarray Dataset, xarray DataArray, or string
+        An xarray object containing the data, or path to the file as a string. 
+        Must include times with at least monthly resolution.
+    ncdf_out : string, optional
+        The file to write the resulting vorticity data out to. 
+        Default is None, in which case nothing is written out.
+
+    Returns
+    -------
+        vorticity : xarray data object
+            The vorticity from the input data
+    '''
+    
+    # --- check inputs
+    data = check_data_inputs(data)
+    
+    if(ncdf_out is not None):
+        if(overwrite): 
+            try: os.remove(ncdf_out)
+            except OSError: pass
+        try: 
+            vort = xr.open_dataset(ncdf_out)
+            print('Read vorticity data from file {}'.format(ncdf_out.split('/')[-1]))
+            return vort
+        except FileNotFoundError:
+            pass
+   
+    #--- compute vorticity via MetPy; assume input is dimensionless
+    u = data['U'] * units.m/units.s
+    v = data['V'] * units.m/units.s
+    # REMOVE MEAN HERE LATER
+    vort = mc.vorticity(u, v).mean('lon')
+    vort = vort.to_dataset(name='VORT')
+   
+    if(ncdf_out is not None):
+        vort.to_netcdf(ncdf_out)
+    return vort
 
 
 # -------------------------------------------------------------
@@ -149,16 +293,362 @@ def Nino34_index(data, sst_var_name='tos', time_samples_mon=1):
     
 
 # -------------------------------------------------------------
+
+
+def ssw_events(dat, lat=60, lev=10):
+    '''
+    Returns SSW events in a dataset, defined as sign flips of the zonal-mean zonal wind
+    at lat,lev
+
+    Parameters
+    ----------
+    data : xarray Dataset, xarray DataArray, or string
+        An xarray object containing the data, or path to the file as a string. 
+        Must contain at least the variable 'U'
+    lat : float, optional
+        Latitude at which to take the zonal-mean wind measurement in degrees. 
+        Defaults to 60 degrees, which is the latitude used for SSW classification by the WMO
+    lev : float, optional
+        Pressure at which to take the zonal-mean wind measurement in hPa.
+        Defaults to 10hPa, which is the pressure used for SSW classification by the WMO
+
+    Returns
+    -------
+    ssw_data : xarray Dataset or DataArray
+        The zonal-mean data, selected on the provided lat,lev positions, and filtered for times 
+        when the zonal-mean zonal wind U<0. If the length of any of the field varibales in this
+        returned dataset is zero, there were no SSWs present in the input as defined for this 
+        lat,lev
+    '''
+    
+    # check inputs
+    data = check_data_inputs(data)
+
+    ssw_data = data.sel({'lat':lat, 'lev':lev}, method='nearest')
+    ssw_data = ssw_data.mean('lon')
+    ssw_data = data.where(data['U'] < 0, drop=True)
+    return ssw_data
+    
+
+# -------------------------------------------------------------
     
     
+def l2_norm(dat, varname='U', norm_type=15, compdat=None, compMean=False):
+    '''
+    Computes l2 norms from Jablonowski+Williamson 2006
+
+    Parameters
+    ----------
+    dat : xarray Dataset
+        the input data
+    varname : string
+        Variable to take the norm of
+    norm_type: int
+        Either 14 or 15, giving the equation number from JW06
+        - Default is 15, in which case the norm is taken between the 
+        zonal mean of the field, and the initial zonal mean of the 
+        field (this measures the departure from stability)
+        - If 14, the norm is taken between the zonal mean of the field, 
+        and the 3D field (this measures the departure from symmetry)
+    compdat : xarray Dataset
+        Another set of input data to compare the input against.
+        Default is None, in which case the norm is taken as described
+        in Jablonowski+06, respecting norm_type. 
+        If provided, norm is taken between the entire 3D fields of each
+        file as a time series (i.e. norm_type will be ignored)
+        It will be assumed that the comparison data set is on the same 
+        horizontal and vertical grid as the input (horizontal only if looking
+        at 2D quantities), and output at the same timesteps
+    compMean : bool
+        If True, and compdat is given, copare the zonally averaged fields
+        from each dataset, rather than the 3D field
+    '''
+
+    var = dat[varname]
+    u = dat['U']
+    ps = dat['PS']
+    hyai = dat['hyai']
+    hybi = dat['hybi']
+    P0 = 100000.0         #Pa, to match ps units
+    dp = dpres_hybrid_ccm(ps, P0, hyai, hybi).values
+    dp = xr.DataArray(dp, dims=u.dims, coords=u.coords, name='dp')
+    
+    # approx horizontal weighting
+    rad = np.pi/180
+    lat = dat['lat']
+    wy  = np.cos(lat*rad) #proxy [ sin(j+1/2)-sin(j-1/2) ]
+
+    # get time samples and zonal-mean var
+    ntime = len(dat['time'])
+    varm = var.mean('lon')
+
+    # read comparison dataset if given
+    if(compdat is not None):
+        norm_type = 0
+        compvar = compdat[varname]
+        comp_varm = var.mean('lon')
+        
+    # compute the norm...
+    
+    # =============== EQ 14 ===============
+    if(norm_type == 14):
+        
+        norm = np.zeros(ntime)
+        for i in range(ntime):
+            # the broadcasting here works by matching dimensions by their names, 
+            # which importantly comes from the input netcdf file
+            diff2 = (var[i] - varm[i])**2
+            num = np.sum(diff2 * wy * dp[i])
+            den = np.sum(wy * dp[i])
+            norm[i] = np.sqrt(num/den)    
+        
+    # =============== EQ 14 ===============
+    elif(norm_type == 15):
+        
+        norm = np.zeros(ntime)
+        for i in range(ntime):
+            # the broadcasting here works by matching dimensions by their names, 
+            # which importantly comes from the input netcdf file
+            diff2 = (varm[i] - varm[0])**2
+            num = np.sum(diff2 * wy * dp[i])
+            den = np.sum(wy * dp[i])
+            norm[i] = np.sqrt(num/den)
+    
+    # =============== COMPARE ===============
+    elif(norm_type == 0):
+        
+        norm = np.zeros(ntime)
+        for i in range(ntime):
+            # the broadcasting here works by matching dimensions by their names, 
+            # which importantly comes from the input netcdf file
+            if(compMean):
+                diff2 = (varm[i] - compvarm[i])**2
+            else:
+                diff2 = (var[i] - compvar[i])**2
+            num = np.sum(diff2 * wy * dp[i])
+            den = np.sum(wy * dp[i])
+            norm[i] = np.sqrt(num/den)
+    
+    return norm
 
 
+# -------------------------------------------------------------
 
 
+def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=False):
+    '''
+    Returns the mean of an ensemble for all variables included in the input ensemble members.
+    Each member is expected as an xarray DataWet, and must have the same dimensions and coordinates.
+
+    Parameters
+    ----------
+    ens : list of datasets
+        The ensemble members. Each entry can be a xarray Dataset, Datarray, or string giving 
+        a file location
+    std : bool, optional
+        Whether or not to compute and also return the standard deviation of the ensemble members,
+        in addition to the mean.
+        Defaults to False, in which case only the mean will be computed and returned.
+    avg_vars : list of strings, optional
+        A list of variables to average over, in the case that it is not desired to average
+        all varibales present, or if all members varibales match only for this list.
+        Defaults to None, in which case all ensemble members will be expected to have identical
+        variables.
+    outFile : str, optional
+        File location to write out the ensemble mean and std files in netcdf format.
+        Default is None, in which case nothing is written out, and the ensemble mean and std
+        is returned to the caller. If this file exists already, it will be read in, and the 
+        data returned, rather than computing anything.
+        If std==True and outFile is provided, a second file will also be written with an 
+        extension '.std' to contain this information.
+    overwrite : bool
+        whether or not to force a recalculation of the ensemble mean, deleting any netcdf 
+        files previously written by this function at outFile. 
+        Defaults to False, in which case the result is read from file if already previously 
+        computed and written out.
+
+    Returns
+    -------
+    ensembleMean : xarray Dataset or list of xarray Datasets
+        If std==False, the ensemble mean of the input ensemble members
+        If std==True, a list of two elements. Item at position 0 is the ensemble
+        mean of the inpit ensemble membersm, item at position 1 is the standard 
+        deviation of the ensemble members
+    '''
+    
+    # ---- read mean,std from file if exists and return
+    if(outFile is not None):
+        outFile_std = '{}.std'.format(outFile)
+        if(overwrite): 
+            try: os.remove(outFile)
+            except OSError: pass
+            try: os.remove(outFile_std)
+            except OSError: pass
+        try: 
+            ensMean = xr.open_dataset(outFile)
+            print('Read data from file {}'.format(outFile.split('/')[-1]))
+            if(std):
+                ensStd = xr.open_dataset(outFile_std)
+                print('Read data from file {}'.format(outFile_std.split('/')[-1]))
+                return [ensMean, ensStd]
+            else:
+                return ensMean
+        except FileNotFoundError:
+            pass
+    
+    # ---- check input
+    N = len(ensemble)
+    ens = np.empty(N, dtype=object)
+    ens[0] = check_data_inputs(ensemble[0])
+
+    if(avg_vars is None):
+        all_vars = sorted(list(ens[0].keys()))
+    else:
+        all_vars = avg_vars
+    
+    for i in range(N-1):
+        ens[i+1] = check_data_inputs(ensemble[i+1])
+        assert np.sum([vv in sorted(list(ens[i+1].keys())) for vv in all_vars]) == len(all_vars), \
+                'not all ensemble members contain these variables:\n{}'.format(all_vars)
+
+    # ---- concat and take mean
+    ens = xr.concat(ens, dim='ensemble_member', data_vars=all_vars, compat='override', coords='minimal')
+    ensMean = ens.mean('ensemble_member')
+    if(std): ensStd = ens.std('ensemble_member')
+
+    # ---- write out, return
+    if(outFile is not None):
+        ensMean.to_netcdf(outFile)
+        print('Wrote ensemble data to file {}'.format(outFile.split('/')[-1]))
+        if(std):
+            ensStd.to_netcdf(outFile_std)
+            print('Wrote ensemble std data to file {}'.format(outFile.split('/')[-1]))
+    pdb.set_trace()
+    if(std):    
+        return ensMean, ensStd
+    else:
+        return ensMean
+    
 
 
+# -------------------------------------------------------------
 
 
+def concat_run_outputs(run, sel={}, mean=[], outFile=None, overwrite=False, 
+                       histnum=0, regridded=None, component='cam'):
+    '''
+    Concatenates netCDF data along the time dimension. Intended to be used to combine outputs of
+    a single run.
+
+    Parameters
+    ----------
+    run : str list
+        CIME run directory contining output to be concatenated. It is assumed
+        that the contents of this directory is from a run of a model through CIME
+        that generated multiple history files of the same number (e.g. there are >1
+        h0 files). Select varaiables are read from the history files and concatenated 
+        across time
+    sel : dict
+        indexers to pass to data.sel(), where data is each history file opened via xarray
+    mean : list
+        list of dimensions along which to take the mean
+    outFile : str
+        File location to write out the concatenated file in netcdf format.
+        Default is None, in which case nothing is written out, and the concatenated data 
+        is returned to the caller. If this file exists already, it will be read in, and 
+        the data returned, rather than any concatenation actually being performed.
+    overwrite : bool
+        whether or not to force a recalculation of the reduced data, deleting any netcdf 
+        files previously written by this function at outFile. 
+        Defaults to False, in which case the result is read from file if already previously 
+        computed and written out.
+    histnum : int
+        hsitory file group to concatenate. Defaults to 0, in which case h0 files will
+        be targeted.
+    regridded : bool
+        Whether or not to look for regridded versions of each history file (i.e. ones for 
+        which the substring "regrid" appears after the header number "h0"). 
+        Defaults to None, in which case this will be set to True if the run directory contains
+        the substring 'FV3', else False.
+    component : string
+        Concatenate data for this component (will look for files with [component].h[histnum]).
+        Defaults to 'cam'
+    '''
+   
+    run_name = run.split('/')[-2]
+    if(regridded is None):
+        if('FV3' in run_name):  regridded = True
+        else:                   regridded = False
+ 
+    print('\n\n========== Concatenating data at {} =========='.format(run_name))
+  
+    if(regridded):
+        hist = sorted(glob.glob('{}/*{}.h{}*regrid*.nc'.format(run, component, histnum)))
+    else:
+        hist = sorted(glob.glob('{}/*{}.h{}*.nc'.format(run, component, histnum)))
+    
+    # remove outFile from glob results, if present
+    try: hist.remove(outFile)
+    except ValueError: pass
+    hist = np.array(hist)
+    
+    print('Found {} files for history group h{}'.format(len(hist), histnum))
+    
+    # --- read concatenation from file if exists
+    if(outFile is not None):
+        if(overwrite): 
+            try: os.remove(outFile)
+            except OSError: pass
+        try: 
+            allDat = xr.open_dataset(outFile)
+            print('Read data from file {}'.format(outFile.split('/')[-1]))
+            return allDat
+        except FileNotFoundError:
+            pass
+        
+    # ---- concatenate
+    allDat_set = False
+    for j in range(len(hist)):
+        print('---------- working on file {} ----------'.format(hist[j].split('/')[-1]))
+        skip=False
+
+        # open dataset, select data
+        with warnings.catch_warnings():  # temporary because of annoying xarray warning
+            warnings.simplefilter('ignore', FutureWarning)
+            dat = xr.open_dataset(hist[j])
+            
+            # ------ sel
+            for dim in sel.keys():
+                try:
+                    dat = dat.sel({dim:sel[dim]}, method='nearest')
+                except NotImplementedError:
+                    dat = dat.sel({dim:sel[dim]})
+                # if all data was removed after the slice, continue
+                # !!! generalize this at some point, for data that has no U
+                if(len(dat['U']) == 0):
+                    skip=True
+                    break
+            if(skip==True): continue
+
+        if(not allDat_set): 
+            allDat = dat
+            allDat_set = True
+        else: 
+            allDat = xr.concat([allDat, dat], 'time')
+    
+    # ------ take means
+    for dim in mean:
+        allDat = allDat.mean(dim)
+   
+    # ------ done; write out and return
+    if(outFile is not None):
+        allDat.to_netcdf(outFile)
+        print('Wrote data to file {}'.format(outFile.split('/')[-1]))
+
+    return allDat
+        
+
+# -----------------------------------------------------------------
 
 
 
