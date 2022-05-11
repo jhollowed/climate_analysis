@@ -79,6 +79,11 @@ def QBO_index(data, p=30, u_var_name='ua', p_var_name='plev'):
     p_var_name : string
         Varibale name to expect for the pressure level. Defaults to the CMIP6 default, 
         which is 'plev'
+
+    Returns
+    -------
+    u_qbo : DataArray
+        A 1D time series of the QBO index
     '''
 
     data = check_data_inputs(data)
@@ -87,17 +92,17 @@ def QBO_index(data, p=30, u_var_name='ua', p_var_name='plev'):
     latslice = slice(-5, 5)
     
     # open data, select on meridional range and average, take zonal mean
-    u = data['u'].sel({'lat':latslice})
+    u = data[u_var_name].sel({'lat':latslice})
     u = u.mean('lat')
     u = u.mean('lon')
 
     # take zonal wind at indexing pressure level (in Pa)
     p = p*100
     if(p in u['plev']):
-        u = u.sel({'plev':3000})
-    else
-        u = u.interp({'plev':3000})
-    return u
+        u_qbo = u.sel({p_var_name:3000})
+    else:
+        u_qbo = u.interp({p_var_name:3000})
+    return u_qbo
     
     
 # -------------------------------------------------------------
@@ -119,6 +124,11 @@ def Nino34_index(data, sst_var_name='tos', time_samples_mon=1):
         Number of time sample represented in the data per month (to facilitate
         5 month rolling average). Defaults to 1, in which case the data is
         assumed to be monthly. If e.g. the data is daily, this arg should be 30
+
+    Returns
+    -------
+    sst_nino : DataArray
+        A 1D time series of the El Nino 3.4 index
     '''
 
     data = check_data_inputs(data)
@@ -128,14 +138,14 @@ def Nino34_index(data, sst_var_name='tos', time_samples_mon=1):
     lonslice = slice(120, 170)
 
     # take unweighted average SST in the region (unweighted since region is meridionally small)
-    data_region = (xr.open_dataset(data)).sel({'lat':latslice, 'lon':lonslice})
+    data_region = data.sel({'lat':latslice, 'lon':lonslice})
     sst = data_region[sst_var_name]
     sst = sst.mean('lat')
     sst = sst.mean('lon')
     
     # take 5 month running average
-    sst = sst.rolling(time=time_samples_mon).mean()
-    return sst
+    sst_nino = sst.rolling(time=time_samples_mon).mean()
+    return sst_nino
     
 
 # -------------------------------------------------------------
