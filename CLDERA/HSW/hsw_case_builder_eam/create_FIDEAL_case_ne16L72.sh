@@ -16,7 +16,6 @@ PROJECT=m4014
 COMPSET=FIDEAL
 GRID=ne16_ne16
 RES=ne16
-NLEV=72
 
 BUILD_FLAG=$1
 TOT_RUN_LENGTH_YEARS=$2
@@ -42,8 +41,9 @@ RUNDIR="${OUTROOT}/${CASENAME}/run"
 
 # total run length in days
 TOT_RUN_LENGTH=$(expr $TOT_RUN_LENGTH_YEARS \* 360)
-# 1.5 years per run ( = sub-30 min for debug queue at ne16 with pecount 768)
-STOP_N=540
+# 1 year per run ( = sub-30 min for debug queue at ne16L72 with pecount 768)
+#STOP_N=360
+STOP_N=180
 
 # check if resubmissions should be done
 DO_RESUBS=false
@@ -74,7 +74,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # ---------- do cleaning if requested
     printf "\n\n========== CLEANING ==========\n"
     if [[ "$BUILD_FLAG" != "0" && -d ${CASE} ]]; then
-        read -p "\nPress Y/y to CLEAN case and output \n${CASE}\n${RUNDIR}" -n 1 -r
+        read -p $'\n'"Press Y/y to CLEAN case and output "$'\n'"${CASE}"$'\n'"${RUNDIR}" -n 1 -r
 	    echo
 	    if [[ $REPLY =~ ^[Yy]$ ]]; then
 			rm -rfv ${CASE}
@@ -101,8 +101,8 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # see: https://www.cesm.ucar.edu/events/tutorials/2018/files/Practical2-shields.pdf
     if $DO_RESUBS; then
         ./xmlchange RESUBMIT=$RESUBMIT
-        ./xmlchange REST_OPTION=ndays
-        ./xmlchange REST_N=$STOP_N
+        #./xmlchange REST_OPTION=ndays
+        #./xmlchange REST_N=$STOP_N
     fi
     
     printf "\n\n========== COPYING NAMELISTS,SOURCEMODS ==========\n"
