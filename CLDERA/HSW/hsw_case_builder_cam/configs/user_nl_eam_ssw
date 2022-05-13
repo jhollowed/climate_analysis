@@ -1,0 +1,36 @@
+empty_htapes    = .TRUE.
+NDENS           = 2,2,2
+
+! hist file 1 is annual avg, 2 is monthly avg, 3 is instant
+avgflag_pertape = 'A','A','I'      
+
+fincl1          = 'U','V','T','PS','OMEGA','AOA1'
+fincl2          = 'U010'
+fincl3          = 'U010','T010','AOA1'
+
+! annual, monthly, daily (in hours)
+NHTFRQ          = -8640,-720,-24
+
+! allow 40 samples (1 year/sample) = 40 years/file annual means, 
+!       60 samples (1 month/sample) = 5 years/file monthly means
+!       1800 samples (1 day/sample) = 5 years/file daily instant, 
+MFILT           = 40,60,1800                  
+
+! activate built-in analytic init of aoa tracers
+aoa_read_from_ic_file = .FALSE.
+
+! select HSW idealized forcing
+ideal_phys_option = 'held-suarez-williamson'
+
+! turn off any random perturbations (not needed for HS in SE)
+pertlim = 0 
+
+! enable IC outputs at end of run
+inithist='ENDOFRUN'
+
+! E3SM L72
+NCDATA = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/E3SM_ne16_L72_FIDEAL_30year/E3SM_ne16_L72_FIDEAL_30year.eam.i.0002-06-25-00000.nc'
+
+! interpolate to lat/lon
+interpolate_output = .true.
+

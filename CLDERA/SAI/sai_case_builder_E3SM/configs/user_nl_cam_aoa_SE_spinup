@@ -1,0 +1,17 @@
+
+! ========== AOA settings ==========
+
+empty_htapes     = .TRUE.              ! output only the varibales listed below
+avgflag_pertape  = 'A','I'             ! hist file 1 is avg, 2 is instant
+
+! output a few quantities for frequently on their instantaneous values for SSW quantification
+fincl1           = 'U','V','OMEGA','T','PS','Z3','PHIS'
+fincl2           = 'U'
+
+NHTFRQ           = -720,-9999      ! output frequency every month, suppress
+MFILT            = 200,200         ! allow 48,144 time samples per hist file (4 years)
+NDENS            = 2,2             ! single-precision for each hist file
+
+aoa_read_from_ic_file = .FALSE.        ! activate built-in analytic init of aoa tracers
+
+inithist='ENDOFRUN'
