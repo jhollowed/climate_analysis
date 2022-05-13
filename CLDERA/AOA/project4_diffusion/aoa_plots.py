@@ -290,17 +290,23 @@ def aoa_levels(inFiles, errFiles, colors=None, sfx=None):
         String to add as suffix to figure filename
     '''
    
-    fig = plt.figure(figsize=(5,10))
-    ax1 = fig.add_subplot(311)
-    ax2 = fig.add_subplot(312)
-    ax3= fig.add_subplot(313)
+    #fig = plt.figure(figsize=(5,10))
+    #ax1 = fig.add_subplot(311)
+    #ax2 = fig.add_subplot(312)
+    #ax3= fig.add_subplot(313)
+    fig = plt.figure(figsize=(10,5))
+    ax1 = fig.add_subplot(131)
+    ax2 = fig.add_subplot(132)
+    ax3= fig.add_subplot(133)
     axes = [ax1, ax2, ax3]
 
     if(colors is None):
         colors = ['g', 'b', 'c', 'k', 'r', 'orange', 'm']
     linestyles = {'FV3':'-', 'SE':'--'}
+    labels=['SE increased total wind diffusion', '' ,'SE defaults', 'SE increased divergence damping', 'FV3 RF heating = off, hord_vt=8', 'FV3 RF heating = off, hord_vt=10', 'FV3 RF heating = on, hord_vt=8']
 
     for i in range(len(inFiles)):
+        if(i == 1): continue
         inFile = inFiles[i]
    
         # --- extract metadata
@@ -310,7 +316,7 @@ def aoa_levels(inFiles, errFiles, colors=None, sfx=None):
         
         nl_names = []
         nl_vals = []
-        if('__' in run_name):
+        if('__' in run_name or 'vt' in run_name):
             run_name = run_name.split('__RESUBMIT')[0]
             if('se_nu' in run_name):
                 #nl_names.append('ν')
@@ -334,6 +340,7 @@ def aoa_levels(inFiles, errFiles, colors=None, sfx=None):
             if(k == len(nl_names)-1): pp=''
             else: pp=', '
             nl_str = nl_str + '{}={}{}'.format(nl_names[k], nl_vals[k],pp)
+
         
         # --- compute or read data
         print('\n\n---------- working on run {} ----------'.format(run_name))
@@ -362,7 +369,8 @@ def aoa_levels(inFiles, errFiles, colors=None, sfx=None):
                 axes[j].fill_between(lat, age_err[0]/365, age_err[1]/365, color=colors[i], alpha=0.33)
             line = axes[j].plot(lat, AOA_allLev[j]/365, ls=linestyles[dycore], color=colors[i])[0]
             if(j == 0):             
-                line.set_label('{} {}'.format(dycore, nl_str))
+                #line.set_label('{} {}'.format(dycore, nl_str))
+                line.set_label(labels[i])
 
     ax1.set_title('AOA at different pressure levels, 20 year mean')
     
@@ -371,7 +379,7 @@ def aoa_levels(inFiles, errFiles, colors=None, sfx=None):
                           horizontalalignment='right', verticalalignment='bottom')
     ax1.tick_params(labelbottom=False)
     ax1.set_xlim([-90, 90])
-    lgd=ax1.legend(fontsize=9, bbox_to_anchor=(0, 1.1))
+    lgd=ax1.legend(fontsize=9, bbox_to_anchor=(0, 1.1, 1, 0.2), loc='lower left', mode='expand')
 
     ax2.set_ylabel('age  [years]', fontsize=12)
     ax2.annotate('30 hPa', xy=(0.95, 0.05), xycoords='axes fraction', fontsize=10,
@@ -387,6 +395,7 @@ def aoa_levels(inFiles, errFiles, colors=None, sfx=None):
 
     plt.tight_layout()
 
+    plt.show()
     plt.savefig('./figs/aoaLevels{}.png'.format(sfx), dpi=300, 
                 bbox_extra_artists=(lgd,), bbox_inches='tight')
 
@@ -502,11 +511,11 @@ if __name__ == '__main__':
             vort_wind_files.append('{}/{}.CAT.VORT_WINDS.nc'.format(run, run_name))
             vort_files.append('{}/{}.CAT.VORT.nc'.format(run, run_name))
             
-            ctb.concat_resubs(run, sel={'lat':75, 'lev':10}, mean=['lon'], 
+            ctb.concat_run_outputs(run, sel={'lat':75, 'lev':10}, mean=['lon'], 
                               histnum=0, overwrite=False, outFile=ssw_files[i])
-            ctb.concat_resubs(run, sel={'time':slice('0015-01-01', '0035-01-01')}, mean=['lon', 'time'], 
+            ctb.concat_run_outputs(run, sel={'time':slice('0015-01-01', '0035-01-01')}, mean=['lon', 'time'], 
                               histnum=0, overwrite=False, outFile=mean_files[i])
-            ctb.concat_resubs(run, sel={'time':slice('0015-01-01', '0035-01-01')}, mean=['time'], 
+            ctb.concat_run_outputs(run, sel={'time':slice('0015-01-01', '0035-01-01')}, mean=['time'], 
                               histnum=0, overwrite=False, outFile=vort_wind_files[i])
     
     # --- compute vorticity for all means for aoa slice plotting
@@ -569,7 +578,7 @@ if __name__ == '__main__':
     aoa_slice_errs = np.hstack([[None]*len(se_files), fv3_ensMeans_err])
 
     # --- AOA slices for 3 SE, 3 FV3 ens means 
-    if(1):
+    if(0):
         for i in range(len(aoa_slice_runs)):
             aoa_profiles(aoa_slice_runs[i], cvar='U', cvar_label = 'u  [m/s]', 
                          twoPanel=False, sfx='_u')
@@ -584,7 +593,7 @@ if __name__ == '__main__':
     # --- SSW plots for 3 SE, 3 FV3 ens1
     ssw_plot_runs = np.hstack([se_files, 
                                mean_files[['ens1' in f for f in mean_files]]])
-    if(1):
+    if(0):
         for i in range(len(aoa_slice_runs)):
             ssw_panels(aoa_slice_runs[i], phissw=75, levssw=10, twoPanel=False, drawSSW=True)
         
@@ -592,5 +601,5 @@ if __name__ == '__main__':
     # --- SSW tally plots for 3 FV3 ens means
     ssw_count_runs = [mod3_ensRuns, mod3_vt8_ensRuns, mod4_ensRuns, 
                       se_files[0], se_files[1], se_files[2], se_files[3]]
-    if(1):
+    if(0):
         ssw_counts(aoa_slice_runs, aoa_slice_errs)

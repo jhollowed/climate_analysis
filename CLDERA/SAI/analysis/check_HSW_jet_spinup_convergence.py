@@ -78,6 +78,7 @@ tinit_symmetric = tinit[tinit_symmetric_mask]
 
 
 # plot jet symmetry at +-74deg, 3hPa
+plot_inithist=False
 
 # -- ax1
 fig = plt.figure(figsize=(8.5, 6))
@@ -85,12 +86,13 @@ ax = fig.add_subplot(211)
 ax.plot(t, datN, color='r', label='northern jet')
 ax.plot(t, datS, color='k', label='southern jet')
 
-ylim = ax.get_ylim()
-[ax.plot([ti,ti], ylim, '--k', lw=0.85, alpha=0.5) for ti in tinit]
-ax.plot([0,0], [0,0], '--k', lw=0.85, alpha=0.5)
-[ax.plot([ti,ti], ylim, '-c', lw=1) for ti in tinit_symmetric]
-ax.plot([0,0], [0,0], '-c', lw=1)
-ax.set_ylim(ylim)
+if(plot_inithist):
+    ylim = ax.get_ylim()
+    [ax.plot([ti,ti], ylim, '--k', lw=0.85, alpha=0.5) for ti in tinit]
+    ax.plot([0,0], [0,0], '--k', lw=0.85, alpha=0.5)
+    [ax.plot([ti,ti], ylim, '-c', lw=1) for ti in tinit_symmetric]
+    ax.plot([0,0], [0,0], '-c', lw=1)
+    ax.set_ylim(ylim)
 ax.set_xlim([0, 720])
 
 ax.set_ylabel('max($U$) [m/s]\npolar jet zonal wind maxima', fontsize=11)
@@ -105,12 +107,13 @@ ax = fig.add_subplot(212)
 ax.plot(t, datN-datS, color='b')
 ax.plot(t, np.zeros(len(t)), '-k', label='symmetric jet maxima')
 
-ylim = ax.get_ylim()
-[ax.plot([ti,ti], ylim, '--k', lw=0.85, alpha=0.5) for ti in tinit]
-ax.plot([0,0], [0,0], '--k', lw=0.85, alpha=0.5, label='inithist output times')
-[ax.plot([ti,ti], ylim, '-c', lw=1) for ti in tinit_symmetric]
-ax.plot([0,0], [0,0], '-c', lw=1, label='inithist w/ $\Delta U < 10$ m/s')
-ax.set_ylim(ylim)
+if(plot_inithist):
+    ylim = ax.get_ylim()
+    [ax.plot([ti,ti], ylim, '--k', lw=0.85, alpha=0.5) for ti in tinit]
+    ax.plot([0,0], [0,0], '--k', lw=0.85, alpha=0.5, label='inithist output times')
+    [ax.plot([ti,ti], ylim, '-c', lw=1) for ti in tinit_symmetric]
+    ax.plot([0,0], [0,0], '-c', lw=1, label='inithist w/ $\Delta U < 10$ m/s')
+    ax.set_ylim(ylim)
 ax.set_xlim([0, 720])
 
 ax.tick_params()

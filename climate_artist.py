@@ -199,14 +199,15 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         if(shift_left): xroll = np.searchsorted(xcen, -180, side='left')
         x = np.roll(x, -xroll)                       # center x on x_center via a matrix "roll"
         x[x > (center_x + 180)] -= 360
-        xlim = [center_x - 180, center_x + 180]     
+        xlim = [center_x - 180, center_x + 180]
 
     X, Y = np.meshgrid(x, y)
     
     plots = np.empty(len(var_dict), dtype=object)
     for i in range(len(var_dict)):
         d = var_dict[i]
-        d['var'] = np.roll(d['var'], -xroll, axis=1) # roll the data for center_x
+        if(center_x is not None):
+            d['var'] = np.roll(d['var'], -xroll, axis=1) # roll the data for center_x
         plotter = getattr(ax, d['plotType'])
         plots[i] = plotter(X, Y, d['var'], **d['plotArgs'])
         # bold zero contour if exists

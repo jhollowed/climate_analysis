@@ -100,8 +100,8 @@ def circulation_snapshot(runf, tsnap, title, savedest, inclTracers=True):
     cf[0].set_ticks(ulev)
    
     if inclTracers:
-        pltargs_c = {'levels':[-5, -4], 'colors':'m', 'linewidths':1.6, "linestyles":'-'}
-        #pltargs_c = {'levels':[-6, -5], 'colors':'m', 'linewidths':1.6, "linestyles":'-'}
+        #pltargs_c = {'levels':[-5, -4], 'colors':'m', 'linewidths':1.6, "linestyles":'-'}
+        pltargs_c = {'levels':[-7, -5.5], 'colors':'m', 'linewidths':1.6, "linestyles":'-'}
         cargs = {'fmt':'%.0f', 'manual':[(18.8, 201), (14.89, 26.2)]} 
         var_dict_c = [{'var':np.log10(C), 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cargs}]
         pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False,inverty=False,slice_at='',xlabel='')
@@ -161,15 +161,13 @@ if(__name__ == '__main__'):
     whsgdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs2/whsg'
     
     
-    amip = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI/'\
-           'AMIPcase_ne30_L72_SAI.eam.h0.0001-01-01-00000.nc.regrid.2x2.nc'
-    amipJune = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI/'\
-               'E3SM_case_ne30_L72_SAI_amip.eam.i.0001-05-31-00000.regird.2x2.nc'
-    amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs2/amip'
+    amip = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI_juneclimo/'\
+           'E3SM_case_ne30_L72_SAI_amip_juneclimo.eam.h0.0001-01-01-00000.regird.2x2.nc'
+    amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/amip'
     
-    circulation_snapshot(whs, 1, 'SE ne30L72, CAM HSW', whsdest)
+    #circulation_snapshot(whs, 1, 'SE ne30L72, CAM HSW', whsdest)
     #circulation_snapshot(whs, [0,60], 'SE ne30L72, CAM HSW', whsdest)
-    #circulation_snapshot(amip, 0.5, 'SE ne30L72, EAM AMIP', amipdest)
+    circulation_snapshot(amip, 0.5, 'SE ne30L72, EAM AMIP', amipdest)
     #circulation_snapshot(amipJune, 0, 'SE ne30L72, EAM AMIP', amipdest, inclTracers=False)
     #circulation_snapshot(whs_spinup, [0,60], 'SE ne30L72, CAM HSW', whsdest, inclTracers=False)
     

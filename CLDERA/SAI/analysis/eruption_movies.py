@@ -72,7 +72,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
 
         if(demo): k+= 10
         #if(k%2 != 0): continue     # every other time sample
-        if(td[k] > 40): continue    # stop after day 40
+        if(td[k] > 30): continue    # stop after day 40
 
         print('--------- {}'.format(k)) 
         if(globe):
@@ -147,15 +147,17 @@ if(__name__ == '__main__'):
     #gmt = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/WhBlGrYeRe.rgb'
     whs = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0/'\
           'run/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0.cam.h0.0001-01-01-00000.nc'
-    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/whsg_symm_init'
+    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/whsg_symm_init_ash'
     #whsgdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/whsg'
     #whs_massfix = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1/'\
     #              'SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1.cam.h0.0001-01-01-00000.nc'
-    #amip = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI/'\
-    #       'AMIPcase_ne30_L72_SAI.eam.h0.0001-01-01-00000.nc.regrid.2x2.nc'
-    #amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/amip'
+    amip = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI_juneclimo/'\
+           'E3SM_case_ne30_L72_SAI_amip_juneclimo.eam.h0.0001-01-01-00000.regird.2x2.nc'
+    amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/amip_ash'
     
     #animate_eruption(whs, 'SE ne30L72, CAM HSW', whsgdest, globe=True)
-    animate_eruption(whs, 'SE ne30L72, CAM WHS, SO2', whsdest, globe=True, demo=False)
-    #animate_eruption(amip, 'SE ne30L72, EAM AMIP', amipdest, globe=False, demo=True)
+    #animate_eruption(whs, 'SE ne30L72, CAM WHS, SO2', whsdest, globe=True, demo=False)
+    #animate_eruption(amip, 'SE ne30L72, EAM AMIP, SO2', amipdest, globe=True, demo=False, tracer='SO2')
+    animate_eruption(whs, 'SE ne30L72, CaM HSW, ash', whsdest, globe=True, demo=False, tracer='ASH')
+    
     
