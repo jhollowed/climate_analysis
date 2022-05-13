@@ -10,13 +10,11 @@ pause(){
 # 2/9/22
 # script for performing E3SM runs with enabled AOA clock tracers
 
-!!!! NEEDS EDITS
-
 MACHINE=cori-knl
 COMPILER=intel
 PROJECT=m4014
-COMPSET=FIDEAL
-GRID=ne16_ne16
+COMPSET=FHS94
+GRID=ne16_ne16_mg17
 RES=ne16
 NLEV=72
 
@@ -29,17 +27,17 @@ PECOUNT=768   # half number of cubedsphere elements in ne16
 QUEUE=debug
 WALLCLOCK=00:30:00
 
-MY_CESM_ROOT="/global/homes/j/jhollo/CAM"
+MY_CESM_ROOT="/global/homes/j/jhollo/CESM"
 MODEL="${MY_CESM_ROOT}/cime/scripts/create_newcase"
 
-CONFIGS="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder/configs"
+CONFIGS="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_cam/configs"
 NL=${CONFIGS}/user_nl_eam
 
-CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder/cases"
+CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_cam/cases"
 CASENAME="E3SM_${RES}_L72_${COMPSET}${PREFIX}"
 CASE=${CASES}/${CASENAME}
 
-OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases"
+OUTROOT="/global/cscratch1/sd/jhollo/CAM/hsw_validate_cases"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
 # total run length in days
@@ -62,6 +60,8 @@ if $DO_RESUBS; then
                            # TOT_RUN_LENGTH - STOP_N
                            # this is correct, since RESUBMIT should be the total number of desired
                            # submissions, minus one for the initial run
+    RESUBMIT=$(expr $RESUBMIT - 1) 
+                           # since we are starting from E3SM IC after one run of length STOP_N
 fi
 
 # -------------- Define case, Build model ---------------
@@ -81,7 +81,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
 
     printf "\n\n========== CREATING CASE ==========\n"
     $MODEL --compset $COMPSET --res $GRID --case $CASE --pecount $PECOUNT \
-           --output-root $OUTROOT --machine $MACHINE --compiler $COMPILER --project $PROJECT
+           --output-root $OUTROOT --machine $MACHINE --compiler $COMPILER --project $PROJECT \
     
     # ---------- configure case
     # nadv_11 = 1 for passive clock tracer
@@ -97,7 +97,6 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # subsequent the initial run
     # see: https://www.cesm.ucar.edu/events/tutorials/2018/files/Practical2-shields.pdf
     if $DO_RESUBS; then
-        pause
         ./xmlchange RESUBMIT=$RESUBMIT
         ./xmlchange REST_OPTION=ndays
         ./xmlchange REST_N=$STOP_N

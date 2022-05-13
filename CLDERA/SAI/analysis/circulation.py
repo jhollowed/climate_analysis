@@ -82,11 +82,15 @@ def circulation_snapshot(runf, tsnap, title, savedest, inclTracers=True):
     print('\n\n=============== {}'.format(title)) 
 
     #fig = plt.figure(figsize=(8,10))
+    
     fig = plt.figure()
     axu = fig.add_subplot(111)
     #axu = fig.add_subplot(221)
     #axv = fig.add_subplot(222)
     #axom = fig.add_subplot(223)
+    
+    figT = plt.figure()
+    axT = fig.add_subplot(111)
 
     # ----- vertical
     
