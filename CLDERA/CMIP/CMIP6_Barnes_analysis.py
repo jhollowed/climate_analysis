@@ -255,7 +255,7 @@ def compute_anomalies(my_vars=None):
 
 # ===============================================================================================
 
-def barnes_fig1(horizontal = True):
+def barnes_fig1(horizontal = True, showfig=False):
     '''
     Renders a fig comparable to Barnes+ Figure 1 for the following outputs sets
     - individual ensembles
@@ -267,6 +267,9 @@ def barnes_fig1(horizontal = True):
         Whether or not to render the plot rotated at 90 degrees with respect to 
         the form in Barnes+ (a horinzontal arrangement,read from right-left, rather 
         than top-bottom)
+    showfig : bool
+        Whether or not to display the figure, rather than saving to file. Defaults 
+        to False
     '''
   
     # get files corresponding to ensemble member anomalies, and the ensemble mean anomaly...
@@ -362,6 +365,11 @@ def barnes_fig1(horizontal = True):
             # plot zonal velocity anomaly
             uc = ax.contourf(lat, lev/100, uuu, levels=levels, cmap='RdBu_r', extend='both')
 
+            # ----- TMP: checking node magntiude positions -----
+            #ax.plot([-75, -75], [min(lev/100), max(lev/100)], '--k')
+            #ax.plot([-45, -45], [min(lev/100), max(lev/100)], '--k')
+            #----------------
+
             # plot temperature anomaly on contours every 0.5 K, including zero
             t_levels = np.arange(np.floor(np.min(ttt)*2)/2, np.floor(np.max(ttt) * 2)/2, 0.5)
             zero = t_levels.tolist().index(0)
@@ -418,7 +426,11 @@ def barnes_fig1(horizontal = True):
 
 
         print('saving...')
-        plt.savefig('{}/CMIP6_BarnesFig1_{}_{}.png'.format(FIGDIR, MODEL_TYPE, identifier), dpi=300)
+        if(not showfig):
+            plt.savefig('{}/CMIP6_BarnesFig1_{}_{}.png'.format(
+                         FIGDIR, MODEL_TYPE, identifier), dpi=300)
+        else:
+            plt.show()
 
 
 # ===============================================================================================
@@ -588,42 +600,270 @@ def verify_qbo():
 # ===============================================================================================
 
 
-def comp_poleward_node_mag():
-    pass
+def comp_poleward_node_mag(u, hem='S'):
+    '''
+    Computes the "poleward node magnitude" of the zonal wind anomaly, as defined in Barnes+
 
+    Parameters
+    ----------
+    u : DataArray
+        zonal wind anomaly
+    hem : str
+        Which hemisphere to search for the node. Either 'S' or 'N'. Default to 'S'
+
+    Returns
+    -------
+    up : DataArray
+        The poleward node magnitude, in m/s, as a function of pressure and time
+    '''
+   
+    # define bounds for the poleward node
+    s = [-1,1][['S', 'N'].index(hem)]
+    bounds = sorted([s*45, s*75])
+    latslice = slice(bounds[0], bounds[1])
+    u = u.sel(lat=latslice)
+
+    # take zonal mean, compute the node magnitude
+    u = u.mean('lon')
+    nodemag = u.max(dim='lat')
+    return nodemag
+    
    
 # ===============================================================================================
 
 
-def qbo_index_comp():
+def qbo_index_corr(qbo_lev=30, do_time_avg=True, qbo_avg='year', hem='S', showfig=False):
+    '''
+    Render a plot comparing the pinatubo response to the QBO index
+
+    Parameters
+    ----------
+    qbo_lev : float
+        Pressure level at which to take the zonal-mean zonal wind, in hPa. The standard
+        choices for this index at 30 hPa (the default), and 50 hPa. Defaults to 30hPa. If
+        this pressure level not present in the data, it will be linearly interpolated
+    do_time_avg : bool
+        Whether or not to perform time averaging. Defaults to True, in which case one point
+        will be rendered on the plot per ensemble member, each index being averaged over the
+        relevant time interval. If False, the data will be plotting as a time series, with
+        each ensemble member contributing one "trajectory" in the phase plane
+    showfig : bool
+        Whether or not to display the figure, rather than saving to file. Defaults 
+        to False
+    hem : str
+        Which hemisphere to use in the calculation of the poleward node magnitude. Must be
+        either 'S' or 'N'. Defaults to 'S'.
+    qbo_avg : str
+        Defines what time range to use for the QBO averaging. If 'year', the average is taken
+        over the year following the eruption. If 'eruption', the average is taken over the 2
+        months following the eruption
+    '''
+    
+    print('\n ---------- Doing QBO dependency analysis ----------')
+    print('The QBO index will be taken at {} hPa\nPlot will be rendered with do_time_avg={}\
+           \nQBO mean will be taken over period:{}\nHemisphere for node calculation:{}H'.format(
+           qbo_lev, do_time_avg, qbo_avg, hem))
     
     # get files corresponding to ensemble member anomalies
     uf = glob.glob('{}/ua_*anomaly*'.format(PINATUBO))
-    u_ensemble_num = [f.split('/')[-1].split('{}_r'.format(MODEL_TYPE))[-1].split('_')[0] for f in uf]
+    u_ensemble_num = [f.split('/')[-1].split('_')[-2].strip('r') for f in uf]
     identifier = ['ensemble{}'.format(n) for n in u_ensemble_num]
     
-    # define the period used for the Barnes+ Figure 1 plots, and lat range used for QBO isolation
-    tslice = slice('1991-07', '1992-02')
+    # time ranges for QBO and poleward node mag averaging
+    # per Barnes, this should cover the year following the eruption for the node mag
+    # if do_time_avg=True, these slices need not coincide, and can use whatever 
+    # definitions should give the best measure...
+    # if do_time_avg=False, we are plotting trajectories, so set the time interval 
+    # for each metric to one matching the Barnes+ Fig 1 panels
+    if(do_time_avg):
+        if(qbo_avg=='eruption'):
+            qbo_tslice = slice('1991-06', '1992-08')
+        if(qbo_avg=='year'):
+            qbo_tslice = slice('1991-06', '1992-05')
+        node_tslice = slice('1991-06', '1992-05')
+    else:
+        qbo_tslice = slice('1991-07', '1992-02')
+        node_tslice = slice('1991-07', '1992-02')
+
 
     # create plot...
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    colors = ['r', 'b']
+    labels = np.array(['historical', 'AMIP'])
+    # make dummy plots for the legend...
+    ax.plot([0],[4],'d',color=colors[0],label=labels[0])
+    ax.plot([0],[4],'d',color=colors[1],label=labels[1])
+    ax.plot([0],[4],'dw', ms=10)
+    
 
     # loop through ensemble members...
     for i in range(len(uf)):
-       
-        print('opening datasets')
-        try:
-            u = (xr.open_dataset(uf)).sel(time=tslice)
-        except ValueError:
-            print('oops')
-            continue
-        ctb.QBO_index(u)
+        print('working on {}'.format(identifier[i]))
+        
+        # read zonal wind
+        u = xr.open_dataset(uf[i])
+        
+        # get qbo index, average over time window
+        u_qbo = u.sel(time = qbo_tslice)
+        qbo = ctb.QBO_index(u_qbo, qbo_lev)
+        if(do_time_avg):
+            qbo_tmean = qbo.mean('time')
 
+        # get poleward node magnitude, vertically average, time average
+        u_node = u.sel(time = node_tslice)
+        node_mag = comp_poleward_node_mag(u_node, hem=hem)
+        node_mag = node_mag.mean('plev')
+        if(do_time_avg):
+            node_mag_tmean = (node_mag.mean('time'))['ua']
+        node_mag = node_mag['ua']
+
+        # ---------- plot ----------
+        color = colors[int('AMIP' in uf[i])] 
+        if(do_time_avg):
+            ax.plot(qbo_tmean, node_mag_tmean, 'dk', color=color)
+        else:
+            alphas = np.linspace(0.1, 0.8, len(qbo)-1)
+            for j in range(len(qbo)-1):
+                ax.plot([qbo[j], qbo[j+1]], [node_mag[j], node_mag[j+1]], 
+                         '-', color=color, alpha=alphas[j])
+            ax.plot(qbo[-1], node_mag[-1], '.', ms=10, color=color)
+
+        #format
+        ax.legend(fontsize=12, loc='upper left')
+        if(qbo_avg=='eruption'):
+            ax.set_xlabel('3-month QBO {}hPa Index  [m/s]'.format(qbo_lev), fontsize=13)
+        if(qbo_avg=='year'):
+            ax.set_xlabel('12-month QBO {}hPa Index  [m/s]'.format(qbo_lev), fontsize=13)
+        ax.set_ylabel('{}H Poleward Node Magnitude  [m/s]'.format(hem), fontsize=13)
+
+    # add zero line
+    ylim=ax.get_ylim()
+    ax.plot([0,0], ylim, '--k', lw=0.8, alpha=0.8)
+    ax.set_ylim(ylim)
+
+    # save figure
+    if(not showfig):
+        ss = np.array(['trajectory', 'mean'])[int(do_time_avg)]
+        tt = np.array(['3', '12'])[int(qbo_avg=='year')] 
+        out = '{}/CMIP6_{}moQBOcorr_{}hPa_{}_{}H_{}.png'.format(
+               FIGDIR, tt, qbo_lev, MODEL_TYPE, hem, ss)
+        print('saving figure to {}'.format(out.split('/')[-1]))
+        plt.savefig(out, dpi=300)
+    else:
+        plt.show()
+        
+        
 
 # ===============================================================================================
 
 
-def nino_index_comp():
+def nino_index_corr(do_time_avg=True, hem='S', showfig=False):
+    '''
+    Render a plot comparing the pinatubo response to the Nino3.4 index
+
+    Parameters
+    ----------
+    do_time_avg : bool
+        Whether or not to perform time averaging. Defaults to True, in which case one point
+        will be rendered on the plot per ensemble member, each index being averaged over the
+        relevant time interval. If False, the data will be plotting as a time series, with
+        each ensemble member contributing one "trajectory" in the phase plane
+    showfig : bool
+        Whether or not to display the figure, rather than saving to file. Defaults 
+        to False
+    hem : str
+        Which hemisphere to use in the calculation of the poleward node magnitude. Must be
+        either 'S' or 'N'. Defaults to 'S'.
+    '''
     
+    print('\n ---------- Doing ENSO dependency analysis ----------')
+    print('Plot will be rendered with do_time_avg={}, nodes computed in the {}H'.format(
+           do_time_avg, hem))
+    
+    # get files corresponding to ensemble member anomalies
+    uf = sorted(glob.glob('{}/ua_*anomaly*'.format(PINATUBO)))
+    u_ensemble_num = [f.split('/')[-1].split('_')[-2].strip('r') for f in uf]
+    identifier = ['ensemble{}'.format(n) for n in u_ensemble_num]
+    
+    sstf = sorted(glob.glob('{}/tos_*anomaly*'.format(PINATUBO)))
+    sst_ensemble_num = [f.split('/')[-1].split('_')[-2].strip('r') for f in sstf]
+
+    if(u_ensemble_num != sst_ensemble_num):
+        raise RuntimeError('u and sst files don\'t seem to correspond... debug this... \
+                            may have forgot to set MODEL_TYPE=\'historical\'')
+    
+    # time ranges for Nino and poleward node mag averaging
+    # per Barnes, this should cover the year following the eruption for the node mag
+    # if do_time_avg=True, these slices need not coincide, and can use whatever 
+    # definitions should give the best measure...
+    # if do_time_avg=False, we are plotting trajectories, so set the time interval 
+    # for each metric to one matching the Barnes+ Fig 1 panels
+    if(do_time_avg):
+        nino_tslice = slice('1991-06', '1991-08')
+        node_tslice = slice('1991-06', '1992-05')
+    else:
+        nino_tslice = slice('1991-07', '1992-02')
+        node_tslice = slice('1991-07', '1992-02')
+
+
+    # create plot...
+    fig = plt.figure()
+    ax = fig.add_subplot(111) 
+    # make dummy plot for the legend...
+    ax.plot([0],[4],'d',color='r',label='historical')
+    ax.plot([0],[4],'dw', ms=10)
+
+    # loop through ensemble members...
+    for i in range(len(uf)):
+        print('working on {}'.format(identifier[i]))
+        
+        # read zonal wind
+        u = xr.open_dataset(uf[i])
+        sst = xr.open_dataset(sstf[i])
+        
+        # get qbo index, average over time window
+        sst = sst.sel(time = nino_tslice)
+        nino = ctb.Nino34_index(sst)
+        if(do_time_avg):
+            nino_tmean = nino.mean('time')
+
+        # get poleward node magnitude, vertically average, time average
+        u_node = u.sel(time = node_tslice)
+        node_mag = comp_poleward_node_mag(u_node, hem=hem)
+        node_mag = node_mag.mean('plev')
+        if(do_time_avg):
+            node_mag_tmean = (node_mag.mean('time'))['ua']
+        node_mag = node_mag['ua']
+
+        # ---------- plot ----------
+        if(do_time_avg):
+            ax.plot(nino_tmean, node_mag_tmean, 'dk', color='r')
+        else:
+            alphas = np.linspace(0.1, 0.8, len(nino)-1)
+            for j in range(len(nino)-1):
+                ax.plot([nino[j], nino[j+1]], [node_mag[j], node_mag[j+1]], 
+                         '-', color='r', alpha=alphas[j])
+            ax.plot(nino[-1], node_mag[-1], '.', ms=10, color='r')
+
+        #format
+        ax.legend(fontsize=12, loc='upper left')
+        ax.set_xlabel('3-month Nino 3.4 Index  [K]', fontsize=13)
+        ax.set_ylabel('{}H Poleward Node Magnitude  [m/s]'.format(hem), fontsize=13)
+
+    # add zero line
+    ylim=ax.get_ylim()
+    ax.plot([0,0], ylim, '--k', lw=0.8, alpha=0.8)
+    ax.set_ylim(ylim)
+
+    # save figure
+    if(not showfig):
+        ss = np.array(['trajectory', 'mean'])[int(do_time_avg)]
+        out = '{}/CMIP6_NinoCorr_{}_{}H_{}.png'.format(FIGDIR, MODEL_TYPE, hem, ss)
+        print('saving figure to {}'.format(out.split('/')[-1]))
+        plt.savefig(out, dpi=300)
+    else:
+        plt.show()
                     
              
 # ===============================================================================================
@@ -650,13 +890,30 @@ if __name__ == '__main__':
 
     if USAGE == 'process':
         #if(len(glob.glob('{}/*'.format(PINATUBO))) == 0):
-            #isolate_barnes_period_data(my_vars=['tos'])
+            isolate_barnes_period_data(my_vars=['tos'])
         #if(len(glob.glob('{}/*climatology*'.format(PINATUBO))) == 0):
-            #compute_climatology(my_vars=['tos'])
+            compute_climatology(my_vars=['tos'])
         #if(len(glob.glob('{}/*anomaly*'.format(PINATUBO))) == 0):
             compute_anomalies(my_vars=['tos'])
     elif USAGE == 'figs':
-        #barnes_fig1()
+        showfig=False
+
+        # should be run with MODEL_TYPE='all'
+        #qbo_index_corr(do_time_avg=True, showfig=showfig, qbo_avg='eruption', hem='S')
+        #qbo_index_corr(do_time_avg=True, showfig=showfig, qbo_avg='year', hem='S')
+        #qbo_index_corr(do_time_avg=False, showfig=showfig, hem='S')
+        #qbo_index_corr(do_time_avg=True, showfig=showfig, qbo_avg='eruption', hem='N')
+        #qbo_index_corr(do_time_avg=True, showfig=showfig, qbo_avg='year', hem='N')
+        #qbo_index_corr(do_time_avg=False, showfig=showfig, hem='N')
+        
+        # should be run with MODEL_TYPE='historical'
+        nino_index_corr(do_time_avg=True, showfig=showfig, hem='S')
+        nino_index_corr(do_time_avg=False, showfig=showfig, hem='S')
+        nino_index_corr(do_time_avg=True, showfig=showfig, hem='N')
+        nino_index_corr(do_time_avg=False, showfig=showfig, hem='N')
+        
+        # should be run with choice of MODEL_TYPE
+        #barnes_fig1(showfig=showfig)
         #verify_qbo()
-        qbo_nino_index_comp()
+       
         
