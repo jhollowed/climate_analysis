@@ -41,9 +41,8 @@ RUNDIR="${OUTROOT}/${CASENAME}/run"
 
 # total run length in days
 TOT_RUN_LENGTH=$(expr $TOT_RUN_LENGTH_YEARS \* 360)
-# 1 year per run ( = sub-30 min for debug queue at ne16L72 with pecount 768)
-#STOP_N=360
-STOP_N=180
+# 1/2 year per run ( = sub-30 min for debug queue at ne16L72 with pecount 768)
+STOP_N=181
 
 # check if resubmissions should be done
 DO_RESUBS=false
