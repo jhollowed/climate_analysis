@@ -1,0 +1,25 @@
+empty_htapes    = .TRUE.
+NDENS           = 2,2
+
+! hist file 0 is 3-hr instantaneous, 1 is suppressed
+avgflag_pertape = 'I','A'       
+
+fincl1          = 'U850','T850','U050','T050','U010','T010'
+fincl2          = 'U010'
+
+! 3-hourly, suppress
+NHTFRQ          = -3,-99999
+
+! allow 300 samples (3 hr/sample) >  30 days/file
+MFILT           = 300,1                   
+
+! select HSW idealized forcing (nl added by Ben)
+ideal_phys_option = 'held-suarez-williamson'
+
+! turn off any random perturbations (not needed for HS in SE)
+pertlim = 0
+
+! supply initial conditions
+NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/E3SM_ne16_L72_FIDEAL_30year/run/E3SM_ne16_L72_FIDEAL_30year.eam.i.0006-01-01-00000.nc"
+
+ideal_phys_analytic_ic = .false.
