@@ -339,9 +339,9 @@ contains
     z0     = 25000.0
     dz     = 5000.0                
     dr     = 100000.0                
-    rs     = 3.0*dr
-    zs     = 3.0*dz                
-    tf     = 172800.0        
+    rs     = 2.0*dr
+    zs     = 2.0*dz                
+    tf     = 32400.0        
     tau    = -LOG(0.05)/tf                
     M_so2  = 1.7e10
     M_ash  = 5.0e10
