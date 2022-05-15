@@ -18,8 +18,9 @@ GRID=ne16_ne16
 RES=ne16
 
 BUILD_FLAG=$1
-TOT_RUN_LENGTH_YEARS=$2
-PREFIX=$3
+TOT_RUN_LENGTH=$2
+SUFFIX=$3
+CUSTOMNL=$4
 
 # ----- for debug queueing -----
 PECOUNT=768   # half number of cubedsphere elements in ne16
@@ -30,27 +31,30 @@ MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/E3SM_FIDEAL"      # ------------  impo
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
 CONFIGS="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/configs"
-NL=${CONFIGS}/user_nl_eam_nossw
+if [ -z "$CUSTOMNL" ]; then
+    NL=${CONFIGS}/user_nl_eam_nossw
+else
+    NL=$CUSTOMNL
+fi
 
 CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/cases"
-CASENAME="E3SM_${RES}_L72_${COMPSET}${PREFIX}"
+CASENAME="E3SM_${RES}_L72_${COMPSET}${SUFFIX}"
 CASE=${CASES}/${CASENAME}
 
 OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
-# total run length in days
-TOT_RUN_LENGTH=$(expr $TOT_RUN_LENGTH_YEARS \* 360)
-# 1/2 year per run ( = sub-30 min for debug queue at ne16L72 with pecount 768)
-STOP_N=181
-
-# check if resubmissions should be done
+# if total run length >1/2 year per run (~15 min on Cori with 768 ranks), then require resubmits
+MAX_STOP_N=181
 DO_RESUBS=false
-if [ "$TOT_RUN_LENGTH" -gt "$STOP_N" ]; then
+if [ "$TOT_RUN_LENGTH" -gt "$MAX_STOP_N" ]; then
+    STOP_N=$MAX_STOP_N
     DO_RESUBS=true
+else
+    STOP_N=$TOT_RUN_LENGTH
 fi
 
-# if so, compute number of resubs to effectively round up total length of simulation 
+# if do resubs, compute number of resubs to effectively round up total length of simulation 
 # by one unit of STOP_N
 RESUBMIT=0
 if $DO_RESUBS; then
@@ -66,6 +70,10 @@ echo "TOT_RUN_LENGTH = $TOT_RUN_LENGTH"
 echo "DO_RESUBS = $DO_RESUBS"
 echo "RESUBMIT = $RESUBMIT"
 
+BOLD="\033[1m"
+YELLOW="\033[38;5;11m"
+RESET="\033[0m"
+
 # -------------- Define case, Build model ---------------
 
 if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
@@ -73,7 +81,9 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # ---------- do cleaning if requested
     printf "\n\n========== CLEANING ==========\n"
     if [[ "$BUILD_FLAG" != "0" && -d ${CASE} ]]; then
-        read -p $'\n'"Press Y/y to CLEAN case and output "$'\n'"${CASE}"$'\n'"${RUNDIR}" -n 1 -r
+        echo -e ${CASES}"/"${BOLD}${YELLOW}${CASENAME}${RESET}
+        echo -e ${BOLD}${YELLOW}${RUNDIR}${RESET}
+        read -p $'\n'"Press Y/y to CLEAN case and output above" -n 1 -r
 	    echo
 	    if [[ $REPLY =~ ^[Yy]$ ]]; then
 			rm -rfv ${CASE}
