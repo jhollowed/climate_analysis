@@ -366,9 +366,9 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     default_args = {
             'contour'   :  {'levels':12, 'colors':'k', 'extend':'both', 'transform':transform},
             'contourf'  :  {'levels':12, 'cmap':'rainbow', 'extend':'both', 'transform':transform},
-            'clabel'    :  {'inline':True, 'fmt':'%.2f', 'fontsize':9, 'transform':transform},
-                           'colorbar' :  {'ax':ax, 'orientation':'vertical', 'extend':'both', 
-                           'extendrect':False, 'format':'%.0f', 'transform':transform},
+            'clabel'    :  {'inline':True, 'fmt':'%.2f', 'fontsize':9},
+            'colorbar'  :  {'ax':ax, 'orientation':'vertical', 'extend':'both', 
+                            'extendrect':False, 'format':'%.0f'},
             'gridlines' :  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
                             'color':'k', 'lw':0.5, 'alpha':0.5, 'linestyle':':', 'crs':transform,
                             'xformatter':aut.LON_DEG_FORMATTER},
@@ -463,6 +463,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
                 pass
         
     # -------- format colors --------
+    cf = np.empty(len(var_dict), dtype=object)
     for i in range(len(var_dict)):
         d = var_dict[i]
         if d['colorFormatter'] is not None:
@@ -474,7 +475,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
                 except AttributeError:
                     raise AttributeError('Neither object {} or {} has attribute {}'.format(
                                           type(ax), type(fig), d['colorFormatter'])) 
-            colorFormatter(plots[i], **d['colorArgs'])
+            cf[i] = colorFormatter(plots[i], **d['colorArgs'])
     
     # -------- format figure --------
     if(xlim is not None): ax.set_xlim(xlim)
@@ -486,7 +487,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
        gl.xlabels_top = False
        gl.ylabels_right = False
     if(coastlines):
-        ax.coastlines(**coastlinesArgs) 
+        ax.coastlines(**coastlinesArgs)
     if(slice_at != ''): 
         text_box = AnchoredText(slice_at, frameon=True, loc='lower left', pad=0.5)
         text_box.set_zorder(100)
@@ -495,3 +496,4 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     ax.set_xlabel(xlabel, fontsize=12)
     ax.set_ylabel(ylabel, fontsize=12)
     ax.set_title(title, fontsize=14)
+    return cf

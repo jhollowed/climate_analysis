@@ -73,7 +73,7 @@ def ptoz(p):
     try: _ = p.m
     except: p = p*units.hPa
     P0 = 1000*units.hPa
-    T0 = 250*units.K
+    T0 = 200*units.K
     H = const.Rd*T0/const.g 
     return H * np.log(P0/p)
 
