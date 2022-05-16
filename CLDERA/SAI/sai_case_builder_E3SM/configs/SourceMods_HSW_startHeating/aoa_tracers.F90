@@ -309,11 +309,12 @@ contains
     real(r8) :: alpha 
     real(r8) :: Hint 
     real(r8) :: Vint 
-    ! for mass estiamte
+    real(r8) :: source_scaling 
+    ! for mass estimate
     real(r8) :: area(ncol), mass(ncol,pver)
-    ! strat heating
-    real(r8) :: dTstrat 
-    real(r8) :: cnorm_strat 
+    ! for stratospheric heating
+    real(r8) :: cnorm
+    real(r8) :: deltaT
     
 
     !------------------------------------------------------------------
@@ -328,7 +329,9 @@ contains
     lq(ixsai2) = .TRUE.
     lq(ixsai3)   = .TRUE.
     lq(ixsai4)   = .TRUE.
-    call physics_ptend_init(ptend, state%psetcols, 'aoa_tracers', lq=lq)
+    ! JH: updating init of ptend object to allocate dsdt
+    !call physics_ptend_init(ptend, state%psetcols, 'aoa_tracers', lq=lq)
+    call physics_ptend_init(ptend, state%psetcols, 'aoa_tracers', lq=lq, ls=.true.)
 
     nstep = get_nstep()
     lchnk = state%lchnk
@@ -352,8 +355,10 @@ contains
     k_ash  = 1.0/86400.0
     P0     = 100000.0
     alpha  = tf  ! constant T(t)
-    dTstrat  = 0.3
-    cnorm_strat = 1.0e-5
+    ! stratospheric heating parameters
+    deltaT = 3.0 * (1.0 / 85400.0) ! temperature rate of change 0.3 K/day in K/s
+    cnorm  = 1.0e-4                ! normalize concentration for heating; roughly
+                                   ! equals peak concentation at injection onset
 
     Hint = 1.0 - EXP(-rs**2.0/(2.0*dr**2.0))
     Vint = ERF(z0/(SQRT(2.0)*dz)) - ERF((z0-zs)/(SQRT(2.0)*dz))
@@ -368,7 +373,7 @@ contains
     area = area * rearth**2
     
     do k = 1,pver
-        ! ---------- SAI_MASS ---------
+        ! =============== SAI_MASS ===============
         ! via hydrostatic approximation
         ! pdel = Pa, area = rad^2, rearth = m, rgrav = s**2/m ===> mass = kg
         mass(:ncol,k) = state%pdel(:ncol,k) * area(:ncol) * rgrav 
@@ -382,37 +387,39 @@ contains
           zz  = state%zm(i, k)
           rr = (rearth+z0) * ACOS( SIN(lat)*SIN(lat0) + COS(lat)*COS(lat0) * COS(ABS(lon-lon0)))
           rhoatm = state%pmid(i, k) / (rair * state%t(i, k))
+          
+          ! ---- do truncation in space if beyond scale distances, truncation
+          !      in time if beyond eruption duration tf
+          if(ABS(zz - z0) > zs .or. rr > rs .or. t > tf) then
+              source_scaling = 0.0
+          else
+              source_scaling = 1.0
+          end if
 
-          ! ---------- SAI_SO2 ----------
+          ! =============== SAI_SO2 ===============
           ptend%q(i,k,ixsai1) = -k_so2 * (state%q(i, k, ixsai1)*rhoatm) + &
                                  A_so2 * EXP(-(1.0/2.0) * (rr/dr)**2.0) * &
-                                         EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0)
-          ! add temporal dependence
-          if(t <= tf) then
-              ptend%q(i,k,ixsai1) = ptend%q(i,k,ixsai1) * 1
-          else
-              ptend%q(i,k,ixsai1) = -k_so2 * (state%q(i, k, ixsai1)*rhoatm)
-          end if
-
-          ! scale density to concentration
+                                         EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0) * &
+                                         source_scaling
+          
+          ! ---- scale density to concentration
           ptend%q(i,k,ixsai1) = ptend%q(i,k,ixsai1) / rhoatm
 
+          ! ---- do startospheric heating
+          ptend%s(i, k) = (state%q(i, k, ixsai1) / cnorm) * cpair * deltaT
+
                                                                    
-          ! ---------- SAI_ASH ----------
-          ptend%q(i,k,ixsai1) = -k_ash * (state%q(i, k, ixsai1)*rhoatm) + &
+          ! =============== SAI_ASH ===============
+          ptend%q(i,k,ixsai2) = -k_ash * (state%q(i, k, ixsai2)*rhoatm) + &
                                  A_ash * EXP(-(1.0/2.0) * (rr/dr)**2.0) * &
-                                         EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0)
-          if(t <= tf) then
-              ptend%q(i,k,ixsai1) = ptend%q(i,k,ixsai1) * 1.0
-          else
-              ptend%q(i,k,ixsai1) = -k_ash * (state%q(i, k, ixsai1)*rhoatm)
-          end if
+                                         EXP(-(1.0/2.0) * ((zz-z0)/dz)**2.0) * &
+                                         source_scaling
           
-          ! scale density to concentration
+          ! ---- scale density to concentration
           ptend%q(i,k,ixsai2) = ptend%q(i,k,ixsai2) / rhoatm
           
           
-          ! ---------- SAI_PT ----------
+          ! =============== SAI_PT ===============
           ! --JH--: Potential Temperature
           ! initialize within the first minute of the injection
           if (t < 60.0_r8) then
@@ -421,7 +428,7 @@ contains
           ptend%q(i,k,ixsai3) = 0.0_r8
                                       
 
-          ! ---------- SAI_AOA ----------
+          ! =============== SAI_AOA ===============
           ptend%q(i,k,ixsai4) = 0.0_r8
 
        end do

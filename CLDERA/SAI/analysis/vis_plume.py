@@ -159,6 +159,7 @@ latmid = np.searchsorted(lat, lat0)
 rr = ((LON - lon0) * (a+z0)).to(u.km)
 
 P0 = 1000*u.hPa
+#T0 = 185.5*u.K
 T0 = 250*u.K
 H = const.Rd*T0/const.g
 p = P0 * np.exp(-Z/H)
@@ -199,6 +200,7 @@ ax1.set_title('{:.0f} km'.format(z[zmid].to(u.km).m))
 ax2.set_xlabel(r'r [km]')
 ax2.set_ylabel(r'p [hPa]')
 ax2.set_xlim([-300, 300])
+#ax2.set_ylim([0.8,1000])
 ax2.set_ylim([3,1000])
 ax2.set_yscale('log')
 ax2.invert_yaxis()

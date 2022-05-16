@@ -19,8 +19,9 @@ RES=ne16
 
 BUILD_FLAG=$1
 TOT_RUN_LENGTH=$2
-SUFFIX=$3
-CUSTOMNL=$4
+DO_HEATING=$3
+SUFFIX=$4
+CUSTOMNL=$5
 
 # ----- for debug queueing -----
 PECOUNT=768   # half number of cubedsphere elements in ne16
@@ -35,6 +36,11 @@ if [ -z "$CUSTOMNL" ]; then
     NL=${CONFIGS}/user_nl_cam_aoa_SEne16_HSW
 else
     NL=$CUSTOMNL
+fi
+if [[ -z "$DO_HEATING" || "$DO_HEATING" == "0" ]]; then
+    SRCMODS=${CONFIGS}/SourceMods_HSW
+else
+    SRCMODS=${CONFIGS}/SourceMods_HSW_startHeating
 fi
 
 CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cases"
@@ -118,7 +124,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # ---------- copy namelist settings
     cp --verbose $NL ./user_nl_eam
     # ---------- copy sourcemods
-    cp --verbose ${CONFIGS}/SourceMods_HSW/* ./SourceMods/src.eam/
+    cp --verbose ${SRCMODS}/* ./SourceMods/src.eam/
     
     printf "\n\n========== CASE SETUP ==========\n"
     ./case.setup

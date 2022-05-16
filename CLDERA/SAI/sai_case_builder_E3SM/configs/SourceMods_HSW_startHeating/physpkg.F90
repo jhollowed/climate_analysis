@@ -136,6 +136,7 @@ subroutine phys_register
     use convect_shallow,    only: convect_shallow_register
     use radiation,          only: radiation_register
     use co2_cycle,          only: co2_register
+    use co2_diagnostics,    only: co2_diags_register
     use flux_avg,           only: flux_avg_register
     use iondrag,            only: iondrag_register
     use ionosphere,         only: ionos_register
@@ -261,6 +262,7 @@ subroutine phys_register
 
        ! co2 constituents
        call co2_register()
+       call co2_diags_register()
 
        ! register data model ozone with pbuf
        if (cam3_ozone_data_on) then
@@ -700,6 +702,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use radheat,            only: radheat_init
     use radiation,          only: radiation_init
     use cloud_diagnostics,  only: cloud_diagnostics_init
+    use co2_diagnostics,    only: co2_diags_init
     use stratiform,         only: stratiform_init
     use wv_saturation,      only: wv_sat_init
     use microp_driver,      only: microp_driver_init
@@ -838,6 +841,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     if (co2_transport()) then
        call co2_init()
     end if
+    call co2_diags_init(phys_state)
 
     ! CAM3 prescribed ozone
     if (cam3_ozone_data_on) call cam3_ozone_data_init(phys_state)
@@ -1014,7 +1018,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     
     if ( adiabatic .or. ideal_phys )then
        call t_stopf ('physpkg_st1')
-	
+
        call t_startf ('bc_physics')
        call phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        call t_stopf ('bc_physics')
@@ -1107,11 +1111,17 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     ! Physics for adiabatic or idealized physics case.
     ! 
     !-----------------------------------------------------------------------
-    use physics_buffer, only : physics_buffer_desc, pbuf_set_field, pbuf_get_chunk, pbuf_old_tim_idx
+    use physics_buffer,   only: physics_buffer_desc, pbuf_set_field, pbuf_get_chunk, pbuf_old_tim_idx
     use time_manager,     only: get_nstep
     use cam_diagnostics,  only: diag_phys_writeout
     use check_energy,     only: check_energy_fix, check_energy_chng
     use dycore,           only: dycore_is
+  
+    ! --JH--: adding to allow aoa tendencies
+    use check_energy,    only: check_tracers_chng, check_tracers_data
+    use aoa_tracers,     only: aoa_tracers_timestep_tend
+    use ppgrid,          only: pcols
+    use constituents,    only: pcnst
 
     !
     ! Input arguments
@@ -1129,7 +1139,8 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     !
     integer             :: c               ! indices
     integer             :: nstep           ! current timestep number
-    type(physics_ptend) :: ptend(begchunk:endchunk) ! indivdual parameterization tendencies
+    type(physics_ptend) :: ptend_aoa(begchunk:endchunk) ! JH: aoa parameterization tendencies
+    type(physics_ptend) :: ptend(begchunk:endchunk)     ! indivdual parameterization tendencies
     real(r8)            :: flx_heat(pcols) ! effective sensible heat flux
     real(r8)            :: zero(pcols)     ! array of zeros
 
@@ -1141,6 +1152,13 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     integer(i8)         :: sysclock_max    ! system clock max value
     real(r8)            :: chunk_cost      ! measured cost per chunk
 
+    ! --JH--: adding to allow aoa tendencies
+    type(check_tracers_data):: tracerint   ! tracer mass integrals and cummulative boundary fluxes
+    real(r8) :: dummy_cflx(pcols, pcnst)    ! array of zeros
+    real(r8) :: dummy_landfrac(pcols)       ! array of zeros
+
+    character(len=128)  :: ideal_phys_option
+
     ! physics buffer field for total energy
     real(r8), pointer, dimension(:) :: teout
     logical, SAVE :: first_exec_of_phys_run1_adiabatic_or_ideal  = .TRUE.
@@ -1148,6 +1166,10 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
 
     nstep = get_nstep()
     zero  = 0._r8
+    
+    ! --JH--: adding to allow aoa tendencies
+    dummy_cflx = 0._r8
+    dummy_landfrac = 0._r8
 
     ! Associate pointers with physics buffer fields
     if (first_exec_of_phys_run1_adiabatic_or_ideal) then
@@ -1155,6 +1177,8 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     endif
 
     call system_clock(count=beg_proc_cnt)
+
+    call phys_getopts(ideal_phys_option_out=ideal_phys_option)
 
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) &
 !$OMP PRIVATE (c, beg_chnk_cnt, flx_heat, end_chnk_cnt, sysclock_rate, sysclock_max, chunk_cost)
@@ -1167,7 +1191,8 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
 
        ! Dump dynamics variables to history buffers
        call diag_phys_writeout(phys_state(c))
-
+        
+       ! Do energy check for LR, SE
        if (dycore_is('LR') .or. dycore_is('SE') ) then
           call check_energy_fix(phys_state(c), ptend(c), nstep, flx_heat)
           call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
@@ -1176,11 +1201,23 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
           call physics_ptend_dealloc(ptend(c))
        end if
 
+       ! Do Held-Suarez temperature forcing if FIDEAL
        if ( ideal_phys )then
           call t_startf('tphysidl')
-          call tphysidl(ztodt, phys_state(c), phys_tend(c))
+          call tphysidl(ztodt, phys_state(c), phys_tend(c), trim(ideal_phys_option))
           call t_stopf('tphysidl')
        end if
+       
+       ! --JH--: Allow advancing of aoa tendencies if enabled
+       ! the timestep_tend function automatically checks that aoa tracers are enabled for the run
+       ! TEMP SOLUTION: args cam_in%cflx and cam_in%landfrac removed for now from aoa_tracers_timestep
+       !                for running with modified aoa_tracers
+       call aoa_tracers_timestep_tend(phys_state(c), ptend_aoa(c), dummy_cflx, &
+                                      dummy_landfrac, ztodt, phys_state(c)%ncol) 
+       call physics_update(phys_state(c), ptend_aoa(c), ztodt, phys_tend(c))
+       call check_tracers_chng(phys_state(c), tracerint, "aoa_tracers_timestep_tend", nstep, ztodt, &
+                               dummy_cflx)
+       call physics_ptend_dealloc(ptend_aoa(c))
 
        ! Save total enery after physics for energy conservation checks
        call pbuf_set_field(pbuf_get_chunk(pbuf2d, c), teout_idx, phys_state(c)%te_cur)
@@ -1221,9 +1258,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
-    use time_manager,   only: get_nstep
+    use time_manager,   only: get_nstep, is_first_step, is_end_curr_month, &
+                              is_first_restart_step, is_last_step
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
     use phys_control,   only: ieflx_opt
+    use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags, &
+                              co2_diags_store_fields, co2_diags_read_fields
+    use co2_cycle,      only: co2_transport
     !
     ! Input arguments
     !
@@ -1291,6 +1332,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call ieflx_gmean(phys_state, phys_tend, pbuf2d, cam_in, cam_out, nstep)
     end if
 
+    ! Get carbon conservation fields from pbuf if restarting
+    if ( co2_transport() ) then
+       if ( is_first_restart_step() ) then
+          call co2_diags_read_fields(phys_state, pbuf2d)
+       end if
+    end if
+
     call system_clock(count=beg_proc_cnt)
 
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) &
@@ -1339,6 +1387,29 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #ifdef TRACER_CHECK
     call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
+
+    !
+    ! Check for carbon conservation
+    !
+    if ( co2_transport() ) then
+       do c = begchunk, endchunk
+          call get_total_carbon(phys_state(c), 'wet')
+       end do
+       call print_global_carbon_diags(phys_state, ztodt, nstep)
+       do c = begchunk, endchunk
+          ncol = get_ncols_p(c)
+          phys_state(c)%tc_prev(:ncol) = phys_state(c)%tc_curr(:ncol)
+          if ( is_first_step() ) then
+             phys_state(c)%tc_init(:ncol) = phys_state(c)%tc_curr(:ncol)
+          end if
+          if ( is_end_curr_month() ) then
+             phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
+          end if
+       end do
+       if ( is_last_step() ) then
+          call co2_diags_store_fields(phys_state, pbuf2d)
+       end if
+    end if
 
     call t_startf ('physpkg_st2')
     call pbuf_deallocate(pbuf2d, 'physpkg')
@@ -1435,7 +1506,7 @@ subroutine tphysac (ztodt,   cam_in,  &
                                   check_prect, check_qflx , &
                                   check_tracers_data, check_tracers_init, &
                                   check_tracers_chng, check_tracers_fini
-    use time_manager,       only: get_nstep
+    use time_manager,       only: get_nstep, is_first_step, is_end_curr_month
     use cam_abortutils,         only: endrun
     use dycore,             only: dycore_is
     use cam_control_mod,    only: aqua_planet 
@@ -1449,7 +1520,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use co2_cycle,          only: co2_cycle_set_ptend
+    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport
+    use co2_diagnostics,    only: get_carbon_sfc_fluxes, get_carbon_air_fluxes
 
     implicit none
 
@@ -1626,7 +1698,6 @@ if (l_tracer_aero) then
     call check_tracers_chng(state, tracerint, "tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
 
-    ! --JH--: adding ncol!
     call aoa_tracers_timestep_tend(state, ptend, cam_in%cflx, cam_in%landfrac, ztodt, state%ncol)      
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
@@ -1635,6 +1706,7 @@ if (l_tracer_aero) then
     ! add tendency from aircraft emissions
     call co2_cycle_set_ptend(state, pbuf, ptend)
     call physics_update(state, ptend, ztodt, tend)
+    call get_carbon_air_fluxes(state, pbuf, ztodt)
 
     ! Chemistry calculation
     if (chem_is_active()) then
@@ -1686,6 +1758,9 @@ end if ! l_tracer_aero
     
     end if ! l_vdiff
     endif
+
+    ! collect surface carbon fluxes
+    call get_carbon_sfc_fluxes(state, cam_in, ztodt)
 
 
 if (l_rayleigh) then

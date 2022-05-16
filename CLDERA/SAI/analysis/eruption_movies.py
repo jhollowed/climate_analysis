@@ -27,7 +27,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
     lon0 = 120.35
     lon_center = 0
     dlat = 0.5
-    psel = 30
+    psel = 10
     minc = -12
     clipc = -15
     maxc = -4
@@ -79,7 +79,8 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
 
     for k in range(len(tt)-1):
 
-        k += 1
+        #k += 1
+        k += 100
         if(demo): k+= 10
         #if(k%2 != 0): continue     # every other time sample
         if(tlabel[k] > 30): continue    # stop after day 30
@@ -174,7 +175,8 @@ if(__name__ == '__main__'):
     gmt = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/GMT_no_green.rgb'
     eam_whs = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/E3SM_ne16_L72_FIDEAL_SAI/run'
     run = '{}/E3SM_ne16_L72_FIDEAL_SAI.eam.h1.0001-01-01-00000.regrid.2x2.nc'.format(eam_whs)
-    dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/eam_whs_passive_sai'
-    animate_eruption(run, 'E3SMv2 HSW ne16L72, SO2', dest, globe=True, demo=False, tracer='SO2')
+    dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
+           'eam_whs_passive_sai/ash'
+    animate_eruption(run, 'E3SMv2 HSW ne16L72, Ash', dest, globe=True, demo=False, tracer='ASH')
     
     
