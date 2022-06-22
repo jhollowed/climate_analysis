@@ -262,12 +262,12 @@ contains
     use time_manager, only: get_curr_time
 
     ! Arguments
-    !type(physics_state), intent(in)    :: state              ! state variables
-    type(physics_state), intent(inout) :: state           ! --JH--
+    !type(physics_state), intent(in)    :: state             ! state variables
+    type(physics_state), intent(inout) :: state              ! --JH--
     type(physics_ptend), intent(out)   :: ptend              ! package tendencies
+    real(r8),            intent(in)    :: dt                 ! timestep
     real(r8),            intent(inout) :: cflx(pcols,pcnst)  ! Surface constituent flux (kg/m^2/s)
     real(r8),            intent(in)    :: landfrac(pcols)    ! Land fraction
-    real(r8),            intent(in)    :: dt                 ! timestep
 
     !----------------- Local workspace-------------------------------
 
@@ -322,7 +322,7 @@ contains
 
           ! AOA1
           ! --JH--: This tracer will be used as a clock tracer with a source of
-          ! 1 everywhere above ~700hPa
+          ! 1 day/sec everywhere above ~700hPa
           if (pref_mid_norm(k) <= 0.7) then
               ptend%q(i,k,ixaoa1) = 1.0_r8 * aoa1_scaling
           else
@@ -331,7 +331,7 @@ contains
           end if
 
           ! AOA2
-          ! --JH--: This tracer will be used as a clock tracer which assumes the
+          ! --JH--: This tracer will be used as a clock tracer which takes the
           ! value of the model time eveywhere below ~700hPa
           if (pref_mid_norm(k) >= 0.7) then
               !ptend%q(i,k,ixaoa2) = 0.0_r8
@@ -341,15 +341,11 @@ contains
               ptend%q(i,k,ixaoa2) = 0.0_r8
           end if
 
-          ! HORZ
-          qrel              = 2._r8 + sin(state%lat(i))
-          xhorz             = (state%q(i,k,ixht) + dt*teul*qrel)/ (1._r8 + teul * dt)
-          ptend%q(i,k,ixht) = (xhorz - state%q(i,k,ixht)) / dt
+          ! HORZ, not used
+          ptend%q(i,k,ixht) = 0.0_r8
 
-          ! VERT
-          qrel              = real(pver-k+1,r8)
-          xvert             = (state%q(i,k,ixvt) + dt*teul*qrel)/ (1._r8 + teul * dt)
-          ptend%q(i,k,ixvt) = (xvert - state%q(i,k,ixvt)) / dt
+          ! VERT, not used
+          ptend%q(i,k,ixvt) = 0.0_r8
 
        end do
     end do
@@ -360,32 +356,6 @@ contains
     call outfld (src_names(3), ptend%q(:,:,ixht),   pcols, lchnk)
     call outfld (src_names(4), ptend%q(:,:,ixvt),   pcols, lchnk)
 
-    ! Set tracer fluxes
-    do i = 1, ncol
-
-       ! AOA1
-       !cflx(i,ixaoa1) = 1.e-6_r8
-       ! --JH--
-       ! temp solution, disable builtin AOA1
-       cflx(i,ixaoa1) = 0._r8
-
-       ! AOA2
-       !if (landfrac(i) .eq. 1._r8  .and.  state%lat(i) .gt. 0.35_r8) then
-       !   cflx(i,ixaoa2) = 1.e-6_r8 + 1e-6_r8*0.0434_r8*real(nstep,r8)*dt/(86400._r8*365._r8)
-       !else
-       !   cflx(i,ixaoa2) = 0._r8
-       !endif
-       ! --JH--
-       ! temp solution, disable builtin AOA2
-       cflx(i,ixaoa2) = 0._r8
-
-       ! HORZ
-       cflx(i,ixht) = 0._r8
-
-       ! VERT
-       cflx(i,ixvt) = 0._r8
-
-    end do
 
   end subroutine aoa_tracers_timestep_tend
 
@@ -416,24 +386,12 @@ contains
        q(:,:) = 0.0_r8
 
     else if (m == ixht) then
-
-       call get_horiz_grid_dim_d( plon, plat )
-       ngcols = plon*plat
-       gsize = size(gcid)
-       allocate(lat(ngcols))
-       call get_horiz_grid_d(ngcols,clat_d_out=lat)
-       do j = 1, gsize
-          q(j,:) = 2._r8 + sin(lat(gcid(j)))
-       end do
-       deallocate(lat)
+       ! HORZ not used; remove initialization
+       q(:,:) = 0.0_r8
 
     else if (m == ixvt) then
-
-       do k = 1, pver
-          do j = 1, size(q,1)
-             q(j,k) = real(pver-k+1,r8)
-          end do
-       end do
+       ! VERT not used; remove initialization
+       q(:,:) = 0.0_r8
 
     end if
 

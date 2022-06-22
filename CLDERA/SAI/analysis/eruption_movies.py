@@ -5,6 +5,7 @@
 # renders video frames of the eruption in horizontal cross, vertical cross, 
 # and AzimuthalEquidistant projection
 
+import pdb
 import numpy as np
 import xarray as xr
 import matplotlib as mpl
@@ -12,7 +13,6 @@ import cartopy.crs as ccrs
 import artist_utils as claut
 import climate_toolbox as ctb
 import matplotlib.pyplot as plt
-from pdb import set_trace as st
 from matplotlib.offsetbox import AnchoredText
 from climate_artist import vertical_slice as pltvert
 from climate_artist import horizontal_slice as plthor
@@ -20,14 +20,14 @@ from climate_artist import horizontal_slice as plthor
 # ============================================================
 
 
-def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False):
+def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False, tres='hourly'):
    
     # params
     lat0 = 15.15
     lon0 = 120.35
     lon_center = 0
     dlat = 0.5
-    psel = 45
+    psel = 10
     minc = -12
     clipc = -15
     maxc = -4
@@ -58,6 +58,15 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
 
     # get time in number of days
     td = ctb.time2day(run['time'])
+    # get time in number of hours
+    th = run['nsteph'].values*1800/60/60
+    # set tiem variable
+    if(tres == 'daily'):
+        tt = th
+        tlabel = [int(thi/24 + 1) for thi in th]
+    elif(tres == 'hourly'):
+        tt = td
+        tlabel = td
     
     # ---------- plot ----------
     levels = np.linspace(minc, maxc, clevels)
@@ -68,11 +77,13 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
         
     print('\n\n=============== {}'.format(title)) 
 
-    for k in range(len(td)):
+    for k in range(len(tt)-1):
 
+        #k += 1
+        k += 100
         if(demo): k+= 10
         #if(k%2 != 0): continue     # every other time sample
-        if(td[k] > 30): continue    # stop after day 40
+        if(tlabel[k] > 30): continue    # stop after day 30
 
         print('--------- {}'.format(k)) 
         if(globe):
@@ -92,7 +103,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
         var_dict = [{'var':chor[k], 'plotType':'contourf', 'plotArgs':pltargs, 
                      'colorFormatter':None}]
         var_dict_c = [{'var':chor[k], 'plotType':'contour', 'plotArgs':pltargs_c, 'colorFormatter':None}]
-        plthor(lon, lat, var_dict, ax=ax1, slice_at='p=45 hPa')
+        plthor(lon, lat, var_dict, ax=ax1, slice_at='p={} hPa'.format(psel))
         plthor(lon, lat, var_dict_c, ax=ax1, slice_at='')
         
         
@@ -124,10 +135,11 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
             var_dict = [{'var':chor[k], 'plotType':'contourf', 'plotArgs':pltargs, 'colorFormatter':None}]
             var_dict_c = [{'var':chor[k], 'plotType':'contour', 'plotArgs':pltargs_c}]
             gridlinesArgs = {'draw_labels':False}
-            plthor(lon, lat, var_dict, ax=ax3, gridlinesArgs=gridlinesArgs, slice_at='p=45 hPa')
+            plthor(lon, lat, var_dict, ax=ax3, gridlinesArgs=gridlinesArgs, 
+                   slice_at='p={} hPa'.format(psel))
             #plthor(lat, lon, var_dict_c, ax=ax1)
         
-        fig.suptitle('{}, day {}'.format(title, round(td[k]+0.)), fontsize=14)
+        fig.suptitle('{}, day {}'.format(title, round(tlabel[k])), fontsize=14)
         ax2.set_aspect('auto')
         plt.subplots_adjust(hspace=0)
 
@@ -143,21 +155,28 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
 
 if(__name__ == '__main__'):
 
-    gmt = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/GMT_no_green.rgb'
+    #gmt = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/GMT_no_green.rgb'
     #gmt = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/WhBlGrYeRe.rgb'
-    whs = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0/'\
-          'run/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0.cam.h0.0001-01-01-00000.nc'
-    whsdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/whsg_symm_init_ash'
+    #whs = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0/'\
+    #      'run/SE_ne16L72_whs_sai_fix0_tau0_nsplit1_nodiff0.cam.h0.0001-01-01-00000.nc'
+    #whsdest ='/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/whsg_symm_init_ash'
     #whsgdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs3/whsg'
     #whs_massfix = '/glade/scratch/jhollowed/CAM/cases/sai_runs/SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1/'\
     #              'SE_ne16L72_whs_saiv2_fix1_tau0_qsplit1.cam.h0.0001-01-01-00000.nc'
-    amip = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI_juneclimo/'\
-           'E3SM_case_ne30_L72_SAI_amip_juneclimo.eam.h0.0001-01-01-00000.regird.2x2.nc'
-    amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/amip_ash'
+    #amip = '/glade/scratch/jhollowed/CAM/cases/sai_runs/E3SM_AMIP_ne30_L72_SAI_juneclimo/'\
+    #       'E3SM_case_ne30_L72_SAI_amip_juneclimo.eam.h0.0001-01-01-00000.regird.2x2.nc'
+    #amipdest = '/glade/u/home/jhollowed/repos/climate_analysis/CLDERA/SAI/analysis/figs/amip_ash'
     
     #animate_eruption(whs, 'SE ne30L72, CAM HSW', whsgdest, globe=True)
     #animate_eruption(whs, 'SE ne30L72, CAM WHS, SO2', whsdest, globe=True, demo=False)
     #animate_eruption(amip, 'SE ne30L72, EAM AMIP, SO2', amipdest, globe=True, demo=False, tracer='SO2')
-    animate_eruption(whs, 'SE ne30L72, CaM HSW, ash', whsdest, globe=True, demo=False, tracer='ASH')
+    #animate_eruption(whs, 'SE ne30L72, CaM HSW, ash', whsdest, globe=True, demo=False, tracer='ASH')
+    
+    gmt = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/GMT_no_green.rgb'
+    eam_whs = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/E3SM_ne16_L72_FIDEAL_SAI/run'
+    run = '{}/E3SM_ne16_L72_FIDEAL_SAI.eam.h1.0001-01-01-00000.regrid.2x2.nc'.format(eam_whs)
+    dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
+           'eam_whs_passive_sai/ash'
+    animate_eruption(run, 'E3SMv2 HSW ne16L72, Ash', dest, globe=True, demo=False, tracer='ASH')
     
     

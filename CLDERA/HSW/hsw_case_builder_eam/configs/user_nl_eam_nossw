@@ -7,12 +7,12 @@ avgflag_pertape = 'A','A'
 fincl1          = 'U','V','T','PS','OMEGA','AOA1'
 fincl2          = 'U010','AOA1'
 
-! annual, monthly, in hours
-NHTFRQ          = -8640,-720
+! bi-annual, monthly, in hours
+NHTFRQ          = -4320,-720
 
-! allow 40 samples (1 year/sample) = 40 years/file annual means,
+! allow 60 samples (1 year/sample) = 30 years/file annual means,
 !       60 samples (1 month/sample) = 5 years/file monthly means 
-MFILT           = 40,60                   
+MFILT           = 60,60                   
 
 ! activate built-in analytic init of aoa tracers
 aoa_read_from_ic_file = .FALSE.        
@@ -23,5 +23,5 @@ ideal_phys_option = 'held-suarez-williamson'
 ! turn off any random perturbations (not needed for HS in SE)
 pertlim = 0
 
-! enable IC outputs at end of run
-inithist='ENDOFRUN'
+! enable IC outputs yearly
+inithist='YEARLY'

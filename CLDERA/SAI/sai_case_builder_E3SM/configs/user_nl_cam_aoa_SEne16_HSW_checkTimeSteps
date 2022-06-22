@@ -1,0 +1,29 @@
+
+! ========== AOA settings ==========
+
+empty_htapes     = .TRUE.              ! output only the varibales listed below
+avgflag_pertape  = 'A','I'             ! hist file 1 is avg, 2 is instant
+
+! output a few quantities for frequently on their instantaneous values for SSW quantification
+fincl1           = 'U','V','OMEGA','T','PS','Z3','PHIS','SAI_SO2','SAI_ASH'
+fincl2           = 'SAI_SO2','SAI_ASH'
+
+NHTFRQ           = -24,1         ! output frequency every day, every timestep
+MFILT            = 200,200       ! allow 48,144 time samples per hist file (4 years)
+NDENS            = 2,2           ! single-precision for each hist file
+
+aoa_read_from_ic_file = .FALSE.        ! activate built-in analytic init of aoa tracers
+
+inithist='ENDOFRUN'
+
+! ues 6-year HSW spinup
+NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/E3SM_ne16_L72_FIDEAL_30year/run/E3SM_ne16_L72_FIDEAL_30year.eam.i.0006-01-01-00000.nc"
+
+! don't let analytic ICs overwrite input from NCDATA
+ideal_phys_analytic_ic = .false.
+
+! select HSW idealized forcing (nl added by Ben)
+ideal_phys_option = 'held-suarez-williamson'
+
+! turn off any random perturbations (not needed for HS in SE)
+pertlim = 0

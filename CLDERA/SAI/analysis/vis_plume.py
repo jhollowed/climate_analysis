@@ -39,18 +39,18 @@ z0 = 25000 * u.m
 dr = 100000 * u.m
 #dz = 7500 * u.m
 dz = 5000 * u.m
-rs = dr*3
-zs = dz*3
+rs = dr*2
+zs = dz*2
 
-tf = 172800 * u.s
-tfh = (172800 * u.s).to(u.hr)
+tfh = 9 * u.hr
+tf = tfh.to(u.s)
 tau = -np.log(0.05)/tf
 a = const.Re.to(u.m)
 
-M_SO2 = 2e10 * u.kg
-M_ash = 2e10 * u.kg
-k_SO2 = 1/2592000 * 1/u.s
-k_ash = 1/86400 * 1/u.s
+M_SO2 = 1.7e10 * u.kg
+M_ash = 5e10 * u.kg
+k_SO2 = (1/25 * 1/u.day).to(1/u.s)
+k_ash = (1 * 1/u.day).to(1/u.day)
 
 
 
@@ -61,8 +61,8 @@ LAT,LON = np.meshgrid(lat, lon)
 
 
 z = np.linspace(0, 50000, 303) * u.m
-t = np.linspace(0, 2*tf.m, 100) * u.s
-th = (np.linspace(0, 2*tf.m, 100) * u.s).to(u.hr)
+t = np.linspace(0, 3*tf.m, 100) * u.s
+th = (np.linspace(0, 3*tf.m, 100) * u.s).to(u.hr)
 
 LAT, LON, Z = np.meshgrid(lat, lon, z.m)
 Z = Z * u.m
@@ -146,7 +146,6 @@ rho_peak_cSO2 = (Ac_SO2 * np.exp(-k_SO2*t) * ( -1+np.exp(tbound*k_SO2))) / k_SO2
 
 # ========== plot ==========
 
-plt.ion()
 data_crs = ccrs.PlateCarree()
 fig = plt.figure(figsize=(8.2,6))
 spec = fig.add_gridspec(2, 5)
@@ -161,6 +160,7 @@ latmid = np.searchsorted(lat, lat0)
 rr = ((LON - lon0) * (a+z0)).to(u.km)
 
 P0 = 1000*u.hPa
+#T0 = 185.5*u.K
 T0 = 250*u.K
 H = const.Rd*T0/const.g
 p = P0 * np.exp(-Z/H)
@@ -169,6 +169,7 @@ pmid = P0 * np.exp(-z[zmid]/H)
 #plotvar = fe_SO2
 #levels = [4, 3, 2, 2.5, 1, 0.5]
 #levels = [0, 0.5, 1, 2, 3, 4]
+<<<<<<< HEAD
 plotvar = fc_SO2
 levels = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]
 
@@ -178,6 +179,21 @@ vmin=-10**-poww
 
 ax1.contour(LON[:,:,zmid]*r2d, LAT[:,:,zmid]*r2d, plotvar[:,:,zmid]*10**poww, levels=levels, transform=data_crs, cmap=cmap, vmin=vmin)
 cs = ax2.contour(rr[:,latmid,:], p[:,latmid,:], plotvar[:,latmid,:]*10**poww, levels=levels, cmap=cmap, vmin=vmin)
+=======
+levels = [1.5, 3.0, 4.5, 6.0, 7.5, 9.0]
+#poww = math.ceil(-np.log10(np.max(fe_SO2[:,latmid,:]).m))
+#vmin=-10**-poww
+vmin=-10**-12
+
+# scale density tendency from kg/m^3/s to g/km^3/s
+fe_SO2 = fe_SO2.to(u.g/u.km**3/u.s)
+
+# ---old scaling
+#ax1.contour(LON[:,:,zmid]*r2d, LAT[:,:,zmid]*r2d, fe_SO2[:,:,zmid]*10**poww, levels=levels, transform=data_crs, cmap=cmap, vmin=vmin)
+#cs = ax2.contour(rr[:,latmid,:], p[:,latmid,:], fe_SO2[:,latmid,:]*10**poww, levels=levels, cmap=cmap, vmin=vmin)
+ax1.contour(LON[:,:,zmid]*r2d, LAT[:,:,zmid]*r2d, fe_SO2[:,:,zmid], levels=levels, transform=data_crs, cmap=cmap, vmin=vmin)
+cs = ax2.contour(rr[:,latmid,:], p[:,latmid,:], fe_SO2[:,latmid,:], levels=levels, cmap=cmap, vmin=vmin)
+>>>>>>> 737a9f442aaeaf4ed0ede5020591b4952cc41aa0
 
 degd = 4
 extent = [lon0*r2d-degd, lon0*r2d+degd, lat0*r2d-degd, lat0*r2d+degd]
@@ -192,16 +208,18 @@ gl.top_labels = []
 ax1.coastlines(resolution='50m', color='k', linestyle='-', alpha=1, zorder=9)
 #ax1.set_xlabel(r'lat [deg]')
 #ax1.set_ylabel(r'lon [deg]')
-ax1.set_title('{:.0f} km, $\sim$40 hPa'.format(z[zmid].to(u.km).m))
+ax1.set_title('{:.0f} km'.format(z[zmid].to(u.km).m))
 
 ax2.set_xlabel(r'r [km]')
 ax2.set_ylabel(r'p [hPa]')
 ax2.set_xlim([-300, 300])
+#ax2.set_ylim([0.8,1000])
+ax2.set_ylim([3,1000])
 ax2.set_yscale('log')
 ax2.invert_yaxis()
 ax2.yaxis.set_major_formatter(ScalarFormatter())
 ax2.clabel(cs, inline=1, fontsize=10)#, fmt='%1.0f')
-ax2.set_title(r'$d\rho/dt \times 10^{{{pp}}}$ ($t$=0)'.format(pp=poww))
+ax2.set_title(r'$d\rho/dt$ [g km$^{-3}$ s$^{-1}$] ($t$=0)')
 
 ax22 = ax2.twinx()
 ax22.set_ylabel(r'Z [km]')
@@ -215,10 +233,15 @@ ax22.set_ylim( (H * np.log(P0/(ax2.get_ylim()*u.hPa))).to(u.km).m )
 #ztick = (H * np.log(P0/(ptick*u.hPa))).to(u.km).m
 #ax22.set_yticklabels(['{:.0f}'.format(ztick[i]) for i in range(len(ztick))])
 
-ax3.plot(th.m, fpe_SO2.m, '-k', label=r'exponential $T(t)$')
-ax3.plot(th.m, fpc_SO2.m, '--k', label=r'constant $T(t)$')
-ax3.set_ylabel(r'peak $f(t)$ [kg/m$^3$/s]', fontsize=11)
-ax3.set_xticklabels([])
+#ax3.plot(th.m, fpe_SO2.m, '-k', label=r'exponential $T(t)$')
+#ax3.plot(th.m, fpc_SO2.m, '--k', label=r'constant $T(t)$')
+#ax3.set_ylabel(r'peak $f(t)$ [kg/m$^3$/s]', fontsize=11)
+ax3.plot(th.m, fpe_SO2.to(u.g/u.km**3/u.s).m, '-k', label=r'exponential $T(t)$')
+ax3.plot(th.m, fpc_SO2.to(u.g/u.km**3/u.s).m, '--k', label=r'constant $T(t)$')
+ax3.set_ylabel(r'peak $f(t)$ [g km$^{-3}$ s$^{-1}$]', fontsize=11)
+#ax3.set_xticklabels([])
+clau.insert_labelled_tick(ax3, 'x', tfh.m, '$t_f$')
+ax3.set_xlabel(r'time [hr]')
 ax3.yaxis.tick_right()
 ax3.yaxis.set_label_position("right")
 ax3.legend(frameon=False)
@@ -229,10 +252,10 @@ ax3.plot(tftf, yy, ':k', lw=0.8)
 ax3.set_ylim(yy)
 #ax3.text(tf.to(u.hr).m-0.5, -0.7e-10, r'$t_f$')
 
-ax4.plot(th.m, rho_peak_eSO2, '-r', label='SO2')
-ax4.plot(th.m, rho_peak_cSO2, '--r')
-ax4.plot(th.m, rho_peak_eash, '-c', label='Ash')
-ax4.plot(th.m, rho_peak_cash, '--c')
+ax4.plot(th.m, rho_peak_eSO2.to(u.kg/u.km**3), '-r', label='SO2')
+ax4.plot(th.m, rho_peak_cSO2.to(u.kg/u.km**3), '--r')
+ax4.plot(th.m, rho_peak_eash.to(u.kg/u.km**3), '-c', label='Ash')
+ax4.plot(th.m, rho_peak_cash.to(u.kg/u.km**3), '--c')
 
 plotNumericalSol = False
 if(plotNumericalSol):
@@ -242,7 +265,7 @@ if(plotNumericalSol):
     ax4.plot(th.m, rho_peak_cash_num, '-k', lw=0.6)
 
 ax4.set_xlabel(r'time [hr]')
-ax4.set_ylabel(r'peak $\rho(t)$ [kg/m$^3$]', fontsize=11)
+ax4.set_ylabel(r'peak $\rho(t)$ [kg km$^{-3}$]', fontsize=11)
 ax4.yaxis.tick_right()
 ax4.yaxis.set_label_position("right")
 ax4.legend(frameon=False)
@@ -257,7 +280,7 @@ ax3.set_xlim(-0.5, np.max(th.m))
 ax4.set_xlim(-0.5, np.max(th.m))
 
 plt.tight_layout()
-plt.savefig('plume.png', dpi=300)
+plt.savefig('figs/plume.png', dpi=300)
 #plt.show()
 
 

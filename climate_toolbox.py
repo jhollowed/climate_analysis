@@ -73,7 +73,8 @@ def ptoz(p):
     try: _ = p.m
     except: p = p*units.hPa
     P0 = 1000*units.hPa
-    T0 = 250*units.K
+    T0 = 250*units.K 
+    #T0 = 185.5*units.K # temporary to force 25km to match 10hPa for plume
     H = const.Rd*T0/const.g 
     return H * np.log(P0/p)
 
