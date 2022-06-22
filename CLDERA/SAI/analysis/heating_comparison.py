@@ -5,7 +5,7 @@ import pdb
 import climate_toolbox as ctb
 
 def heating_comp(dat1f, dat2f):
-    
+   
     dat1 = xr.open_dataset(dat1f)
     dat2 = xr.open_dataset(dat2f)
     #datdiff = dat1['T'] - dat2['T']
@@ -41,12 +41,18 @@ def heating_comp(dat1f, dat2f):
         Tdiff = T1-T2
         t = ctb.time2day(T1['time'].values)
         ax.plot(t, -Tdiff, label='{} hPa'.format(p), color=colors[i])
-        ax.set_xlim([0, 30])
+        #ax.set_xlim([0, 30])
         ax.set_xlabel('time [days]', fontsize=14)
         ax.set_ylabel('Temperature difference [K]', fontsize=14)
+    
+    T1 = dat1['T'].mean('lon') 
+    T2 = dat2['T'].mean('lon')
+    Tdiff = T1-T2
+    Tdiff.to_netcdf('Tdiff.nc')
+    
     ax.legend()
-    plt.savefig('./figs/stratHeating.png', dpi=150)
-    #plt.show()
+    #plt.savefig('./figs/stratHeating.png', dpi=150)
+    plt.show()
 
     
 
@@ -56,7 +62,7 @@ def heating_comp(dat1f, dat2f):
 if __name__ == '__main__':
 
     datout = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/E3SM_ne16_L72_FIDEAL_SAI'
-    dat1 = '{}_90days_stratHeating/run/'\
+    dat1 = '{}_90days_stratHeating_BKP/run/'\
            'E3SM_ne16_L72_FIDEAL_SAI_90days_stratHeating.eam.h0.0001-01-01-00000.regrid.2x2.nc'\
            .format(datout)
     dat2 = '{}/run/E3SM_ne16_L72_FIDEAL_SAI.eam.h0.0001-01-01-00000.regrid.2x2.nc'.format(datout)
