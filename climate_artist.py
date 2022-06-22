@@ -103,7 +103,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         Defaults to True.
     slice_at : string
         String to print in a text box in a plot corner, giving the position of the slice 
-        (or stating a mean, etc). Defaults to 'SLICE AT' as a placeholder. Set to an empty
+        (or stating a mean, etc). Defaults to 'SLICE AT ?' as a placeholder. Set to an empty
         string '' to disable the text box.
     '''
     

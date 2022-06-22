@@ -105,6 +105,7 @@ Ac_ash = (M_ash/dnc) * HVint
 # ----- exp source at t=0
 f = H * V
 fe_SO2 = Ae_SO2 * f
+fc_SO2 = Ac_SO2 * f
 
 # ========== peak concentration over time==========
 fpe_SO2 = Ae_SO2 * Te         # fpe = forcing peak, exponential in t
@@ -165,14 +166,18 @@ H = const.Rd*T0/const.g
 p = P0 * np.exp(-Z/H)
 pmid = P0 * np.exp(-z[zmid]/H)
 
-cmap = plt.cm.OrRd
+#plotvar = fe_SO2
 #levels = [4, 3, 2, 2.5, 1, 0.5]
-levels = [0, 0.5, 1, 2, 3, 4]
-poww = math.ceil(-np.log10(np.max(fe_SO2[:,latmid,:]).m))
+#levels = [0, 0.5, 1, 2, 3, 4]
+plotvar = fc_SO2
+levels = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]
+
+cmap = plt.cm.OrRd
+poww = math.ceil(-np.log10(np.max(plotvar[:,latmid,:]).m))
 vmin=-10**-poww
 
-ax1.contour(LON[:,:,zmid]*r2d, LAT[:,:,zmid]*r2d, fe_SO2[:,:,zmid]*10**poww, levels=levels, transform=data_crs, cmap=cmap, vmin=vmin)
-cs = ax2.contour(rr[:,latmid,:], p[:,latmid,:], fe_SO2[:,latmid,:]*10**poww, levels=levels, cmap=cmap, vmin=vmin)
+ax1.contour(LON[:,:,zmid]*r2d, LAT[:,:,zmid]*r2d, plotvar[:,:,zmid]*10**poww, levels=levels, transform=data_crs, cmap=cmap, vmin=vmin)
+cs = ax2.contour(rr[:,latmid,:], p[:,latmid,:], plotvar[:,latmid,:]*10**poww, levels=levels, cmap=cmap, vmin=vmin)
 
 degd = 4
 extent = [lon0*r2d-degd, lon0*r2d+degd, lat0*r2d-degd, lat0*r2d+degd]
@@ -200,7 +205,7 @@ ax2.set_title(r'$d\rho/dt \times 10^{{{pp}}}$ ($t$=0)'.format(pp=poww))
 
 ax22 = ax2.twinx()
 ax22.set_ylabel(r'Z [km]')
-ax22.contour(rr[:,latmid,:], Z[:,latmid,:].to(u.km), fe_SO2[:,latmid,:], levels=15, colors='k', alpha=0)
+ax22.contour(rr[:,latmid,:], Z[:,latmid,:].to(u.km), plotvar[:,latmid,:], levels=15, colors='k', alpha=0)
 #ax22.set_yscale('log')
 #ax22.invert_yaxis()
 #ax2.yaxis.set_major_formatter(ScalarFormatter())
@@ -229,10 +234,12 @@ ax4.plot(th.m, rho_peak_cSO2, '--r')
 ax4.plot(th.m, rho_peak_eash, '-c', label='Ash')
 ax4.plot(th.m, rho_peak_cash, '--c')
 
-ax4.plot(th.m, rho_peak_eSO2_num, '-k', lw=0.6, label='numerical')
-ax4.plot(th.m, rho_peak_cSO2_num, '-k', lw=0.6)
-ax4.plot(th.m, rho_peak_eash_num, '-k', lw=0.6)
-ax4.plot(th.m, rho_peak_cash_num, '-k', lw=0.6)
+plotNumericalSol = False
+if(plotNumericalSol):
+    ax4.plot(th.m, rho_peak_eSO2_num, '-k', lw=0.6, label='numerical')
+    ax4.plot(th.m, rho_peak_cSO2_num, '-k', lw=0.6)
+    ax4.plot(th.m, rho_peak_eash_num, '-k', lw=0.6)
+    ax4.plot(th.m, rho_peak_cash_num, '-k', lw=0.6)
 
 ax4.set_xlabel(r'time [hr]')
 ax4.set_ylabel(r'peak $\rho(t)$ [kg/m$^3$]', fontsize=11)
@@ -244,32 +251,14 @@ yy = [yy[0], yy[1]]
 ax4.plot(tftf, yy, ':k', lw=0.8)
 ax4.set_ylim([0, yy[1]])
 
-#ticks = ax3.get_xticks()
-#ticks = np.append(ticks, tfh.m)
-#ticklabs = ticks.tolist()
-#ticklabs = ['%.0f'%lab for lab in ticklabs]
-#ticklabs[-1] = '$t_f$'
-#ax4.set_xticks(ticks)
-#ax4.set_xticklabels(ticklabs)
-#ax3.set_xticks(ticks)
-#st()
-st()
 clau.insert_labelled_tick(ax4, 'x', tfh.m, '$t_f$')
-
 clau.format_ticks([ax2, ax3, ax4])
-#for ax in [ax2, ax3, ax4]:
-#    ax.xaxis.set_ticks_position('both')
-#    ax.xaxis.set_tick_params(direction='in', which='both')
-#    if(ax != ax2):
-#        ax.yaxis.set_ticks_position('both')
-#    ax.yaxis.set_tick_params(direction='in', which='both')
-#ax22.yaxis.set_tick_params(direction='in', which='both')
 ax3.set_xlim(-0.5, np.max(th.m))
 ax4.set_xlim(-0.5, np.max(th.m))
 
 plt.tight_layout()
-#plt.savefig('plume.png', dpi=300)
-plt.show()
+plt.savefig('plume.png', dpi=300)
+#plt.show()
 
 
 

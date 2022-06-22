@@ -123,9 +123,9 @@ cbar.ax.tick_params(labelsize=9)
 #cax.xaxis.set_ticks_position('top')
 #cax.set_xlim([0, np.max(kr)])
 
-ax2.plot([-90, 90], [3, 3], '--r', label='Williamson+97 model top')
-ax2.plot([-90, 90], [1, 1], '--b', label='stratopause')
-ax2.legend(loc='upper center', bbox_to_anchor=(0.5,1.15), ncol=1, frameon=False, fontsize=10)
+#ax2.plot([-90, 90], [3, 3], '--r', label='Williamson+97 model top')
+#ax2.plot([-90, 90], [1, 1], '--b', label='stratopause')
+#ax2.legend(loc='upper center', bbox_to_anchor=(0.5,1.15), ncol=1, frameon=False, fontsize=10)
 
 
 
@@ -138,6 +138,6 @@ ax2.clabel(CS, fmt='%.0f', manual=False, levels = [200, 220, 170])
 
 
 plt.tight_layout()
-plt.show()
-#plt.savefig('WHS.png', dpi=300)
+#plt.show()
+plt.savefig('WHS_new.png', dpi=300)
 

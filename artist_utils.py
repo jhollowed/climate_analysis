@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import cartopy.feature as cfeature
 import matplotlib.ticker as mticker
 from matplotlib.colors import ListedColormap
+from matplotlib.offsetbox import AnchoredText
 
 _DEGREE_SYMBOL = u'\u00B0'
 
@@ -112,6 +113,34 @@ def insert_labelled_tick(ax, axis, value, label=None):
 
 
 # -------------------------------------------------------------
+
+
+def add_annotation_box(ax, text, loc='lower right', alpha=1, fs=10):
+    '''
+    Inserts a white text box in the corner of an axis
+
+    Parameters
+    ----------
+    ax : pyplot axis object
+        The Axis in which to insert the annotation box
+    text : str
+        The text to insert in the annotation box
+    loc : str, optional
+        Location of the box. Must be a valid option for the 'loc' argument 
+        to matplotlib's AnchoredText. Defaults to 'lower right'
+    alpha : float, optional
+        Alpha of the annotation box. Defaults to 1
+    fs : float, optional
+        Fontsize of the text in the annotation box. Defaults to 10
+    '''
+    text_box = AnchoredText(text, frameon=True, loc=loc, pad=0.5, prop=dict(fontsize=fs))
+    text_box.set_zorder(100)
+    plt.setp(text_box.patch, facecolor='white', alpha=alpha)
+    ax.add_artist(text_box)
+
+
+# -------------------------------------------------------------
+
 
 def _lon_west_formatted(longitude, num_format='g'):
     fmt_string = u'{longitude:{num_format}}{degree}W'
