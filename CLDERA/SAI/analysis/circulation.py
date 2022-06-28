@@ -156,7 +156,8 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, savedest=None, inclTra
     fig.suptitle('{}, {}'.format(title, ttitle), fontsize=14)
     plt.tight_layout()
     if(savedest is not None):
-        plt.savefig('{}/{}_t{}.png'.format(savedest, title, tsnap), dpi=150)
+        fig.savefig('{}/{}_t{}_U.png'.format(savedest, title, tsnap), dpi=150)
+        figT.savefig('{}/{}_t{}_T.png'.format(savedest, title, tsnap), dpi=150)
     else: 
         plt.show()
         
