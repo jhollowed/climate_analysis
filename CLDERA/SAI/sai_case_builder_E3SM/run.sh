@@ -34,4 +34,11 @@
 #SUFFIX=$3
 #CUSTOMNL=$4
 
-./create_FIDEAL_ne16L72_builtin_SAI.sh 1 30
+./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_1year_oldTeq_pthwy1' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_aoa_SEne16_HSW_builtin_SAI_oldTeq_pthwy1
+
+./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_1year_oldTeq_pthwy2' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_aoa_SEne16_HSW_builtin_SAI_oldTeq_pthwy2
+
+./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_1year_oldTeq_pthwy12' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_aoa_SEne16_HSW_builtin_SAI_oldTeq_pthwy12
+
+./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_1year_oldTeq_pthwy123' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_aoa_SEne16_HSW_builtin_SAI_oldTeq_pthwy123
+

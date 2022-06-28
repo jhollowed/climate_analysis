@@ -14,7 +14,7 @@ MACHINE=cori-knl
 COMPILER=intel
 PROJECT=m4014
 COMPSET=FIDEAL
-GRID=ne16_ne16
+GRID=ne16pg2_ne16pg2
 RES=ne16
 
 BUILD_FLAG=$1
@@ -23,11 +23,12 @@ SUFFIX=$3
 CUSTOMNL=$4
 
 # ----- for debug queueing -----
-PECOUNT=768   # half number of cubedsphere elements in ne16
+#PECOUNT=768   # half number of cubedsphere elements in ne16
+PECOUNT=384   # quarter number of cubedsphere elements in ne16
 QUEUE=debug
 WALLCLOCK=00:30:00
 
-MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/E3SM_FIDEAL"      # ------------  important!
+MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/E3SM_myFork_SAI"      # ------------  important!
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
 CONFIGS="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/configs"
@@ -99,7 +100,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # nadv_11 = 1 for passive clock tracer
     cd $CASE
     ./xmlchange DEBUG=FALSE,DOUT_S=FALSE,STOP_OPTION=ndays,STOP_N=$STOP_N
-    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-age_of_air_trcs "
+    #./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-age_of_air_trcs "
     ./xmlchange JOB_WALLCLOCK_TIME=$WALLCLOCK
     ./xmlchange SAVE_TIMING=TRUE
     ./xmlchange JOB_QUEUE=$QUEUE

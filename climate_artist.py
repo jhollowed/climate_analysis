@@ -7,13 +7,17 @@ import numpy as np
 import xarray as xr
 import artist_utils as aut
 import cartopy.crs as ccrs
+import artist_utils as aut
 import climate_toolbox as ctb
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from cartopy.util import add_cyclic_point
 from matplotlib.offsetbox import AnchoredText
 
+# ---- global parameters
 cmap = plt.cm.rainbow
+label_fs = 14
+tick_fs = 12
 
 
 # ==========================================================================================
@@ -114,7 +118,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
     default_args = {
                     'contour'  :  {'levels':12, 'colors':'k', 'extend':'both'},
                     'contourf' :  {'levels':12, 'cmap':'rainbow','extend':'both'},
-                    'clabel'   :  {'inline':True, 'fmt':'%.2f', 'fontsize':9},
+                    'clabel'   :  {'inline':True, 'fmt':'%.0f', 'fontsize':tick_fs},
                     'colorbar' :  {'ax':ax, 'location':'right', 'orientation':'vertical',
                                    'extend':'both', 'extendrect':False, 'format':'%.0f'},
                     'gridlines':  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
@@ -238,14 +242,20 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
                                           type(ax), type(fig), d['colorFormatter']))
             cf[i] = colorFormatter(plots[i], **d['colorArgs'])
     
+    if(d['colorFormatter'] == 'colorbar'):
+        cf[i].ax.tick_params(labelsize=tick_fs)
+        cf[i].ax.xaxis.get_label().set_fontsize(label_fs)
+        cf[i].ax.yaxis.get_label().set_fontsize(label_fs)
+    
     # -------- format figure -------- 
     if(inverty): ax.invert_yaxis()
     if(logy): ax.set_yscale('log')
     if(xlim is not None): ax.set_xlim(xlim)
     if(ylim is not None): ax.set_ylim(ylim)
-    if(xlabel != ''): ax.set_xlabel(xlabel, fontsize=12)
-    if(ylabel != ''): ax.set_ylabel(ylabel, fontsize=12)
-    ax.set_title(title, fontsize=14)
+    if(xlabel != ''): ax.set_xlabel(xlabel, fontsize=label_fs)
+    if(ylabel != ''): ax.set_ylabel(ylabel, fontsize=label_fs)
+    ax.set_title(title, fontsize=label_fs)
+    ax.tick_params(axis='both', which='major', labelsize=tick_fs)
     
     # x, y tick labels formats assuming pressure vs. degrees
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: \
@@ -261,12 +271,9 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         plotterz = getattr(axz, d['plotType'])
         plotterz(X, ctb.ptoz(Y).m, d['var'], **d['plotArgs'], alpha=0)  # pressure must be in hPa
         axz.set_ylim(ylimz)
-        axz.set_ylabel(r'Z [km]')
-    if(slice_at != ''): 
-        text_box = AnchoredText(slice_at, frameon=True, loc=slice_at_loc, pad=0.5)
-        text_box.set_zorder(100)
-        plt.setp(text_box.patch, facecolor='white', alpha=1)
-        ax.add_artist(text_box)
+        axz.set_ylabel(r'Z [km]', fontsize=label_fs)
+    if(slice_at != ''):
+        aut.add_annotation_box(ax, slice_at, loc=slice_at_loc, fs=tick_fs)
     return cf
     
     
@@ -366,7 +373,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     default_args = {
             'contour'   :  {'levels':12, 'colors':'k', 'extend':'both', 'transform':transform},
             'contourf'  :  {'levels':12, 'cmap':'rainbow', 'extend':'both', 'transform':transform},
-            'clabel'    :  {'inline':True, 'fmt':'%.2f', 'fontsize':9},
+            'clabel'    :  {'inline':True, 'fmt':'%.0f', 'fontsize':tick_fs},
             'colorbar'  :  {'ax':ax, 'orientation':'vertical', 'extend':'both', 
                             'extendrect':False, 'format':'%.0f'},
             'gridlines' :  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
@@ -477,11 +484,16 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
                                           type(ax), type(fig), d['colorFormatter'])) 
             cf[i] = colorFormatter(plots[i], **d['colorArgs'])
     
+    if(d['colorFormatter'] == 'colorbar'):
+        cf[i].ax.tick_params(labelsize=tick_fs)
+        cf[i].ax.xaxis.get_label().set_fontsize(label_fs)
+        cf[i].ax.yaxis.get_label().set_fontsize(label_fs)
+    
     # -------- format figure --------
     if(xlim is not None): ax.set_xlim(xlim)
     if(ylim is not None): ax.set_ylim(ylim) 
-    if(xlabel != ''): ax.set_xlabel(xlabel, fontsize=12)
-    if(ylabel != ''): ax.set_ylabel(ylabel, fontsize=12)
+    if(xlabel != ''): ax.set_xlabel(xlabel, fontsize=label_fs)
+    if(ylabel != ''): ax.set_ylabel(ylabel, fontsize=label_fs)
     if(gridlines):
        gl = ax.gridlines(**gridlinesArgs)
        gl.xlabels_top = False
@@ -489,11 +501,9 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     if(coastlines):
         ax.coastlines(**coastlinesArgs)
     if(slice_at != ''): 
-        text_box = AnchoredText(slice_at, frameon=True, loc='lower left', pad=0.5)
-        text_box.set_zorder(100)
-        plt.setp(text_box.patch, facecolor='white', alpha=1)
-        ax.add_artist(text_box)
-    ax.set_xlabel(xlabel, fontsize=12)
-    ax.set_ylabel(ylabel, fontsize=12)
-    ax.set_title(title, fontsize=14)
+        aut.add_annotation_box(ax, slice_at, loc='lower left', fs=tick_fs)
+    ax.set_xlabel(xlabel, fontsize=label_fs)
+    ax.set_ylabel(ylabel, fontsize=label_fs)
+    ax.set_title(title, fontsize=label_fs)
+    ax.tick_params(axis='both', which='major', labelsize=tick_fs)
     return cf
