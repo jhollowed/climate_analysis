@@ -1,0 +1,19 @@
+empty_htapes    = .TRUE.
+NDENS           = 2
+
+! hist file 1 is annual avg, 2 is monthly avg
+avgflag_pertape = 'A' 
+
+fincl1          = 'HS_HEAT'
+
+! daily
+NHTFRQ          = -24
+
+! allow 60 samples (2mo)
+MFILT           = 60                  
+
+! select HSW idealized forcing (nl added by Ben)
+ideal_phys_option = 'held-suarez-williamson'
+
+! turn off any random perturbations (not needed for HS in SE)
+pertlim = 0

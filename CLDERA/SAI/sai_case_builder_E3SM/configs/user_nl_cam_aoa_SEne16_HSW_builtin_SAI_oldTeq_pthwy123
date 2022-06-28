@@ -1,0 +1,40 @@
+empty_htapes     = .TRUE.              ! output only the varibales listed below
+avgflag_pertape  = 'A','I','A'         ! hist file 1 is avg, 2 is instant, 3 is avg
+
+! output a few quantities for frequently on their instantaneous values for SSW quantification
+fincl1           = 'U','V','T','Z3','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS'
+fincl2           = 'U','V','T','Z3','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS'
+fincl3           = 'U','V','T','Z3','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS'
+
+NHTFRQ           = -6,-6,-48       ! output frequency every 6 hours, 6 hours, 2 days
+MFILT            = 360,360,360     ! allow 360 time samples per hist file (90 days)
+NDENS            = 2,2             ! single-precision for each hist file
+
+inithist='ENDOFRUN'
+
+! ues 6-year HSW spinup
+NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/E3SM_ne16_L72_FIDEAL_30year/run/E3SM_ne16_L72_FIDEAL_30year.eam.i.0006-01-01-00000.nc"
+
+! don't let analytic ICs overwrite input from NCDATA
+ideal_phys_analytic_ic = .false.
+
+! select HSW idealized forcing (nl added by Ben)
+ideal_phys_option = 'held-suarez-williamson'
+
+! turn off any random perturbations (not needed for HS in SE)
+pertlim = 0
+
+! activate built-in analytic init of cldera sai tracers
+cldera_sai_read_from_ic_file = .false.
+
+! toggle pathways
+cldera_sai_formSulfate = .true.
+cldera_sai_stratHeating = .true.
+cldera_sai_surfCooling = .true.
+
+! experimenting with new heating normalizations
+cldera_sai_qstar = 2e-7
+cldera_sai_taustar = 2e6
+
+
+
