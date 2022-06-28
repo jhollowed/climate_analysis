@@ -25,7 +25,8 @@ tick_fs = 12
 
 def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True, center_x=None,
                    xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, gridlines=False, 
-                   gridlinesArgs=None, cyclic=True, slice_at=None, slice_at_loc='lower left'):
+                   gridlinesArgs=None, cyclic=True, slice_at=None, slice_at_loc='lower left', 
+                   slice_at_alph=1):
     '''
     Plot the 2D vertical slice of a variable
 
@@ -273,7 +274,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         axz.set_ylim(ylimz)
         axz.set_ylabel(r'Z [km]', fontsize=label_fs)
     if(slice_at != ''):
-        aut.add_annotation_box(ax, slice_at, loc=slice_at_loc, fs=tick_fs)
+        aut.add_annotation_box(ax, slice_at, loc=slice_at_loc, fs=tick_fs, alpha=slice_at_alph)
     return cf
     
     
@@ -283,7 +284,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
 def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),  
                      xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, 
                      gridlines=True, gridlinesArgs=None, coastlines=True, coastlinesArgs=None, 
-                     cyclic=True, slice_at=None):
+                     cyclic=True, slice_at=None, slice_at_loc='lower right', slice_at_alpha=1):
     '''
     Plot the 2D horizontal slice of a variable
 
@@ -501,7 +502,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     if(coastlines):
         ax.coastlines(**coastlinesArgs)
     if(slice_at != ''): 
-        aut.add_annotation_box(ax, slice_at, loc='lower left', fs=tick_fs)
+        aut.add_annotation_box(ax, slice_at, loc=slice_at_loc, fs=tick_fs, alpha=slice_at_alph)
     ax.set_xlabel(xlabel, fontsize=label_fs)
     ax.set_ylabel(ylabel, fontsize=label_fs)
     ax.set_title(title, fontsize=label_fs)

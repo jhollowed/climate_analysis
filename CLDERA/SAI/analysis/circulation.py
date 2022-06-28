@@ -20,7 +20,8 @@ from climate_artist import horizontal_slice as plthor
 # ============================================================
 
 
-def circulation_snapshot(runf, tsnap, title, ttitle=None, savedest=None, inclTracers=True):
+def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True, 
+                         savedest=None, inclTracers=True):
    
     if(isinstance(tsnap, list)):
         ti, tf = tsnap[0], tsnap[1]
@@ -103,7 +104,8 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, savedest=None, inclTra
     cArgs_c = {'fmt':'%d'}
     var_dict = [{'var':U, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
     var_dict_c = [{'var':U, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
-    cf = pltvert(lat, lev, var_dict, ax=axu, plot_zscale=True, slice_at='zonal mean', xlabel='')
+    cf = pltvert(lat, lev, var_dict, ax=axu, plot_zscale=True,
+                 slice_at='zonal mean at year 6', slice_at_alph=0.75)
     pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False, inverty=False, slice_at='', xlabel='')
     cf[0].set_ticks(ulev)
     
@@ -113,7 +115,8 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, savedest=None, inclTra
     cArgs_c = {'fmt':'%d'}
     var_dict = [{'var':T, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
     var_dict_c = [{'var':T, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
-    cf = pltvert(lat, lev, var_dict, ax=axT, plot_zscale=True, slice_at='zonal mean', xlabel='')
+    cf = pltvert(lat, lev, var_dict, ax=axT, plot_zscale=True, 
+                 slice_at='zonal mean at year 6', slice_at_alph=0.75)
     pltvert(lat, lev, var_dict_c, ax=axT, plot_zscale=False, inverty=False, slice_at='', xlabel='')
     cf[0].set_ticks(Tlev)
 
@@ -138,7 +141,7 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, savedest=None, inclTra
         cArgs_c = {'fmt':'%.0f'}
         var_dict = [{'var':V, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
         var_dict_c = [{'var':V, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
-        pltvert(lat, lev, var_dict, ax=axv, plot_zscale=True, slice_at='zonal mean', xlabel='')
+        pltvert(lat, lev, var_dict, ax=axv, plot_zscale=True, slice_at='zonal mean at year 6', xlabel='')
         pltvert(lat, lev, var_dict_c, ax=axv, plot_zscale=False, inverty=False, slice_at='', xlabel='')
         axv.set_ylabel('p  [hPa]')
         axv.set_xlabel('lat  [deg]')
@@ -148,13 +151,16 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, savedest=None, inclTra
         cArgs = {'orientation':'horizontal', 'location':'top', 'label':'OM [Pa/s]'}
         var_dict = [{'var':OM, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
         var_dict_c = [{'var':OM, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorFormatter':None}]    
-        pltvert(lat, lev, var_dict, ax=axom, plot_zscale=True, slice_at='zonal mean', xlabel='')
+        pltvert(lat, lev, var_dict, ax=axom, plot_zscale=True, slice_at='zonal mean at year 6', xlabel='')
         pltvert(lat, lev, var_dict_c, ax=axom, plot_zscale=False, inverty=False, slice_at='', xlabel='')
         axom.set_ylabel('p  [hPa]')
         axom.set_xlabel('lat  [deg]')
 
-    #fig.suptitle('{}, {}'.format(title, ttitle), fontsize=14)
-    plt.tight_layout()
+    if(maketitle):
+        fig.suptitle('{}, {}'.format(title, ttitle), fontsize=14)
+        figT.suptitle('{}, {}'.format(title, ttitle), fontsize=14)
+    fig.tight_layout()
+    figT.tight_layout()
     if(savedest is not None):
         fig.savefig('{}/{}_t{}_U.png'.format(savedest, title, tsnap), dpi=150)
         figT.savefig('{}/{}_t{}_T.png'.format(savedest, title, tsnap), dpi=150)
@@ -204,6 +210,6 @@ if(__name__ == '__main__'):
         initfile = whs_improved_initfiles[i]
         year = int(initfile.split('-')[0].split('.')[-1])
         if(year != 5): continue
-        circulation_snapshot(initfile, 0, 'SE ne16L72, EAM HSW', 
-                             ttitle='year {}'.format(year), savedest=dest, inclTracers=False)
+        circulation_snapshot(initfile, 0, 'SE_ne16pg2_L72_EAM_HSW_newTeq', maketitle=False, 
+                             ttitle='year{}'.format(year), savedest=dest, inclTracers=False)
     
