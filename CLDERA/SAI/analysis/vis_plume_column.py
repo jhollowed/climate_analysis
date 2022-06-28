@@ -54,7 +54,7 @@ f = lambda z: (1/(np.sqrt(2*np.pi) * sigma)) * np.exp(-(z - mu)**2/(2*sigma**2))
 #pdb.set_trace()v
 
 
-def compute_tracer_evolution(nlev = 100, zk = None, dt_inject = None, dt_decay = None, tmax = 365*5*u.day, timestep_correction=False, analytic_only=False):
+def compute_tracer_evolution(nlev = 100, zk = None, dt_inject = None, dt_decay = None, tmax = 365*5*u.day, timestep_correction=False, analytic_only=False, z0=None, zT=None):
     '''
     Performs analytic and numerical solutions to SAI tracer tendency equations
 
@@ -79,10 +79,17 @@ def compute_tracer_evolution(nlev = 100, zk = None, dt_inject = None, dt_decay =
         True, the return for the numerical result is None
     '''
     # ---------- vertical distribution ----------
+    if(z0 is None): z0 = 12 * u.km
+    if(zT is None): zT = 35 * u.km
     if(zk is None):
-        zk = (np.linspace(12, 35, nlev) * u.km).to(u.m)
+        if(nlev == 'e3sm'):
+           zk = np.array([12066.939, 12551.622, 13032.191, 13509.571, 13984.683, 14458.534, 14931.965, 15405.396, 15879.088, 16353.361, 
+                          16828.559, 17318.906, 17882.68, 18564.715, 19366.602, 20290.275, 21337.922, 22513.977, 23836.834, 25323.637, 
+                          26980.406, 28813.516, 30832.33, 33047.85]) * u.m
+        else:
+            zk = (np.linspace(z0, zT, nlev)).to(u.m)
     else:
-        zk = zk.to(u.km)
+        zk = np.sort(zk.to(u.m))
     V = f(zk)
     V[np.logical_or(zk < zmin, zk > zmax)] = 0 * V[0].u
     sVk = np.sum(V)
@@ -189,14 +196,12 @@ def compute_tracer_evolution(nlev = 100, zk = None, dt_inject = None, dt_decay =
  
 
 
-
-
 # --------- select plots to render 
 main_figure = False
-z_figure = False
+z_figure = True
 t_figure = False
 eva_figure = False
-heating_figure = True
+heating_figure = False
 
 # ----- global plotting properties
 label_fs =14
@@ -209,9 +214,12 @@ if(main_figure or eva_figure):
     m_analytic, m_numerical, zk, V, t = compute_tracer_evolution(100)
 if(z_figure):
     print('----- solving for z figure')
-    m_analytic_50, _, zk_50, V_50, t = compute_tracer_evolution(50, analytic_only=True)
-    m_analytic_10, _, zk_10, V_10, _ = compute_tracer_evolution(10, analytic_only=True)
-    m_analytic_5, _, zk_5, V_5, _ = compute_tracer_evolution(5, analytic_only=True)
+    m_analytic_100, _, zk_100, V_100, t = compute_tracer_evolution(100, analytic_only=True)
+    m_analytic_8, _, zk_8, V_8, _ = compute_tracer_evolution(8, analytic_only=True)
+    m_analytic_e3sm, _, zk_e3sm, V_e3sm, _ = compute_tracer_evolution('e3sm', analytic_only=True)
+    #zk = xr.open_dataset('data/E3SM_Z3_HSyr6_horzAvg.nc')['Z3']
+    #zk = sorted(zk.values) * u(zk.units)
+    #m_analytic_e3sm, _, zk_e3sm, V_e3sm, _ = compute_tracer_evolution(np.sum(np.logical_and(zk>12*u.km, zk<35*u.km)), analytic_only=True)
 if(t_figure):
     print('----- solving for t figure')
     # below we save the result to file so that we need not recompute it for plotting changes (takes a while)
@@ -370,15 +378,15 @@ if(z_figure):
     print('----- plotting z figure')
     
     # ---------- vis ----------
-    fig = plt.figure(figsize=(8,5))
+    fig = plt.figure(figsize=(9,5.7))
     gs = fig.add_gridspec(nrows=1, ncols=2)
     axV = fig.add_subplot(gs[0,0])
     axM = fig.add_subplot(gs[0,1:])
 
     # ---- get total masses
-    m_tot_50 = np.sum(m_analytic_50.to('Mt'), axis=2)
-    m_tot_10 = np.sum(m_analytic_10.to('Mt'), axis=2)
-    m_tot_5 = np.sum(m_analytic_5.to('Mt'), axis=2)
+    m_tot_100 = np.sum(m_analytic_100.to('Mt'), axis=2)
+    m_tot_8 = np.sum(m_analytic_8.to('Mt'), axis=2)
+    m_tot_e3sm = np.sum(m_analytic_e3sm.to('Mt'), axis=2)
 
     # ---- global ax settings
     for ax in [axV, axM]:
@@ -387,27 +395,29 @@ if(z_figure):
         claut.format_ticks(ax)
 
     # ----- plot V(z) profiles
-    axV.plot(V_50.to(u.km**(-1)), zk_50.to(u.km), '-ok', lw=2, label='nlev=50')
-    axV.plot(V_10.to(u.km**(-1)), zk_10.to(u.km), '-or', lw=2, label='nlev=10')
-    axV.plot(V_5.to(u.km**(-1)), zk_5.to(u.km), '-om', lw=2, label='nlev=5')
+    axV.plot(V_100.to(u.km**(-1)), zk_100.to(u.km), '-k', lw=2, label='nlev=100', alpha=1)
+    axV.plot(V_e3sm.to(u.km**(-1)), zk_e3sm.to(u.km), '-or', lw=1.6, label='nlev=24 (E3SMv2)')
+    axV.plot(V_8.to(u.km**(-1)), zk_8.to(u.km), '-sb', lw=1.6, label='nlev=8')
     axV.legend(fancybox=False, fontsize=tick_fs, loc='upper right')
     axV.set_xlabel('$V(z)$ [km$^{-1}$]', fontsize=label_fs)
     axV.set_ylabel('$z$ [km]', fontsize=label_fs)
     axV.set_ylim([12, 30])
 
     # ----- line plots of total mass
-    axM.plot(t.to(u.month), (m_tot_10[0]-m_tot_50[0]) * 1e14, '-r', lw=2, label='M(nlev=10) - M(nlev=50)')
-    axM.plot(t.to(u.month), (m_tot_5[0]-m_tot_50[0]) * 1e14, '-m', lw=2, label='M(nlev=5) - M(nlev=50)')
-
+    axM.plot(t.to(u.month), (m_tot_8[0]-m_tot_100[0]) * 1e14, '-b', lw=2, 
+                            label='M(nlev=8) $-$ M(nlev=100)')
+    axM.plot(t.to(u.month), (m_tot_e3sm[0]-m_tot_100[0]) * 1e14, '-r', lw=2, 
+                             label='M(nlev=24) $-$ M(nlev=100)')
+    
     axM.set_xlabel('$t$ [months]', fontsize=label_fs)
     axM.set_ylabel('total SO$_2$ mass difference [$10^{-14}$ Mt]', fontsize=label_fs)
     axM.legend(fancybox=False, fontsize=tick_fs, loc='upper right')
     axM.set_xlim([-0.1, 4])
     axM.yaxis.set_label_position("right")
     axM.yaxis.tick_right()
-    ticklabs = np.array(['{:.1f}'.format(t) for t in axM.get_yticks()])
-    ticklabs[axM.get_yticks() % 0.5 != 0] = ''
-    axM.set_yticklabels(ticklabs)
+    #ticklabs = np.array(['{:.1f}'.format(t) for t in axM.get_yticks()])
+    #ticklabs[axM.get_yticks() % 0.5 != 0] = ''
+    #axM.set_yticklabels(ticklabs)
 
     plt.tight_layout()
     plt.savefig('figs/sai_column_nlev_fig.png', dpi=300)
