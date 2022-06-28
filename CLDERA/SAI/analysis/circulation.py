@@ -153,7 +153,7 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, savedest=None, inclTra
         axom.set_ylabel('p  [hPa]')
         axom.set_xlabel('lat  [deg]')
 
-    fig.suptitle('{}, {}'.format(title, ttitle), fontsize=14)
+    #fig.suptitle('{}, {}'.format(title, ttitle), fontsize=14)
     plt.tight_layout()
     if(savedest is not None):
         fig.savefig('{}/{}_t{}_U.png'.format(savedest, title, tsnap), dpi=150)
