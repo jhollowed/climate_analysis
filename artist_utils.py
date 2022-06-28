@@ -115,7 +115,7 @@ def insert_labelled_tick(ax, axis, value, label=None):
 # -------------------------------------------------------------
 
 
-def add_annotation_box(ax, text, loc='lower right', alpha=1, fs=10):
+def add_annotation_box(ax, text, loc='lower right', alpha=1, fs=10, bbox_to_anchor=None):
     '''
     Inserts a white text box in the corner of an axis
 
@@ -133,7 +133,11 @@ def add_annotation_box(ax, text, loc='lower right', alpha=1, fs=10):
     fs : float, optional
         Fontsize of the text in the annotation box. Defaults to 10
     '''
-    text_box = AnchoredText(text, frameon=True, loc=loc, pad=0.5, prop=dict(fontsize=fs))
+    if(bbox_to_anchor is None):
+        text_box = AnchoredText(text, frameon=True, loc=loc, pad=0.5, prop=dict(fontsize=fs))
+    else:
+        text_box = AnchoredText(text, frameon=True, loc=loc, pad=0.5, prop=dict(fontsize=fs), 
+                                bbox_to_anchor=bbox_to_anchor, bbox_transform=ax.transAxes)
     text_box.set_zorder(100)
     plt.setp(text_box.patch, facecolor='white', alpha=alpha)
     ax.add_artist(text_box)

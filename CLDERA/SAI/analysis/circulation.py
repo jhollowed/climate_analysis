@@ -12,6 +12,7 @@ import matplotlib as mpl
 import cartopy.crs as ccrs
 import artist_utils as claut
 import climate_toolbox as ctb
+from matplotlib import colors
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 from climate_artist import vertical_slice as pltvert
@@ -75,9 +76,12 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
 
     # ---------- plot ----------
     data_crs = ccrs.PlateCarree()
-    Tlev = np.linspace(150, 300, 11)
-    uleva = np.arange(0, np.max(U), 15)
-    ulev = np.hstack([-uleva[1:][::-1], uleva])
+    Tlev = np.linspace(180, 300, 9)
+    
+    #uleva = np.arange(0, np.max(U), 15)
+    #ulev = np.hstack([-uleva[1:][::-1], uleva])
+    ulev = np.hstack([np.linspace(-30, 0, 6), np.linspace(15, 75, 5)])
+    divnorm=colors.TwoSlopeNorm(vcenter=0.)
     
     #cmap = claut.ncar_rgb_to_cmap(gmt)
     cmap_u = mpl.cm.rainbow
@@ -98,26 +102,26 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
 
     # ----- vertical
     
-    pltargs = {'levels':ulev, 'cmap':cmap_u, 'zorder':0}
-    pltargs_c = {'levels':ulev, 'colors':'k', 'linewidths':0.6, 'zorder':1}
-    cArgs = {'orientation':'horizontal', 'location':'top', 'label':'U [m/s]'}
+    pltargs = {'levels':ulev, 'cmap':cmap_u, 'zorder':0, 'norm':divnorm}
+    pltargs_c = {'levels':ulev, 'colors':'k', 'linewidths':0.6, 'zorder':1, 'norm':divnorm}
+    cArgs = {'orientation':'horizontal', 'location':'top', 'label':'U [m/s]', 'aspect':30}
     cArgs_c = {'fmt':'%d'}
     var_dict = [{'var':U, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
     var_dict_c = [{'var':U, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
     cf = pltvert(lat, lev, var_dict, ax=axu, plot_zscale=True,
-                 slice_at='zonal mean at year 6', slice_at_alph=0.75)
-    pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False, inverty=False, slice_at='', xlabel='')
+                 annotation='zonal mean at year 6', annotation_alph=0.85, annotation_loc='lower right')
+    pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False, inverty=False, annotation='', xlabel='')
     cf[0].set_ticks(ulev)
     
     pltargs = {'levels':Tlev, 'cmap':cmap_T, 'zorder':0}
     pltargs_c = {'levels':Tlev, 'colors':'k', 'linewidths':0.6, 'zorder':1}
-    cArgs = {'orientation':'horizontal', 'location':'top', 'label':'T [K]'}
+    cArgs = {'orientation':'horizontal', 'location':'top', 'label':'T [K]', 'aspect':30}
     cArgs_c = {'fmt':'%d'}
     var_dict = [{'var':T, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
     var_dict_c = [{'var':T, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
     cf = pltvert(lat, lev, var_dict, ax=axT, plot_zscale=True, 
-                 slice_at='zonal mean at year 6', slice_at_alph=0.75)
-    pltvert(lat, lev, var_dict_c, ax=axT, plot_zscale=False, inverty=False, slice_at='', xlabel='')
+                 annotation='zonal mean at year 6', annotation_alph=0.85, annotation_loc='lower right')
+    pltvert(lat, lev, var_dict_c, ax=axT, plot_zscale=False, inverty=False, annotation='', xlabel='')
     cf[0].set_ticks(Tlev)
 
     if inclTracers:
@@ -125,7 +129,7 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
         pltargs_c = {'levels':[-7, -5.5], 'colors':'m', 'linewidths':1.6, "linestyles":'-'}
         cargs = {'fmt':'%.0f', 'manual':[(18.8, 201), (14.89, 26.2)]} 
         var_dict_c = [{'var':np.log10(C), 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cargs}]
-        pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False,inverty=False,slice_at='',xlabel='')
+        pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False,inverty=False,annotation='',xlabel='')
         axu.plot([0,0],[100,100],'-m', label='log10(concentration)')
         axu.legend(loc='lower right', fancybox=False, framealpha=1)
 
@@ -134,28 +138,6 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
     axT.set_ylabel('p  [hPa]')
     axT.set_xlabel('latitude')
    
-    if(0): # currentlty disable V, OMEGA plots
-        pltargs = {'levels':vlev, 'cmap':cmap, 'zorder':0}
-        pltargs_c = {'levels':vlev, 'colors':'k', 'linewidths':0.6, 'linestyles':'-', 'zorder':1}
-        cArgs = {'orientation':'horizontal', 'location':'top', 'label':'V [m/s]'}
-        cArgs_c = {'fmt':'%.0f'}
-        var_dict = [{'var':V, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
-        var_dict_c = [{'var':V, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
-        pltvert(lat, lev, var_dict, ax=axv, plot_zscale=True, slice_at='zonal mean at year 6', xlabel='')
-        pltvert(lat, lev, var_dict_c, ax=axv, plot_zscale=False, inverty=False, slice_at='', xlabel='')
-        axv.set_ylabel('p  [hPa]')
-        axv.set_xlabel('lat  [deg]')
-        
-        pltargs = {'levels':levels, 'cmap':cmap, 'zorder':0}
-        pltargs_c = {'levels':levels, 'colors':'k', 'linewidths':0.6, 'linestyles':'-', 'zorder':1}
-        cArgs = {'orientation':'horizontal', 'location':'top', 'label':'OM [Pa/s]'}
-        var_dict = [{'var':OM, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
-        var_dict_c = [{'var':OM, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorFormatter':None}]    
-        pltvert(lat, lev, var_dict, ax=axom, plot_zscale=True, slice_at='zonal mean at year 6', xlabel='')
-        pltvert(lat, lev, var_dict_c, ax=axom, plot_zscale=False, inverty=False, slice_at='', xlabel='')
-        axom.set_ylabel('p  [hPa]')
-        axom.set_xlabel('lat  [deg]')
-
     if(maketitle):
         fig.suptitle('{}, {}'.format(title, ttitle), fontsize=14)
         figT.suptitle('{}, {}'.format(title, ttitle), fontsize=14)
