@@ -198,9 +198,11 @@ if(__name__ == '__main__'):
     whs_improved_initfiles = sorted(glob.glob('/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/'\
                                       'hsw_validate_cases/E3SM_ne16_L72_FIDEAL_10year_spinup_withNewTeq/'\
                                       'run/*eam.i*regrid.2x2.nc'))[::-1]
+    dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/updated_whs_apole'
     for i in range(len(whs_improved_initfiles)):
         initfile = whs_improved_initfiles[i]
         year = int(initfile.split('-')[0].split('.')[-1])
+        if(year != 5): continue
         circulation_snapshot(initfile, 0, 'SE ne16L72, EAM HSW', 
-                             ttitle='year {}'.format(year), savedest=None, inclTracers=False)
+                             ttitle='year {}'.format(year), savedest=dest, inclTracers=False)
     
