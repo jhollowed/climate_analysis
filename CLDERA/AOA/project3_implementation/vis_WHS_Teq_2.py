@@ -138,6 +138,6 @@ ax2.clabel(CS, fmt='%.0f', manual=False, levels = [200, 220, 170])
 
 
 plt.tight_layout()
-#plt.show()
-plt.savefig('WHS_new.png', dpi=300)
+plt.show()
+#plt.savefig('WHS_new.png', dpi=300)
 

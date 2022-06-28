@@ -89,6 +89,7 @@ def compute_tracer_evolution(nlev = 100, zk = None, dt_inject = None, dt_decay =
 
     # ---------- normalization ----------
     A  = [MM[j] / (tf * sVk) for j in range(len(MM))]
+    pdb.set_trace()
 
     # ---------- tendencies ----------
     if(not timestep_correction):
