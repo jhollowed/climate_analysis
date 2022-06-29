@@ -96,7 +96,6 @@ def compute_tracer_evolution(nlev = 100, zk = None, dt_inject = None, dt_decay =
 
     # ---------- normalization ----------
     A  = [MM[j] / (tf * sVk) for j in range(len(MM))]
-    pdb.set_trace()
 
     # ---------- tendencies ----------
     if(not timestep_correction):
@@ -379,7 +378,7 @@ if(z_figure):
     print('----- plotting z figure')
     
     # ---------- vis ----------
-    fig = plt.figure(figsize=(9,5.7))
+    fig = plt.figure(figsize=(7.2,4.5))
     gs = fig.add_gridspec(nrows=1, ncols=2)
     axV = fig.add_subplot(gs[0,0])
     axM = fig.add_subplot(gs[0,1:])
@@ -406,9 +405,9 @@ if(z_figure):
 
     # ----- line plots of total mass
     axM.plot(t.to(u.month), (m_tot_8[0]-m_tot_100[0]) * 1e14, '-b', lw=2, 
-                            label='M(nlev=8) $-$ M(nlev=100)')
+                            label='M(nlev=8) \n$-$ M(nlev=100)')
     axM.plot(t.to(u.month), (m_tot_e3sm[0]-m_tot_100[0]) * 1e14, '-r', lw=2, 
-                             label='M(nlev=24) $-$ M(nlev=100)')
+                             label='M(nlev=24) \n$-$ M(nlev=100)')
     
     axM.set_xlabel('$t$ [months]', fontsize=label_fs)
     axM.set_ylabel('total SO$_2$ mass difference [$10^{-14}$ Mt]', fontsize=label_fs)
