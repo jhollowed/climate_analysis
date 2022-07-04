@@ -76,11 +76,11 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
 
     # ---------- plot ----------
     data_crs = ccrs.PlateCarree()
-    Tlev = np.linspace(180, 300, 9)
+    Tlev = np.linspace(180, 300, 9).astype(int)
     
     #uleva = np.arange(0, np.max(U), 15)
     #ulev = np.hstack([-uleva[1:][::-1], uleva])
-    ulev = np.hstack([np.linspace(-30, 0, 6), np.linspace(15, 75, 5)])
+    ulev = np.hstack([np.linspace(-30, 0, 6), np.linspace(15, 75, 5)]).astype(int)
     divnorm=colors.TwoSlopeNorm(vcenter=0.)
     
     #cmap = claut.ncar_rgb_to_cmap(gmt)
@@ -100,27 +100,31 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
     figT = plt.figure(figsize=(6,5))
     axT = figT.add_subplot(111)
 
+    if(tismean):
+        annot = 'mean from year 5-10'
+    else:
+        annot = 'zonal mean at year 5'
+
     # ----- vertical
-    
     pltargs = {'levels':ulev, 'cmap':cmap_u, 'zorder':0, 'norm':divnorm}
     pltargs_c = {'levels':ulev, 'colors':'k', 'linewidths':0.6, 'zorder':1, 'norm':divnorm}
-    cArgs = {'orientation':'horizontal', 'location':'top', 'label':'U [m/s]', 'aspect':30}
+    cArgs = {'orientation':'horizontal', 'location':'top', 'label':'U [m/s]','aspect':30,'format':'%d'}
     cArgs_c = {'fmt':'%d'}
     var_dict = [{'var':U, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
     var_dict_c = [{'var':U, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
     cf = pltvert(lat, lev, var_dict, ax=axu, plot_zscale=True,
-                 annotation='zonal mean at year 6', annotation_alph=0.85, annotation_loc='lower right')
+                 annotation=annot, annotation_alph=0.85, annotation_loc='lower right')
     pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False, inverty=False, annotation='', xlabel='')
     cf[0].set_ticks(ulev)
     
     pltargs = {'levels':Tlev, 'cmap':cmap_T, 'zorder':0}
     pltargs_c = {'levels':Tlev, 'colors':'k', 'linewidths':0.6, 'zorder':1}
-    cArgs = {'orientation':'horizontal', 'location':'top', 'label':'T [K]', 'aspect':30}
+    cArgs = {'orientation':'horizontal', 'location':'top', 'label':'T [K]', 'aspect':30, 'format':'%d'}
     cArgs_c = {'fmt':'%d'}
     var_dict = [{'var':T, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
     var_dict_c = [{'var':T, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
     cf = pltvert(lat, lev, var_dict, ax=axT, plot_zscale=True, 
-                 annotation='zonal mean at year 6', annotation_alph=0.85, annotation_loc='lower right')
+                 annotation=annot, annotation_alph=0.85, annotation_loc='lower right')
     pltvert(lat, lev, var_dict_c, ax=axT, plot_zscale=False, inverty=False, annotation='', xlabel='')
     cf[0].set_ticks(Tlev)
 
@@ -146,6 +150,7 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
     if(savedest is not None):
         fig.savefig('{}/{}_t{}_U.png'.format(savedest, title, tsnap), dpi=150)
         figT.savefig('{}/{}_t{}_T.png'.format(savedest, title, tsnap), dpi=150)
+        plt.show()
     else: 
         plt.show()
         
@@ -184,14 +189,28 @@ if(__name__ == '__main__'):
     #circulation_snapshot(whs_spinup, [0,60], 'SE ne30L72, CAM HSW', whsdest, inclTracers=False)
 
     # SPINUP FOR IMPROVED WHS TOP RUNS
-    whs_improved_initfiles = sorted(glob.glob('/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/'\
-                                      'hsw_validate_cases/E3SM_ne16_L72_FIDEAL_10year_spinup_withNewTeq/'\
-                                      'run/*eam.i*regrid.2x2.nc'))[::-1]
-    dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/updated_whs_apole'
-    for i in range(len(whs_improved_initfiles)):
-        initfile = whs_improved_initfiles[i]
-        year = int(initfile.split('-')[0].split('.')[-1])
-        if(year != 5): continue
-        circulation_snapshot(initfile, 0, 'SE_ne16pg2_L72_EAM_HSW_newTeq', maketitle=False, 
-                             ttitle='year{}'.format(year), savedest=dest, inclTracers=False)
+    if(1):
+        whs_improved_initfiles = sorted(glob.glob('/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/'\
+                                                  'hsw_validate_cases/E3SM_ne16_L72_FIDEAL_10year_'\
+                                                  'spinup_withNewTeq/run/*eam.i*regrid.2x2.nc'))[::-1]
+        dest='/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/updated_whs_apole'
+        
+        for i in range(len(whs_improved_initfiles)):
+            initfile = whs_improved_initfiles[i]
+            year = int(initfile.split('-')[0].split('.')[-1])
+            if(year != 5): continue
+            circulation_snapshot(initfile, 0, 'SE_ne16pg2_L72_EAM_HSW_newTeq', maketitle=False, 
+                                 ttitle='year{}'.format(year), savedest=dest, inclTracers=False)
     
+    # TIME MEAN OF SPINUP FOR IMPROVED WHS TOP RUNS
+    if(1):
+        avg_file = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/'\
+                   'E3SM_ne16_L72_FIDEAL_10year_spinup_withNewTeq/run/'\
+                   'E3SM_ne16_L72_FIDEAL_10year_spinup_withNewTeq.eam.h0.0001-01-01-00000'\
+                   '.nc.regrid.2x2.nc'
+        dest='/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/updated_whs_apole'
+        
+        circulation_snapshot(avg_file, [int(360*3), int(360*10)], 
+                             'SE_ne16pg2_L72_EAM_HSW_newTeq_avg', maketitle=False, 
+                             ttitle='', inclTracers=False, savedest=dest)
+        

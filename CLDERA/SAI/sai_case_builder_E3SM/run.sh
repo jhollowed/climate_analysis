@@ -28,17 +28,26 @@
 #./create_FIDEAL_ne16L72_SAI.sh 1 1 0 '_90days_checkTimesteps' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_aoa_SEne16_HSW_checkTimeSteps
 
 
+# --- hsw plume runs with builtin SAI QUICK TEST / heating param tuning
+#BUILD_FLAG=$1
+#TOT_RUN_LENGTH=$2
+#SUFFIX=$3
+#CUSTOMNL=$4
+./create_FIDEAL_ne16L72_builtin_SAI.sh 1 61 '_70day_newTeq_pthwy123_TEST' /global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_SEne16_HSW_builtin_SAI_newTeq_pthwy123_QUICKTESTS
+exit 0
+
+
 # --- hsw plume runs with builtin SAI
 #BUILD_FLAG=$1
 #TOT_RUN_LENGTH=$2
 #SUFFIX=$3
 #CUSTOMNL=$4
 
-./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_1year_oldTeq_pthwy1' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_aoa_SEne16_HSW_builtin_SAI_oldTeq_pthwy1
+./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_180day_newTeq_pthwy1' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_SEne16_HSW_builtin_SAI_newTeq_pthwy1
 
-./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_1year_oldTeq_pthwy2' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_aoa_SEne16_HSW_builtin_SAI_oldTeq_pthwy2
+./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_180day_newTeq_pthwy2' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_SEne16_HSW_builtin_SAI_newTeq_pthwy2
 
-./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_1year_oldTeq_pthwy12' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_aoa_SEne16_HSW_builtin_SAI_oldTeq_pthwy12
+./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_180day_newTeq_pthwy12' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_SEne16_HSW_builtin_SAI_newTeq_pthwy12
 
-./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_1year_oldTeq_pthwy123' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_aoa_SEne16_HSW_builtin_SAI_oldTeq_pthwy123
+./create_FIDEAL_ne16L72_builtin_SAI.sh 1 180 '_180day_newTeq_pthwy123' ~/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/configs/user_nl_cam_SEne16_HSW_builtin_SAI_newTeq_pthwy123
 

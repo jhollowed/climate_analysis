@@ -217,6 +217,9 @@ if(z_figure):
     m_analytic_100, _, zk_100, V_100, t = compute_tracer_evolution(100, analytic_only=True)
     m_analytic_8, _, zk_8, V_8, _ = compute_tracer_evolution(8, analytic_only=True)
     m_analytic_e3sm, _, zk_e3sm, V_e3sm, _ = compute_tracer_evolution('e3sm', analytic_only=True)
+    A = 17*1e9*u.kg/(9*3600*u.s * np.sum(V_e3sm))
+    dmdt = A * V_e3sm
+    pdb.set_trace()
     #zk = xr.open_dataset('data/E3SM_Z3_HSyr6_horzAvg.nc')['Z3']
     #zk = sorted(zk.values) * u(zk.units)
     #m_analytic_e3sm, _, zk_e3sm, V_e3sm, _ = compute_tracer_evolution(np.sum(np.logical_and(zk>12*u.km, zk<35*u.km)), analytic_only=True)

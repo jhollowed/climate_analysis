@@ -26,7 +26,7 @@ tick_fs = 12
 def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True, center_x=None,
                    xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, gridlines=False, 
                    gridlinesArgs=None, cyclic=True, annotation=None, annotation_loc='lower left', 
-                   annotation_alph=1, annotation_bbox=None):
+                   annotation_alph=1, annotation_bbox=None, no_yticklabs=False, no_xticklabs=False):
     '''
     Plot the 2D vertical slice of a variable
 
@@ -121,7 +121,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
                     'contourf' :  {'levels':12, 'cmap':'rainbow','extend':'both'},
                     'clabel'   :  {'inline':True, 'fmt':'%.0f', 'fontsize':tick_fs},
                     'colorbar' :  {'ax':ax, 'location':'right', 'orientation':'vertical',
-                                   'extend':'both', 'extendrect':False, 'format':'%.0f'},
+                                   'extend':'both', 'extendrect':False, 'format':'%.2f'},
                     'gridlines':  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
                                    'color':'k', 'lw':0.3, 'alpha':0.5, 'xformatter':aut.LON_DEG_FORMATTER}
                    }
@@ -190,9 +190,12 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
     for i in range(len(var_dict)):
         if(cyclic):
             d['var'], xcyc = add_cyclic_point(d['var'], coord=x, axis=1)
-    x = xcyc
+    if(cyclic):
+        x = xcyc
     
     if(center_x is not None):
+        assert cyclic, 'cannot shift x-axis with arg center_x if cyclic=False'
+
         # recenter on center_x in degrees, assuming periodicity in x
         xcen = x - center_x  # shifted coords only used to find rolling index
         shift_right, shift_left = False, False
@@ -255,6 +258,8 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
     if(ylim is not None): ax.set_ylim(ylim)
     if(xlabel != ''): ax.set_xlabel(xlabel, fontsize=label_fs)
     if(ylabel != ''): ax.set_ylabel(ylabel, fontsize=label_fs)
+    if(no_yticklabs): ax.yaxis.set_ticklabels([])
+    if(no_xticklabs): ax.xaxis.set_ticklabels([])
     ax.set_title(title, fontsize=label_fs)
     ax.tick_params(axis='both', which='major', labelsize=tick_fs)
     
@@ -264,8 +269,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
     ax.xaxis.set_major_formatter(aut.LON_DEG_FORMATTER)
     
     if(gridlines):
-        ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False, 
-                     color='k', lw=0.3, alpha=0.75)
+        ax.grid(color='k', lw=0.3, alpha=0.75)
     if(plot_zscale):
         ylimz = ctb.ptoz(ax.get_ylim()).m/1000
         axz = ax.twinx()
@@ -286,7 +290,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
                      xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, 
                      gridlines=True, gridlinesArgs=None, coastlines=True, coastlinesArgs=None, 
                      cyclic=True, annotation=None, annotation_loc='lower right', 
-                     annotation_alpha=1, annotation_bbox=None):
+                     annotation_alpha=1, annotation_bbox=None, no_yticklabs=False, no_xticklabs=False):
     '''
     Plot the 2D horizontal slice of a variable
 
@@ -378,7 +382,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
             'contourf'  :  {'levels':12, 'cmap':'rainbow', 'extend':'both', 'transform':transform},
             'clabel'    :  {'inline':True, 'fmt':'%.0f', 'fontsize':tick_fs},
             'colorbar'  :  {'ax':ax, 'orientation':'vertical', 'extend':'both', 
-                            'extendrect':False, 'format':'%.0f'},
+                            'extendrect':False, 'format':'%.2f'},
             'gridlines' :  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
                             'color':'k', 'lw':0.5, 'alpha':0.5, 'linestyle':':', 'crs':transform,
                             'xformatter':aut.LON_DEG_FORMATTER},
@@ -497,6 +501,8 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     if(ylim is not None): ax.set_ylim(ylim) 
     if(xlabel != ''): ax.set_xlabel(xlabel, fontsize=label_fs)
     if(ylabel != ''): ax.set_ylabel(ylabel, fontsize=label_fs)
+    if(no_yticklabs): ax.yaxis.set_ticklabels([])
+    if(no_xticklabs): ax.xaxis.set_ticklabels([])
     if(gridlines):
        gl = ax.gridlines(**gridlinesArgs)
        gl.xlabels_top = False
@@ -510,4 +516,5 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     ax.set_ylabel(ylabel, fontsize=label_fs)
     ax.set_title(title, fontsize=label_fs)
     ax.tick_params(axis='both', which='major', labelsize=tick_fs)
+
     return cf
