@@ -20,38 +20,65 @@ from climate_artist import horizontal_slice as plthor
 # ============================================================
 
 
-def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False, tres='hourly'):
+def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False, tres='hourly', 
+                     dhor_file=None, dvert_file=None):
    
     # params
     lat0 = 15.15
     lon0 = 120.35
     lon_center = 0
-    dlat = 0.5
+    dlat = 1
     psel = 10
     minc = -12
     clipc = -15
     maxc = -4
     clevels = 9
+    latsel = slice(lat0-dlat, lat0+dlat)
 
     # read data
+    print('opening dataset...')
     run = xr.open_dataset(runf)
-    c = run['SAI_{}'.format(tracer)]
+    lat = run['lat']
+    lon = run['lon']
+    lev = run['lev']
+    
+    # write/read the horizontal, vertical cross sections from file if args provided
+    compute_dhor=False
+    compute_dvert=False
+    overwrite=False # toggle this manually
+    if(dhor_file is not None and not overwrite):
+        try: 
+            dhor = xr.open_dataset(dhor_file)
+            print('read horizontal slice at {:.2f} hPa...'.format(psel))
+        except FileNotFoundError: compute_dhor=True
+    else: compute_dhor = True
+    if(dvert_file is not None and not overwrite):
+        try: 
+            dvert = xr.open_dataset(dhor_file)
+            print('read vertical slice at {:.2f}-{:.2f} deg...'.format(lat0-dlat, lat0+dlat))
+        except FileNotFoundError: compute_dvert=True
+    else: compute_dvert = True
+    
+    if(compute_dhor):
+        print('taking horizontal slice at {:.2f} hPa...'.format(psel))
+        dhor = run.sel({'lev':psel}, method='nearest')
+        dhor.to_netcdf(dhor_file)
+    if(compute_dvert):
+        print('taking vertical slice at {:.2f}-{:.2f} deg...'.format(lat0-dlat, lat0+dlat))
+        dvert = run.sel({'lat':latsel}).mean('lat')
+        dvert.to_netcdf(dvert_file)
+
+    c = run['{}'.format(tracer)]
+    chor = dhor['{}'.format(tracer)]
+    cvert = dvert['{}'.format(tracer)]
+    pdb.set_trace()
    
-    # for horizontal slices
-    lat = c['lat']
-    lon = c['lon']
-    chor = c.sel({'lev':psel}, method='nearest')           # replace zeros with tiny value, for log
+    # ---- horz slice: replace zeros with tiny value, for log
     mask = np.logical_or(chor == 0, chor < 10**clipc)
     chor = np.ma.masked_array(chor, mask).filled(10**clipc) 
     chor = np.log10(chor)
     
-    # for vertical slice
-    lev = c['lev']
-    latsel = slice(lat0-dlat, lat0+dlat)
-    #cvert = np.log10(c.sel({'lat':latsel}).mean('lat'))
-    #mask = np.logical_or(cvert == -float('inf'), cvert < minc)
-    #cvert = np.ma.masked_array(cvert, mask).filled(minc)
-    cvert = c.sel({'lat':latsel}).mean('lat')              # replace zeros with tiny value, for log
+    # ---- vert slice: replace zeros with tiny value, for log
     mask = np.logical_or(cvert == 0, cvert < 10**clipc)
     cvert = np.ma.masked_array(cvert, mask).filled(10**clipc) 
     cvert = np.log10(cvert)
@@ -60,7 +87,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
     td = ctb.time2day(run['time'])
     # get time in number of hours
     th = run['nsteph'].values*1800/60/60
-    # set tiem variable
+    # set time variable
     if(tres == 'daily'):
         tt = th
         tlabel = [int(thi/24 + 1) for thi in th]
@@ -75,7 +102,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
     #cmap = mpl.cm.YlGnBu
     data_crs = ccrs.PlateCarree()
         
-    print('\n\n=============== {}'.format(title)) 
+    print('plotting {}...'.format(title)) 
 
     for k in range(len(tt)-1):
 
@@ -85,7 +112,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
         #if(k%2 != 0): continue     # every other time sample
         if(tlabel[k] > 30): continue    # stop after day 30
 
-        print('--------- {}'.format(k)) 
+        print('--------- {}'.format(k), end='\r') 
         if(globe):
             fig = plt.figure(figsize=(10,6))
             spec = fig.add_gridspec(2, 2)
@@ -103,8 +130,8 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
         var_dict = [{'var':chor[k], 'plotType':'contourf', 'plotArgs':pltargs, 
                      'colorFormatter':None}]
         var_dict_c = [{'var':chor[k], 'plotType':'contour', 'plotArgs':pltargs_c, 'colorFormatter':None}]
-        plthor(lon, lat, var_dict, ax=ax1, slice_at='p={} hPa'.format(psel))
-        plthor(lon, lat, var_dict_c, ax=ax1, slice_at='')
+        plthor(lon, lat, var_dict, ax=ax1, annotation='p={} hPa'.format(psel))
+        plthor(lon, lat, var_dict_c, ax=ax1, annotation='')
         
         
         # ----- vertical
@@ -115,8 +142,8 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
         var_dict = [{'var':cvert[k], 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
         var_dict_c = [{'var':cvert[k], 'plotType':'contour', 'plotArgs':pltargs_c, \
                        'colorFormatter':None}]    
-        pltvert(lon, lev, var_dict, ax=ax2, plot_zscale=True, center_x=lon_center, slice_at='lat=15.15 deg', xlabel='', slice_at_loc='upper left')
-        pltvert(lon, lev, var_dict_c, ax=ax2, plot_zscale=False, inverty=False, center_x=lon_center, slice_at='', xlabel='')
+        pltvert(lon, lev, var_dict, ax=ax2, plot_zscale=True, center_x=lon_center, annotation='lat=15.15 deg', xlabel='', annotation_loc='upper left')
+        pltvert(lon, lev, var_dict_c, ax=ax2, plot_zscale=False, inverty=False, center_x=lon_center, annotation='', xlabel='')
         ax2.set_ylabel('p  [hPa]')
         
         #ax2.set_xticks([0, 60, 120, 180, 240])
@@ -136,7 +163,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
             var_dict_c = [{'var':chor[k], 'plotType':'contour', 'plotArgs':pltargs_c}]
             gridlinesArgs = {'draw_labels':False}
             plthor(lon, lat, var_dict, ax=ax3, gridlinesArgs=gridlinesArgs, 
-                   slice_at='p={} hPa'.format(psel))
+                   annotation='p={} hPa'.format(psel))
             #plthor(lat, lon, var_dict_c, ax=ax1)
         
         fig.suptitle('{}, day {}'.format(title, round(tlabel[k])), fontsize=14)
@@ -146,7 +173,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
         if(demo):
             plt.show()
         else:
-            plt.savefig('{}/{:03d}.png'.format(savedest, k), dpi=150)
+            plt.savefig('{}/{:03d}.png'.format(savedest, k), dpi=200)
         
 
 
@@ -172,11 +199,25 @@ if(__name__ == '__main__'):
     #animate_eruption(amip, 'SE ne30L72, EAM AMIP, SO2', amipdest, globe=True, demo=False, tracer='SO2')
     #animate_eruption(whs, 'SE ne30L72, CaM HSW, ash', whsdest, globe=True, demo=False, tracer='ASH')
     
+    #gmt = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/GMT_no_green.rgb'
+    #eam_whs = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/E3SM_ne16_L72_FIDEAL_SAI/run'
+    #run = '{}/E3SM_ne16_L72_FIDEAL_SAI.eam.h1.0001-01-01-00000.regrid.2x2.nc'.format(eam_whs)
+    #dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
+    #       'eam_whs_passive_sai/ash'
+    #animate_eruption(run, 'E3SMv2 HSW ne16L72, Ash', dest, globe=True, demo=False, tracer='ASH')
+    
     gmt = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/cmaps/GMT_no_green.rgb'
-    eam_whs = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/E3SM_ne16_L72_FIDEAL_SAI/run'
-    run = '{}/E3SM_ne16_L72_FIDEAL_SAI.eam.h1.0001-01-01-00000.regrid.2x2.nc'.format(eam_whs)
-    dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
-           'eam_whs_passive_sai/ash'
-    animate_eruption(run, 'E3SMv2 HSW ne16L72, Ash', dest, globe=True, demo=False, tracer='ASH')
+    sai_prelim = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/'\
+                 'E3SM_ne16_L72_FIDEAL_builtin_SAI_180day_newTeq_pthwy123/run'
+    run = '{}/E3SM_ne16_L72_FIDEAL_builtin_SAI_180day_newTeq_pthwy123.eam.h1.'\
+          '0001-01-01-00000.nc.regrid.2x2.nc'.format(sai_prelim) # this is first 90 days
+    for tracer in ['SO2', 'SULFATE', 'ASH']:
+        print('\n\n====== starting plotting for tracer {}'.format(tracer))
+        dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
+               'e3sm_prelim_figs/{}'.format(tracer)
+        animate_eruption(run, 'E3SMv2 HSW ne16L72, {}'.format(tracer), dest, 
+                         globe=True, demo=True, tracer=tracer, tres='daily', 
+                         dhor_file = '{}/processed_files/{}_hor.nc'.format(sai_prelim, tracer),
+                         dvert_file = '{}/processed_files/{}_vert.nc'.format(sai_prelim, tracer))
     
     

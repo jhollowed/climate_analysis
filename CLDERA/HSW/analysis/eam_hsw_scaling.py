@@ -25,15 +25,17 @@ def gather_run_times(topDir):
 
     cases = glob.glob('{}/*'.format(topDir))
     timings = []
-
+    
     for case in cases:
 
-        # get pecount
+        # get pecount, stop_n
         caseName = case.split('{}/'.format(topDir))[-1]
         caseName.split()
         pe = np.array(subprocess.check_output(['cd {0}; {0}/xmlquery NTASKS'.format(case)], 
                                                shell=True).decode('utf-8').strip().split())
         pe = int(pe[[('ATM' in p) for p in pe]][0].replace("'","").replace(",","").split(':')[-1])
+        stop_n = float(np.array(subprocess.check_output(['cd {0}; {0}/xmlquery STOP_N'.format(case)], 
+                                               shell=True).decode('utf-8').strip().split())[-1])
         
         # get timing
         try:
@@ -97,8 +99,9 @@ def plot_scaling(times, title):
     ax.set_xlabel('number of processes')
     ax.set_ylabel('wall minutes per simulated year')
     ax.legend()
-    ax.set_title('E3SM scaling for {}'.format(title))
-    plt.show()
+    ax.set_title('E3SMv2 scaling for {}'.format(title))
+    plt.savefig('./figs/scaling_{}.png'.format(title.replace(',','').replace(' ','_')), dpi=300)
+    #plt.show()
 
     
 
@@ -106,10 +109,10 @@ def plot_scaling(times, title):
         
 
 if __name__ == '__main__':
-    topDir = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder/cases'
+    topDir = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/'\
+             'hsw_case_builder_eam/cases/scaling_tests'
     times = gather_run_times(topDir)
-    plot_scaling(times, 'HSW, ne16np4 L72')
-    pdb.set_trace()
+    plot_scaling(times, 'HSW, ne16pg2 L72')
         
 
     

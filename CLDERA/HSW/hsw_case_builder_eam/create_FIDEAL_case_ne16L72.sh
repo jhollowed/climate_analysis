@@ -21,10 +21,11 @@ BUILD_FLAG=$1
 TOT_RUN_LENGTH=$2
 SUFFIX=$3
 CUSTOMNL=$4
+PECOUNT=$5
 
 # ----- for debug queueing -----
 #PECOUNT=768   # half number of cubedsphere elements in ne16
-PECOUNT=384   # quarter number of cubedsphere elements in ne16
+#PECOUNT=384   # quarter number of cubedsphere elements in ne16
 QUEUE=debug
 WALLCLOCK=00:30:00
 
@@ -38,11 +39,15 @@ else
     NL=$CUSTOMNL
 fi
 
-CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/cases"
+# replace this later
+#CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/cases"
+CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/cases/scaling_tests"
 CASENAME="E3SM_${RES}_L72_${COMPSET}${SUFFIX}"
 CASE=${CASES}/${CASENAME}
 
-OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases"
+# replace this later
+#OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases"
+OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/scaling_runs"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
 # if total run length >1/2 year per run (~15 min on Cori with 768 ranks), then require resubmits
