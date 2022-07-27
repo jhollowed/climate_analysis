@@ -1,0 +1,7 @@
+gw_drag_file = /global/cfs/cdirs/e3sm/inputdata/atm/waccm/gw/newmfspectra40_dc25.nc
+tropopause_climo_file = /global/cfs/cdirs/e3sm/inputdata/atm/cam/chem/trop_mozart/ub/clim_p_trop.nc
+prescribed_ozone_datapath = /global/cfs/cdirs/e3sm/inputdata/atm/cam/ozone
+prescribed_ozone_file = /global/cfs/cdirs/e3sm/inputdata/atm/cam/ozone/ozone_1.9x2.5_L26_2000clim_c091112.nc
+mesh_file = /dev/null
+ncdata = /global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/E3SM_ne16_L72_FIDEAL_10year_spinup_withNewTeq/run/E3SM_ne16_L72_FIDEAL_10year_spinup_withNewTeq.eam.i.0005-01-01-00000.nc.newcoordnames
+bnd_topo = /global/cfs/cdirs/e3sm/inputdata/atm/cam/topo/USGS-gtopo30_ne16np4pg2_16xdel2_20200527.nc

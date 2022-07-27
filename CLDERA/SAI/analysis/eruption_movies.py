@@ -6,6 +6,7 @@
 # and AzimuthalEquidistant projection
 
 import pdb
+import os.path
 import numpy as np
 import xarray as xr
 import matplotlib as mpl
@@ -21,7 +22,7 @@ from climate_artist import horizontal_slice as plthor
 
 
 def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False, tres='hourly', 
-                     dhor_file=None, dvert_file=None):
+                     dhor_file=None, dvert_file=None, everyother=False, globe_only=False):
    
     # params
     lat0 = 15.15
@@ -31,8 +32,9 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
     psel = 10
     minc = -12
     clipc = -15
-    maxc = -4
-    clevels = 9
+    #maxc = -4 # replace this once normalization fixed!
+    maxc = -6
+    clevels = abs(minc - maxc) + 1
     latsel = slice(lat0-dlat, lat0+dlat)
 
     # read data
@@ -54,7 +56,7 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
     else: compute_dhor = True
     if(dvert_file is not None and not overwrite):
         try: 
-            dvert = xr.open_dataset(dhor_file)
+            dvert = xr.open_dataset(dvert_file)
             print('read vertical slice at {:.2f}-{:.2f} deg...'.format(lat0-dlat, lat0+dlat))
         except FileNotFoundError: compute_dvert=True
     else: compute_dvert = True
@@ -71,7 +73,6 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
     c = run['{}'.format(tracer)]
     chor = dhor['{}'.format(tracer)]
     cvert = dvert['{}'.format(tracer)]
-    pdb.set_trace()
    
     # ---- horz slice: replace zeros with tiny value, for log
     mask = np.logical_or(chor == 0, chor < 10**clipc)
@@ -104,15 +105,19 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
         
     print('plotting {}...'.format(title)) 
 
+    overwrite_figs = False # toggle manually
     for k in range(len(tt)-1):
 
-        #k += 1
-        k += 100
-        if(demo): k+= 10
-        #if(k%2 != 0): continue     # every other time sample
-        if(tlabel[k] > 30): continue    # stop after day 30
+        k += 1
+        if(demo): k+= 100
+        if(k%2 != 0 and everyother): continue     # every other time sample
+        if(tlabel[k] > 90): continue    # stop after day 90
+                
+        print('--------- {}/{}'.format(k, len(tt)-2), end='\r') 
+        # continue if file exists and we don't want to overwrite figure
+        if(os.path.isfile('{}/{:03d}.png'.format(savedest, k)) and not overwrite_figs):
+            continue
 
-        print('--------- {}'.format(k), end='\r') 
         if(globe):
             fig = plt.figure(figsize=(10,6))
             spec = fig.add_gridspec(2, 2)
@@ -173,7 +178,12 @@ def animate_eruption(runf, title, savedest, tracer='SO2', globe=True, demo=False
         if(demo):
             plt.show()
         else:
-            plt.savefig('{}/{:03d}.png'.format(savedest, k), dpi=200)
+            if(globe and globe_only):
+                extent = ax3.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+                fig.savefig('{}/{:03d}.png'.format(savedest, k),  
+                                        bbox_inches=extent.expanded(1.07, 1.0), dpi=200)
+            else:
+                fig.savefig('{}/{:03d}.png'.format(savedest, k), dpi=200)
         
 
 
@@ -213,11 +223,20 @@ if(__name__ == '__main__'):
           '0001-01-01-00000.nc.regrid.2x2.nc'.format(sai_prelim) # this is first 90 days
     for tracer in ['SO2', 'SULFATE', 'ASH']:
         print('\n\n====== starting plotting for tracer {}'.format(tracer))
+        
+        if(tracer=='SO2'): 
+            everyother=False
+            globe_only=False
+        else: 
+            everyother=False
+            globe_only=True
+        
         dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
                'e3sm_prelim_figs/{}'.format(tracer)
         animate_eruption(run, 'E3SMv2 HSW ne16L72, {}'.format(tracer), dest, 
-                         globe=True, demo=True, tracer=tracer, tres='daily', 
-                         dhor_file = '{}/processed_files/{}_hor.nc'.format(sai_prelim, tracer),
-                         dvert_file = '{}/processed_files/{}_vert.nc'.format(sai_prelim, tracer))
+                         globe=True, demo=False, tracer=tracer, tres='daily', 
+                         dhor_file = '{}/processed_files/dhor.nc'.format(sai_prelim),
+                         dvert_file = '{}/processed_files/dvert.nc'.format(sai_prelim),
+                         everyother=everyother, globe_only=globe_only)
     
     

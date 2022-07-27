@@ -1,0 +1,13 @@
+&modelio
+  diri = "/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/E3SM_ne16_L72_FIDEAL_SAICLDERA_TEST/bld/ice"
+  diro = "/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/E3SM_ne16_L72_FIDEAL_SAICLDERA_TEST/run"
+  logfile = "ice.log.220727-160643"
+/
+&pio_inparm
+  pio_netcdf_format = "64bit_offset"
+  pio_numiotasks = -99
+  pio_rearranger = 1
+  pio_root = 0
+  pio_stride = 64
+  pio_typename = "pnetcdf"
+/

@@ -1,0 +1,5 @@
+&drydep_inparm
+ drydep_method		= 'xactive_lnd'
+/
+&megan_emis_nl
+/

@@ -1,0 +1,50 @@
+2022-07-27 16:05:14: /global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/cime/scripts/create_newcase --compset FIDEAL --res ne16pg2_ne16pg2 --case /global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cldera_sai_examples/cases/E3SM_ne16_L72_FIDEAL_SAICLDERA_TEST --pecount 384 --output-root /global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases --machine cori-knl --compiler intel --project m4014
+ ---------------------------------------------------
+2022-07-27 16:05:14: Compset longname is 2000_EAM%IDEAL_SLND_SICE_SOCN_SROF_SGLC_SWAV_SIAC_SESP
+ ---------------------------------------------------
+2022-07-27 16:05:14: Compset specification file is /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/eam//cime_config/config_compsets.xml
+ ---------------------------------------------------
+2022-07-27 16:05:14: Pes     specification file is /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/eam/cime_config/config_pes.xml
+ ---------------------------------------------------
+2022-07-27 16:05:14: Forcing is 
+ ---------------------------------------------------
+2022-07-27 16:05:14: Component CPL is present day:
+ ---------------------------------------------------
+2022-07-27 16:05:14: Using None coupler instances
+ ---------------------------------------------------
+2022-07-27 16:05:14: Component ATM is cam5 physics:EAM ideal physics:
+ ---------------------------------------------------
+2022-07-27 16:05:14: ATM_GRID is ne16np4.pg2
+ ---------------------------------------------------
+2022-07-27 16:05:14: Component LND is Stub land component
+ ---------------------------------------------------
+2022-07-27 16:05:14: LND_GRID is null
+ ---------------------------------------------------
+2022-07-27 16:05:14: Component ICE is Stub ice component
+ ---------------------------------------------------
+2022-07-27 16:05:14: ICE_GRID is null
+ ---------------------------------------------------
+2022-07-27 16:05:14: Component OCN is Stub ocn component
+ ---------------------------------------------------
+2022-07-27 16:05:14: OCN_GRID is null
+ ---------------------------------------------------
+2022-07-27 16:05:14: Component ROF is Stub river component
+ ---------------------------------------------------
+2022-07-27 16:05:14: ROF_GRID is null
+ ---------------------------------------------------
+2022-07-27 16:05:14: Component GLC is Stub glacier (land ice) component
+ ---------------------------------------------------
+2022-07-27 16:05:14: GLC_GRID is null
+ ---------------------------------------------------
+2022-07-27 16:05:14: Component WAV is Stub wave component
+ ---------------------------------------------------
+2022-07-27 16:05:14: WAV_GRID is null
+ ---------------------------------------------------
+2022-07-27 16:05:14: Component IAC is Stub iac component
+ ---------------------------------------------------
+2022-07-27 16:05:14: IAC_GRID is null
+ ---------------------------------------------------
+2022-07-27 16:05:14: Component ESP is Stub external system processing (ESP) component
+ ---------------------------------------------------
+2022-07-27 16:05:14: ESP_GRID is None
+ ---------------------------------------------------

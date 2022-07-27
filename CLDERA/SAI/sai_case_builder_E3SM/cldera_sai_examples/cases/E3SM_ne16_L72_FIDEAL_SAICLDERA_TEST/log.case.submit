@@ -1,0 +1,43 @@
+
+env_batch.xml appears to have changed, regenerating batch scripts
+manual edits to these file will be lost!
+
+Creating batch scripts
+Writing case.run script from input template /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/cime_config/machines/template.case.run
+Creating file .case.run
+Writing case.st_archive script from input template /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/cime_config/machines/template.st_archive
+Creating file case.st_archive
+  2022-07-27 16:06:42 atm 
+Create namelist for component eam
+   Calling /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/eam//cime_config/buildnml
+  2022-07-27 16:06:42 lnd 
+Create namelist for component slnd
+   Calling /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/stub_comps/slnd/cime_config/buildnml
+  2022-07-27 16:06:42 ice 
+Create namelist for component sice
+   Calling /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/stub_comps/sice/cime_config/buildnml
+  2022-07-27 16:06:42 ocn 
+Create namelist for component socn
+   Calling /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/stub_comps/socn/cime_config/buildnml
+  2022-07-27 16:06:42 rof 
+Create namelist for component srof
+   Calling /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/stub_comps/srof/cime_config/buildnml
+  2022-07-27 16:06:42 glc 
+Create namelist for component sglc
+   Calling /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/stub_comps/sglc/cime_config/buildnml
+  2022-07-27 16:06:42 wav 
+Create namelist for component swav
+   Calling /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/stub_comps/swav/cime_config/buildnml
+  2022-07-27 16:06:42 iac 
+Create namelist for component siac
+   Calling /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/stub_comps/siac/cime_config/buildnml
+  2022-07-27 16:06:42 esp 
+Create namelist for component sesp
+   Calling /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/components/stub_comps/sesp/cime_config/buildnml
+  2022-07-27 16:06:42 cpl 
+Create namelist for component drv
+   Calling /global/u2/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP/driver-mct/cime_config/buildnml
+Checking that inputdata is available as part of case submission
+Loading input file list: 'Buildconf/cpl.input_data_list'
+Loading input file list: 'Buildconf/eam.input_data_list'
+ERROR: Build complete is not True please rebuild the model by calling case.build
