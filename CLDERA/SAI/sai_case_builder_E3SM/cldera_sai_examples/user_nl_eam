@@ -19,7 +19,7 @@ inithist='ENDOFRUN'
 NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/E3SM_ne16_L72_FIDEAL_10year_spinup_withNewTeq/run/E3SM_ne16_L72_FIDEAL_10year_spinup_withNewTeq.eam.i.0005-01-01-00000.nc.newcoordnames"
 
 ! don't let analytic ICs overwrite input from NCDATA
-ideal_phys_analytic_ic = .false.
+!ideal_phys_analytic_ic = .false. !YYY
 
 ! select HSW idealized forcing (nl added by Ben)
 ideal_phys_option = 'held-suarez-williamson'
@@ -28,16 +28,16 @@ ideal_phys_option = 'held-suarez-williamson'
 pertlim = 0
 
 ! activate built-in analytic init of cldera sai tracers
-cldera_sai_read_from_ic_file = .false.
+!cldera_sai_read_from_ic_file = .false. !YYY
 
 ! toggle pathways
-cldera_sai_formSulfate = .true.
-cldera_sai_stratHeating = .true.
-cldera_sai_surfCooling = .true.
+!cldera_sai_formSulfate = .true. !YYY
+!cldera_sai_stratHeating = .true. !YYY
+!cldera_sai_surfCooling = .true. !YYY
 
 ! experimenting with new heating normalizations
-cldera_sai_qstar = 0.7e-7
-cldera_sai_taustar = 1e6
+!cldera_sai_qstar = 0.7e-7 !YYY
+!cldera_sai_taustar = 1e6 !YYY
 
 
 

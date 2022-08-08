@@ -1,0 +1,28 @@
+empty_htapes     = .TRUE.              ! output only the varibales listed below
+avgflag_pertape  = 'A'                 ! hist file 1 is avg
+
+! output a few quantities for frequently on their instantaneous values for SSW quantification
+fincl1           = 'U','AOA','E90','ST80'
+
+NHTFRQ           = -720            ! output frequency every 30 days
+MFILT            = 12              ! allow 12 time samples per hist file (1 year)
+NDENS            = 2               ! single-precision for each hist file
+
+inithist='ENDOFRUN'
+
+! use 6-year HSW spinup
+! NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/E3SM_ne16_L72_FIDEAL_30year/run/E3SM_ne16_L72_FIDEAL_30year.eam.i.0006-01-01-00000.nc"
+! continue from 1 year run of these tracers
+NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/aoa_cases/E3SM_ne16_L72_FIDEAL_clocks/run_year1/E3SM_ne16_L72_FIDEAL_clocks.eam.i.0001-12-29-00000.nc"
+
+! don't let analytic ICs overwrite input from NCDATA
+ideal_phys_analytic_ic = .false.
+
+! select HSW idealized forcing
+ideal_phys_option = 'held-suarez-williamson'
+
+! turn off any random perturbations (not needed for HS in SE)
+pertlim = 0
+
+! activate built-in analytic init of cldera clock tracers
+cldera_clock_read_from_ic_file = .TRUE.

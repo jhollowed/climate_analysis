@@ -31,7 +31,7 @@ WALLCLOCK=00:30:00
 # THIS POINTS TO REPO CLONE YOU WISH TO USE
 # currently defaulting to my backup branch (working SAI before merge to master rebase)
 # https://github.com/sandialabs/CLDERA-E3SM/tree/jhollowed/eam/cldera-sai-module
-MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAIFork_BKP"
+MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAIBranch"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
 CONFIGS="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cldera_sai_examples"
@@ -105,7 +105,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # ---------- configure case
     cd $CASE
     ./xmlchange DEBUG=FALSE,DOUT_S=FALSE,STOP_OPTION=ndays,STOP_N=$STOP_N
-    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-cldera_sai_trcs -verbose"
+    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-cldera_sai_trcs -verbose" #YYY
     ./xmlchange JOB_WALLCLOCK_TIME=$WALLCLOCK
     ./xmlchange SAVE_TIMING=TRUE
     ./xmlchange JOB_QUEUE=$QUEUE
@@ -129,8 +129,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     
     # ---------- build, submit
     printf "\n\n========== BUILDING, SUBMITTING JOB ==========\n"
-    #./case.build 2>&1 | tee ./log.case.buid
-    ./case.build --clean 2>&1 | tee ./log.case.buid
+    ./case.build 2>&1 | tee ./log.case.buid
     ./case.submit 2>&1 | tee ./log.case.submit
 else
     printf "\n\n========== CASE EXISTS; ABORTING ==========\n"
