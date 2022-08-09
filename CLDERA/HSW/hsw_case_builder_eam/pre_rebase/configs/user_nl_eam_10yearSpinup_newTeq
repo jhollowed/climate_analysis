@@ -1,0 +1,22 @@
+empty_htapes    = .TRUE.
+NDENS           = 2
+
+! hist file 1 is annual avg, 2 is monthly avg
+avgflag_pertape = 'A' 
+
+fincl1          = 'U','V','T','PS','OMEGA','HS_HEAT'
+
+! bi-annual, in hours
+NHTFRQ          = -4320
+
+! allow 60 samples (1 year/sample) = 30 years/file annual means,
+MFILT           = 60 
+
+! select HSW idealized forcing (nl added by Ben)
+ideal_phys_option = 'held-suarez-williamson'
+
+! turn off any random perturbations (not needed for HS in SE)
+pertlim = 0
+
+! enable IC outputs yearly
+inithist='YEARLY'

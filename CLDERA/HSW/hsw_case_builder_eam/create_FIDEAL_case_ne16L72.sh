@@ -24,30 +24,26 @@ CUSTOMNL=$4
 PECOUNT=$5
 
 # ----- for debug queueing -----
-#PECOUNT=768   # half number of cubedsphere elements in ne16
-#PECOUNT=384   # quarter number of cubedsphere elements in ne16
+PECOUNT=384   # quarter number of cubedsphere elements in ne16
 QUEUE=debug
 WALLCLOCK=00:30:00
 
-MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/E3SM_myFork_SAI"      # ------------  important!
+wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/current"
+MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAIBranch"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
 CONFIGS="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/configs"
 if [ -z "$CUSTOMNL" ]; then
-    NL=${CONFIGS}/user_nl_eam_nossw
+    NL=${CONFIGS}/user_nl_eam_10yearSpinup
 else
     NL=$CUSTOMNL
 fi
 
-# replace this later
-#CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/cases"
-CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/cases/scaling_tests"
+CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/cases"
 CASENAME="E3SM_${RES}_L72_${COMPSET}${SUFFIX}"
 CASE=${CASES}/${CASENAME}
 
-# replace this later
-#OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases"
-OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/scaling_runs"
+OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
 # if total run length >1/2 year per run (~15 min on Cori with 768 ranks), then require resubmits
@@ -102,10 +98,8 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
            --output-root $OUTROOT --machine $MACHINE --compiler $COMPILER --project $PROJECT
     
     # ---------- configure case
-    # nadv_11 = 1 for passive clock tracer
     cd $CASE
     ./xmlchange DEBUG=FALSE,DOUT_S=FALSE,STOP_OPTION=ndays,STOP_N=$STOP_N
-    #./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-age_of_air_trcs "
     ./xmlchange JOB_WALLCLOCK_TIME=$WALLCLOCK
     ./xmlchange SAVE_TIMING=TRUE
     ./xmlchange JOB_QUEUE=$QUEUE
@@ -123,8 +117,6 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     printf "\n\n========== COPYING NAMELISTS,SOURCEMODS ==========\n"
     # ---------- copy namelist settings
     cp --verbose $NL ./user_nl_eam
-    # ---------- copy sourcemods
-    cp --verbose ${CONFIGS}/SourceMods/* ./SourceMods/src.eam/
     
     printf "\n\n========== CASE SETUP ==========\n"
     ./case.setup

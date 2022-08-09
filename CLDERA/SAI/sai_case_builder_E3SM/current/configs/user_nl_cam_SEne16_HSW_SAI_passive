@@ -2,9 +2,9 @@ empty_htapes     = .TRUE.              ! output only the varibales listed below
 avgflag_pertape  = 'A','I','A'         ! hist file 1 is avg, 2 is instant, 3 is avg
 
 ! output a few quantities for frequently on their instantaneous values for SSW quantification
-fincl1           = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS'
-fincl2           = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS'
-fincl3           = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS'
+fincl1           = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS','SAI_AOD'
+fincl2           = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS','SAI_AOD'
+fincl3           = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS','SAI_AOD'
 
 !NHTFRQ           = -6,-6,-48       ! output frequency every 6 hours, 6 hours, 2 days
 NHTFRQ           = -720,-720,-720       ! output frequency every 30 days
@@ -34,7 +34,7 @@ cldera_sai_stratHeating = .false.
 cldera_sai_surfCooling = .false.
 
 ! experimenting with new heating normalizations
-cldera_sai_qstar = 0.7e-7
+cldera_sai_qstar = 4e-7
 cldera_sai_taustar = 1e6
 
 ! injection duration and delay
