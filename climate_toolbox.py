@@ -536,7 +536,7 @@ def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=Fa
 
 
 def concat_run_outputs(run, sel={}, mean=[], outFile=None, overwrite=False, 
-                       histnum=0, regridded=None, component='cam'):
+                       histnum=0, regridded=True, component='cam'):
     '''
     Concatenates netCDF data along the time dimension. Intended to be used to combine outputs of
     a single run.
@@ -569,17 +569,13 @@ def concat_run_outputs(run, sel={}, mean=[], outFile=None, overwrite=False,
     regridded : bool
         Whether or not to look for regridded versions of each history file (i.e. ones for 
         which the substring "regrid" appears after the header number "h0"). 
-        Defaults to None, in which case this will be set to True if the run directory contains
-        the substring 'FV3', else False.
+        Defaults to True
     component : string
         Concatenate data for this component (will look for files with [component].h[histnum]).
         Defaults to 'cam'
     '''
    
-    run_name = run.split('/')[-2]
-    if(regridded is None):
-        if('FV3' in run_name):  regridded = True
-        else:                   regridded = False
+    run_name = run.rstrip('/').split('/')[-2]
  
     print('\n\n========== Concatenating data at {} =========='.format(run_name))
   
@@ -592,6 +588,7 @@ def concat_run_outputs(run, sel={}, mean=[], outFile=None, overwrite=False,
     try: hist.remove(outFile)
     except ValueError: pass
     hist = np.array(hist)
+    assert len(hist) > 0, 'no history files found at {} for regridded={}'.format(run, regridded)
     
     print('Found {} files for history group h{}'.format(len(hist), histnum))
     
@@ -636,7 +633,7 @@ def concat_run_outputs(run, sel={}, mean=[], outFile=None, overwrite=False,
             allDat_set = True
         else: 
             allDat = xr.concat([allDat, dat], 'time')
-    
+  
     # ------ take means
     for dim in mean:
         allDat = allDat.mean(dim)

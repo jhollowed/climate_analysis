@@ -1,0 +1,12 @@
+-----------------------------------------------------------------------------
+Joe Hollowed 8/4/22
+Templates for idealized SAI runs in a HSW configuration
+-----------------------------------------------------------------------------
+
+./create_FIDEAL_ne16pg2L72_SAI.sh
+    Script for calling CIME scripts for case creation, building, submission. See inline
+    comments for explanation of various settings
+
+./user_nl_eam
+    Text file containing sample EAM namelist settings, including those controlling parameters
+    of the injection. See inline comments for explanations

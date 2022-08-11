@@ -18,10 +18,12 @@ from climate_artist import horizontal_slice as plthor
 # ============================================================
 
 
-def prelim_e3sm_fig(run1, run2, sfx='', savedest=None, datsavedest='.'):
+def prelim_e3sm_fig(run1, run2, sfx='', savedest=None, datsavedest='.', inj_delay=0):
 
     # windows in days over which to compoute means for horizontal slices
-    t_windows = [slice(30, 60), slice(150, 180)]
+    # second month, fourth month
+    # offset if injection_dealy > 0
+    t_windows = [slice(30+inj_delay, 60+inj_delay), slice(120+inj_delay, 150+inj_delay)]
     t_labels = ['month 2\n', 'month 5\n']
     t_labels = ['', '']
 
@@ -362,24 +364,26 @@ def prelim_e3sm_fig(run1, run2, sfx='', savedest=None, datsavedest='.'):
 if(__name__ == '__main__'):
 
     dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
-           'e3sm_pathways_prelim_figs'
+           'e3sm_pathway_figs'
     data = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases'
-    ds = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways'
-    
-    runs1_config = 123
-    runs2_config = 1
+    #ds = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways'
+    ds = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways/delay_15days'
+
+    runs1_config = 'allActive_delay15days'
+    runs2_config = 'passive'
     sfx = '{}-{}'.format(runs1_config, runs2_config)
     
-    runs1 = '{}/E3SM_ne16_L72_FIDEAL_builtin_SAI_180day_newTeq_pthwy{}/run/'.format(data, runs1_config)
-    runs2 = '{}/E3SM_ne16_L72_FIDEAL_builtin_SAI_180day_newTeq_pthwy{}/run/'.format(data, runs2_config)
+    runs1 = '{}/E3SM_ne16_L72_FIDEAL_SAI_{}/run/'.format(data, runs1_config)
+    runs2 = '{}/E3SM_ne16_L72_FIDEAL_SAI_{}/run/'.format(data, runs2_config)
     
-    run1 = '{}/pthwy123_concat_hist.nc'.format(ds)
-    run2 = '{}/pthwy1_concat_hist.nc'.format(ds)
+    run1 = '{}/{}_concat_hist.nc'.format(ds, runs1_config)
+    run2 = '{}/{}_concat_hist.nc'.format(ds, runs2_config)
     
     # first concatenate runs to single dataset
     ctb.concat_run_outputs(runs1, outFile=run1, histnum=0, regridded=True, component='eam')
     ctb.concat_run_outputs(runs2, outFile=run2, histnum=0, regridded=True, component='eam')
     print('\n')
 
-    prelim_e3sm_fig(run1, run2, sfx=sfx, savedest=dest, datsavedest=ds)
+    #prelim_e3sm_fig(run1, run2, sfx=sfx, savedest=dest, datsavedest=ds)
+    prelim_e3sm_fig(run1, run2, sfx=sfx, savedest=dest, datsavedest=ds, inj_delay=15)
     

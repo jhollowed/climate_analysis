@@ -1,43 +1,101 @@
-empty_htapes     = .TRUE.              ! output only the varibales listed below
-avgflag_pertape  = 'A','I','A'         ! hist file 1 is avg, 2 is instant, 3 is avg
+! --------------------------------------------------------------------------------------
+!
+! Joe Hollowed 8/4/22
+! Namelist settings for HSW++ SAI runs. See namelist setting descriptions inline below.
+! By default, this outputs 3 history files with different averaging and frequency (see below).
+!
+! Namelist definitions and default values are stored at
+! components/eam/bld/namelist_files/namelist_definition.xml
+! components/eam/bld/namelist_files/namelist_defaults_eam.xml
+!
+! To see all namelist values after case creation, see
+! {case_output_root}/run/atm_in
+! This file is a concatenation of this contents of the present file (user_nl_eam), and
+! all other defaults
+!
+! --------------------------------------------------------------------------------------
 
-! output a few quantities for frequently on their instantaneous values for SSW quantification
-fincl1           = 'U','V','T','Z3','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS'
-fincl2           = 'U','V','T','Z3','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS'
-fincl3           = 'U','V','T','Z3','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS'
 
+! ------ Output frequencies etc
+empty_htapes     = .TRUE.          ! output only the varibales listed below
+avgflag_pertape  = 'A','I','A'     ! hist file 1 is avg, 2 is instant, 3 is avg
 NHTFRQ           = -6,-6,-48       ! output frequency every 6 hours, 6 hours, 2 days
-MFILT            = 360,360,360     ! allow 360 time samples per hist file (90 days)
+MFILT            = 360,360,360     ! allow 360 time samples per hist file (90 days at 6 hourly outputs)
 NDENS            = 2,2             ! single-precision for each hist file
-
-inithist='ENDOFRUN'
-
-! ues 6-year HSW spinup
-! NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/E3SM_ne16_L72_FIDEAL_30year/run/E3SM_ne16_L72_FIDEAL_30year.eam.i.0006-01-01-00000.nc"
-
-! uses new 5-year spinup with extended stratopause
-NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_validate_cases/E3SM_ne16_L72_FIDEAL_10year_spinup_withNewTeq/run/E3SM_ne16_L72_FIDEAL_10year_spinup_withNewTeq.eam.i.0005-01-01-00000.nc.newcoordnames"
-
-! don't let analytic ICs overwrite input from NCDATA
-!ideal_phys_analytic_ic = .false. !YYY
-
-! select HSW idealized forcing (nl added by Ben)
-ideal_phys_option = 'held-suarez-williamson'
-
-! turn off any random perturbations (not needed for HS in SE)
-pertlim = 0
-
-! activate built-in analytic init of cldera sai tracers
-!cldera_sai_read_from_ic_file = .false. !YYY
-
-! toggle pathways
-!cldera_sai_formSulfate = .true. !YYY
-!cldera_sai_stratHeating = .true. !YYY
-!cldera_sai_surfCooling = .true. !YYY
-
-! experimenting with new heating normalizations
-!cldera_sai_qstar = 0.7e-7 !YYY
-!cldera_sai_taustar = 1e6 !YYY
+inithist         = 'ENDOFRUN'      ! output initial conditions at end of run
 
 
+! ------ Timestep 
+! set the dynamics timestep with se_tstep. The physics timestep MUST be divisible by this number
+! (the physics timestep is set via ATM_NCPL at case creation; see the case creation script)
+! Also, when setting the dynamics timestep directly in this way, the "old" (CAM) method of timestep
+! splitting must be disabled via se_nsplit=-1, rsplit=-1, qsplit=-1. This should be default behavior, 
+! depending on the ATM grid selected. Can double check these values in 'atm_in' in the case directory 
+! (see note at header of this file). 
+! Defaults for ne16pg2_ne16pg2 are se_tstep=600s, ATM_NCPL=48 ==> dtime=1800s, or 1/2 hour physics
+! timesteps, 10 minute dynamics timesteps. See more here:
+! https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1044644202/EAM+s+HOMME+dycore
+!
+! se_tstep = 600    ! dynamics timestep in seconds (currently unused; remove ! to enable)
+
+
+! ------ Output fields currently present:
+! U: zonal wind in m/s
+! V: meridional wind in m/s
+! T: temperature in K
+! OMEGA: vertical pressure velocity in Pa/s
+! PS: surface pressure in Pa
+! Z3: geopotential height in km
+! SO2: SO2 mixing-ratio in kg/kg
+! SULFATE: Sulfate mixing-ratio in kg/kg
+! ASH: Ash mixing-ratio in kg/kg
+!
+! ------ Other optional fields that can be added:
+! SAI_HEAT: Local tracer heating rate in K/day
+! SAI_COOL: Surface heating by tracer AOD in K/day
+! AIR_MASS: Mass of air in grid cells in kg (multiply through mixing ratios to get tracer masses)
+
+fincl1           = 'U','V','T','OMEGA','PS','Z3','SO2','ASH','SULFATE'
+fincl2           = 'U','V','T','OMEGA','PS','Z3','SO2','ASH','SULFATE'
+fincl3           = 'U','V','T','OMEGA','PS','Z3','SO2','ASH','SULFATE'
+
+
+! ------ Point to initial condition; currently 5-year HSW spinup
+NCDATA="/project/projectdirs/m4014/data/HSW/initial_conditions/netcdf/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc"
+
+ideal_phys_analytic_ic = .false.              ! don't let analytic ICs overwrite input from NCDATA
+ideal_phys_option = 'held-suarez-williamson'  ! select HSW idealized forcing
+pertlim = 0                                   ! turn off random T perturbations
+
+
+! ------ Injection namelist settings
+! set cldera_sai_stratHeating and cldera_sai_surfCooling both to .false. for passive tracers
+! other SAI namelist settings (e.g. lat,lon position, total mass normalization, etc...)
+! are not set here, and will assume their default values; see note at header of this file
+cldera_sai_read_from_ic_file = .false. ! activate built-in analytic init of cldera sai tracers
+cldera_sai_formSulfate = .true.        ! toggle sulfate formation
+cldera_sai_stratHeating = .true.       ! toggle local heating
+cldera_sai_surfCooling = .true.        ! toggle surface cooling
+
+
+! These settings are tuned against aspun-up HSW climatology to give zonal-mean monthly-mean 
+! heating rates at month 3 post-injection which qualitatively agree with Stenchikov(1998) and 
+! Ramachandran(2000). These factors appear in the denominators of the heating terms, so lowering their 
+! values will strengthen the heating/cooling responses
+cldera_sai_qstar = 9.5e-7              ! dimensionless local heating normalization (kg/kg)
+cldera_sai_taustar = 1e7               ! dimensionless AOD surface cooling normalization
+
+! Perhaps a more intuitive way to control the magnitude of the heating/cooling responses is to leave
+! the normalization constants (above) as they are, and instead adjust the following temperature
+! tendency constants. In either case, results may not be predictable, since the local heating 
+! encourages local circulation pertubations, which changes the aerosol mixing ratios. Small changes 
+! may be straightforward, but in general this tuning process is an iterative one.
+cldera_sai_dTstrat = 0.35              ! Local temperature rate of change by sulfur species 
+                                       ! (SO2 + sulfate if cldera_sai_formSulfate is true), in K/day. 
+                                       ! This temperature tendency will be met where 
+                                       ! (q_SO2 + q_sulfate) = cldera_sai_qstar
+cldera_sai_dTsurf = -0.012             ! Local temperature rate of change by the net AOD species 
+                                       ! (from SO2, ash, and sulfate if cldera_sai_formSulfate is 
+                                       ! true), in K/day. This temperature tendency will be met where 
+                                       ! the AOD = cldera_sai_taustar
 
