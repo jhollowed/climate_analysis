@@ -36,11 +36,12 @@ wd=$(cd $(dirname $0) && pwd)
 
 # This points to the repo clone you wish to use; currently defaulting to my HSW++ branch at
 # https://github.com/sandialabs/CLDERA-E3SM/tree/jhollowed/eam/cldera-sai-module
-MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAIBranch"
+#MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAIBranch"
+MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAIBranch_PV"
 # This is the parent directory where new case directories created by this script will be placed
 CASE_ROOT="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cldera_sai_examples/cases"
 # This is the parent directory where new case outputs and build files will be placed
-OUT_ROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases"
+#OUT_ROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/cldera_template_cases"
 
 # =====================================================
 
@@ -55,7 +56,8 @@ NL=$4
 
 # ------ set argument defaults ------
 if [ -z "$GRID" ]; then
-    GRID=ne16pg2_ne16pg2
+    #GRID=ne16pg2_ne16pg2
+    GRID=ne16_ne16
 fi
 if [ -z "$TOT_RUN_LENGTH" ]; then
     TOT_RUN_LENGTH=30
@@ -81,6 +83,7 @@ MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 CASENAME="E3SM_${GRID}_L72_${COMPSET}_SAI${SUFFIX}"
 CASE=${CASE_ROOT}/${CASENAME}
 RUNDIR="${OUT_ROOT}/${CASENAME}/run"
+OUT_ROOT="${CASE}/OUTPUT"
 
 printf "\n\n========== CREATING CASE ==========\n"
 $MODEL --compset $COMPSET --res $GRID --case $CASE --pecount $PECOUNT \

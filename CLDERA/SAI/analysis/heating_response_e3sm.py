@@ -366,11 +366,11 @@ if(__name__ == '__main__'):
     dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
            'e3sm_pathway_figs'
     data = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases'
-    #ds = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways'
-    ds = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways/delay_15days'
+    ds = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways'
+    #ds = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways/delay_15days'
 
-    runs1_config = 'allActive_delay15days'
-    runs2_config = 'passive'
+    runs1_config = 'allActive_np4'
+    runs2_config = 'passive_np4'
     sfx = '{}-{}'.format(runs1_config, runs2_config)
     
     runs1 = '{}/E3SM_ne16_L72_FIDEAL_SAI_{}/run/'.format(data, runs1_config)

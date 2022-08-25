@@ -19,10 +19,12 @@
 ! ------ Output frequencies etc
 empty_htapes     = .TRUE.          ! output only the varibales listed below
 avgflag_pertape  = 'A','I','A'     ! hist file 1 is avg, 2 is instant, 3 is avg
-NHTFRQ           = -6,-6,-48       ! output frequency every 6 hours, 6 hours, 2 days
+!NHTFRQ           = -6,-6,-48       ! output frequency every 6 hours, 6 hours, 2 days
+NHTFRQ           = -999999,-999999,-999999       ! suppress output
 MFILT            = 360,360,360     ! allow 360 time samples per hist file (90 days at 6 hourly outputs)
 NDENS            = 2,2             ! single-precision for each hist file
-inithist         = 'ENDOFRUN'      ! output initial conditions at end of run
+!inithist         = 'ENDOFRUN'      ! output initial conditions at end of run
+inithist         = 'NONE'      ! suppress output
 
 
 ! ------ Timestep 
