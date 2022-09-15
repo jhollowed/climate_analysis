@@ -7,7 +7,6 @@ import numpy as np
 import xarray as xr
 import artist_utils as aut
 import cartopy.crs as ccrs
-import artist_utils as aut
 import climate_toolbox as ctb
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -262,9 +261,12 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
     if(no_xticklabs): ax.xaxis.set_ticklabels([])
     ax.set_title(title, fontsize=label_fs)
     ax.tick_params(axis='both', which='major', labelsize=tick_fs)
+    aut.format_ticks(ax)
     
     # x, y tick labels formats assuming pressure vs. degrees
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: \
+                                 ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
+    ax.yaxis.set_minor_formatter(ticker.FuncFormatter(lambda y,pos: \
                                  ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
     ax.xaxis.set_major_formatter(aut.LON_DEG_FORMATTER)
     

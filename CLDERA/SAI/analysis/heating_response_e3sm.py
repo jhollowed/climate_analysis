@@ -5,7 +5,6 @@ import xarray as xr
 import matplotlib as mpl
 import artist_utils as aut
 import cartopy.crs as ccrs
-import artist_utils as claut
 import climate_toolbox as ctb
 from matplotlib import colors
 import matplotlib.pyplot as plt

@@ -48,6 +48,25 @@ def ncar_rgb_to_cmap(rgb, hdrl=2):
 # -------------------------------------------------------------
 
 
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+    '''
+    Truncates an input colormap and returns a new colormap
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    '''
+    new_cmap = colors.LinearSegmentedColormap.from_list(
+        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+        cmap(np.linspace(minval, maxval, n)))
+    return new_cmap
+
+
+# -------------------------------------------------------------
+
+
 def format_ticks(ax):
     '''
     Formats tick labels for plots in my style. Ticks face inward, and are reproduced on
@@ -98,17 +117,23 @@ def insert_labelled_tick(ax, axis, value, label=None):
     '''
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
-    
-    ticks = ax.get_xticks()
+    assert axis in ['x', 'y'], 'axis arg must be either \'x\' or \'y\''
+    if(axis == 'x'):   ticks = ax.get_xticks()
+    elif(axis == 'y'): ticks = ax.get_yticks()
+   
     ticks = np.append(ticks, value)
     ticklabs = ticks.tolist()
     ticklabs = ['%.0f'%lab for lab in ticklabs]
     if(label is not None): 
         ticklabs[-1] = label
-    ax.set_xticks(ticks)
-    ax.set_xticklabels(ticklabs) 
+    if(axis == 'x'):
+        ax.set_xticks(ticks)
+        ax.set_xticklabels(ticklabs) 
+    if(axis == 'y'):
+        ax.set_yticks(ticks)
+        ax.set_yticklabels(ticklabs) 
 
-    ax.set_ylim(xlim)
+    ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
 
