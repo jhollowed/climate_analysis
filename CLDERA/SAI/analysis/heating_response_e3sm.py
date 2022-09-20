@@ -17,7 +17,8 @@ from climate_artist import horizontal_slice as plthor
 # ============================================================
 
 
-def prelim_e3sm_fig(run1, run2, sfx='', savedest=None, datsavedest='.', inj_delay=0):
+def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None, 
+                    sfx='', savedest=None, datsavedest='.', inj_delay=0):
 
     # windows in days over which to compoute means for horizontal slices
     # second month, fourth month
@@ -45,6 +46,31 @@ def prelim_e3sm_fig(run1, run2, sfx='', savedest=None, datsavedest='.', inj_dela
     td2 = ctb.time2day(dat2['time'])
     dat2 = dat2.assign_coords(time=td2)
     print('found {} timesteps from day {} to {}'.format(len(td2), min(td2), max(td2)))
+
+    # read native if passed
+    if(run1_native is not None and run2_native is not None):
+        print('reading native data 1')
+        ndat1 = xr.open_dataset(run1)
+        ndat1 = dat1.assign_coords(time=td1)
+        
+        print('reading native data 2')
+        ndat2 = xr.open_dataset(run2)
+        ndat2 = dat2.assign_coords(time=td2)
+
+        print('using native grid data for computing total tracer masses...')
+        ttdat1 = ndat1
+        ttdat2 = ndat2
+        ttdims = ('ncol', 'lev')
+        ttstr='native'
+        file_ext = 'pathways_nativeMass{}.nc'.format(sfx)
+    else:
+        print('run1_native AND/OR run2_native = None;')
+        print('using interpolated grid data for computing total tracer masses...')
+        ttdat1 = dat1
+        ttdat2 = dat2
+        ttdims = ('lat', 'lon', 'lev')
+        ttstr=''
+        file_ext = 'pathways{}.nc'.format(sfx)
     
     # assume that these are the same for both datasets
     time = td1
@@ -53,7 +79,6 @@ def prelim_e3sm_fig(run1, run2, sfx='', savedest=None, datsavedest='.', inj_dela
 
     # toggle to force re-computation
     overwrite=False
-    file_ext = 'pathways_{}.nc'.format(sfx)
     
     # get "anomalies", read from file if previosly computed, or compute and then write out
     try:
@@ -118,10 +143,12 @@ def prelim_e3sm_fig(run1, run2, sfx='', savedest=None, datsavedest='.', inj_dela
         print('read tracers 1')
     except FileNotFoundError:
         print('computing tracers 1...')
-        SO21 = (dat1['SO2'] * dat1['AIR_MASS']).sum(('lat', 'lon', 'lev'))
-        sulf1 = (dat1['SULFATE'] * dat1['AIR_MASS']).sum(('lat', 'lon', 'lev'))
-        SO21.to_dataset(name='tot_SO2_mass').to_netcdf('{}/so21_{}'.format(datsavedest, file_ext))
-        sulf1.to_dataset(name='tot_SULFATE_mass').to_netcdf('{}/sulf1_{}'.format(datsavedest, file_ext))
+        SO21 = (ttdat1['SO2'] * ttdat1['AIR_MASS']).sum(ttdims)
+        sulf1 = (ttdat1['SULFATE'] * ttdat1['AIR_MASS']).sum(ttdims)
+        SO21.to_dataset(name='tot_SO2_mass').to_netcdf('{}/so21_{}{}'.format(
+                                                       datsavedest, file_ext, ttstr))
+        sulf1.to_dataset(name='tot_SULFATE_mass').to_netcdf('{}/sulf1_{}{}'.format(
+                                                            datsavedest, file_ext, ttstr))
         print('wrote tracers 1')
     
     try:
@@ -131,10 +158,12 @@ def prelim_e3sm_fig(run1, run2, sfx='', savedest=None, datsavedest='.', inj_dela
         print('read tracers 2')
     except FileNotFoundError:
         print('computing tracers 2...')
-        SO22 = (dat2['SO2'] * dat2['AIR_MASS']).sum(('lat', 'lon', 'lev'))
-        sulf2 = (dat2['SULFATE'] * dat2['AIR_MASS']).sum(('lat', 'lon', 'lev'))
-        SO22.to_dataset(name='tot_SO2_mass').to_netcdf('{}/so22_{}'.format(datsavedest, file_ext))
-        sulf2.to_dataset(name='tot_SULFATE_mass').to_netcdf('{}/sulf2_{}'.format(datsavedest, file_ext))
+        SO22 = (ttdat2['SO2'] * ttdat2['AIR_MASS']).sum(ttdims)
+        sulf2 = (ttdat2['SULFATE'] * ttdat2['AIR_MASS']).sum(ttdims)
+        SO22.to_dataset(name='tot_SO2_mass').to_netcdf('{}/so22_{}{}'.format(
+                                                       datsavedest, file_ext, ttstr))
+        sulf2.to_dataset(name='tot_SULFATE_mass').to_netcdf('{}/sulf2_{}{}'.format(
+                                                            datsavedest, file_ext, ttstr))
         print('wrote tracers 2')
     
     # analytic total mass with V(:) = 1, sum Vk = 1
@@ -324,7 +353,6 @@ def prelim_e3sm_fig(run1, run2, sfx='', savedest=None, datsavedest='.', inj_dela
     axTr.legend(fontsize=tick_fs, fancybox=False, loc='center right', ncol=2)
     #axTr.set_ylim([0, 30])
     
-    
     # -------- formatting --------
     for ax in top_axes:
         ax.set_xlabel('')
@@ -362,27 +390,57 @@ def prelim_e3sm_fig(run1, run2, sfx='', savedest=None, datsavedest='.', inj_dela
 
 if(__name__ == '__main__'):
 
-    dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
-           'e3sm_pathway_figs'
-    data = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases'
-    ds = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways'
-    #ds = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways/delay_15days'
+    use_native_mass = [False, True, True, True]
+    inj_delay = [0, 0, 15, 0]
+    inj_delay_str = ['', '', '_dealy15days', '']
+    np4_str = ['', '', '', '_np4']
+    i = 0 # indexes lists above
 
-    runs1_config = 'allActive_np4'
-    runs2_config = 'passive_np4'
+    fig_dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
+               'e3sm_pathway_figs'
+    data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways'
+    data_source = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases'
+
+    runs1_config = 'allActive{}{}'.format(inj_dealy_str[i], np4_str[i])
+    runs2_config = 'passive{}{}'.format(inj_delay_str[i], npr_str[i])
     sfx = '{}-{}'.format(runs1_config, runs2_config)
     
-    runs1 = '{}/E3SM_ne16_L72_FIDEAL_SAI_{}/run/'.format(data, runs1_config)
-    runs2 = '{}/E3SM_ne16_L72_FIDEAL_SAI_{}/run/'.format(data, runs2_config)
+    rundir1 = '{}/E3SM_ne16_L72_FIDEAL_SAI_{}/run/'.format(data, runs1_config)
+    rundir2 = '{}/E3SM_ne16_L72_FIDEAL_SAI_{}/run/'.format(data, runs2_config)
+    runs1 = glob.glob('{}/*regrid*.nc'.format(runs1))
+    runs2 = glob.glob('{}/*regrid*.nc'.format(runs1))
     
-    run1 = '{}/{}_concat_hist.nc'.format(ds, runs1_config)
-    run2 = '{}/{}_concat_hist.nc'.format(ds, runs2_config)
-    
-    # first concatenate runs to single dataset
-    ctb.concat_run_outputs(runs1, outFile=run1, histnum=0, regridded=True, component='eam')
-    ctb.concat_run_outputs(runs2, outFile=run2, histnum=0, regridded=True, component='eam')
+    if(len(runs1) > 1):
+        run1 = '{}/{}_concat_hist.nc'.format(ds, runs1_config)
+        ctb.concat_run_outputs(runs1, outFile=run1, histnum=0, regridded=True, component='eam')
+    else: 
+        run1 = runs1[0]
+    if(len(runs2) > 1):
+        run2 = '{}/{}_concat_hist.nc'.format(ds, runs2_config)
+        ctb.concat_run_outputs(runs2, outFile=run2, histnum=0, regridded=True, component='eam')
+    else: 
+        run2 = runs2[0]
     print('\n')
-
-    #prelim_e3sm_fig(run1, run2, sfx=sfx, savedest=dest, datsavedest=ds)
-    prelim_e3sm_fig(run1, run2, sfx=sfx, savedest=dest, datsavedest=ds, inj_delay=15)
     
+    if(use_native_mass[i]):
+        runs1_native = glob.glob('{}/*0.nc'.format(runs1))
+        runs2_native = glob.glob('{}/*0.nc'.format(runs1))
+        if(len(runs1_native) > 1):
+            run1_native = '{}/{}_concat_hist.nc'.format(ds, runs1_config)
+            ctb.concat_run_outputs(runs1_native, outFile=run1_native, 
+                                   histnum=0, regridded=True, component='eam')
+        else: 
+            run1_native = runs1_native[0]
+        if(len(runs2_native) > 1):
+            run2_native = '{}/{}_concat_hist.nc'.format(ds, runs2_config)
+            ctb.concat_run_outputs(runs2_native, outFile=run2_native, 
+                                   histnum=0, regridded=True, component='eam')
+        else: 
+            run2_native = runs2_native[0]
+    print('\n')
+    else
+        runs1_native = None
+        runs2_native = None
+
+    prelim_e3sm_fig(run1, run2, run1_native, run2_native, 
+                    sfx=sfx, savedest=dest, datsavedest=ds, inj_delay=inj_delay[i]) 

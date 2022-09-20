@@ -6,9 +6,10 @@ fincl1 = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COO
 fincl2 = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS','SAI_AOD'
 fincl3 = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS','SAI_AOD'
 
-NHTFRQ           = -6,-6,-48       ! output frequency every 6 hours, 6 hours, 2 days
-MFILT            = 360,360,360     ! allow 360 time samples per hist file (90 days)
-NDENS            = 2,2             ! single-precision for each hist file
+!NHTFRQ           = -6,-6,-48       ! output frequency every 6 hours, 6 hours, 2 days
+NHTFRQ            = -24,-24,-4      ! output frequency every 6 hours, 6 hours, 2 days
+MFILT             = 721,721,721     ! time samples per hist file
+NDENS             = 2,2             ! single-precision for each hist file
 
 inithist='ENDOFRUN'
 

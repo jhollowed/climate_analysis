@@ -582,7 +582,7 @@ def concat_run_outputs(run, sel={}, mean=[], outFile=None, overwrite=False,
     if(regridded):
         hist = sorted(glob.glob('{}/*{}.h{}*regrid*.nc'.format(run, component, histnum)))
     else:
-        hist = sorted(glob.glob('{}/*{}.h{}*.nc'.format(run, component, histnum)))
+        hist = sorted(glob.glob('{}/*{}.h{}*0.nc'.format(run, component, histnum)))
     
     # remove outFile from glob results, if present
     try: hist.remove(outFile)
