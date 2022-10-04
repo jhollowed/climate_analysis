@@ -17,7 +17,7 @@ from climate_artist import horizontal_slice as plthor
 # ============================================================
 
 
-def mass_norm_fig(runs, run_labels, figsavedest=None, datsavedest='.', inj_delay=0):
+def mass_norm_fig(runs, run_labels, figsavedest=None, datsavedest='.', inj_delay=0, maxtime=None):
 
     # read data, transform time coordinate to ndays
     print('reading data')
@@ -28,11 +28,12 @@ def mass_norm_fig(runs, run_labels, figsavedest=None, datsavedest='.', inj_delay
         print('found {} timesteps from day {} to {} for run {}'.format(
                                           len(td[i]), min(td[i]), max(td[i]), run_labels[i]))
     # temp
-    dat = [d.sel({'time':slice(0, 155)}) for d in dat]
+    if(maxtime is not None):
+        dat = [d.sel({'time':slice(0, maxtime)}) for d in dat]
     time = [d['time'].values for d in dat]
     
     # toggle to force re-computation
-    overwrite=True
+    overwrite=False
     
     # get total masses of SO2, sulfate for all time, compute analytic solution
     SO2_mass = np.zeros(len(dat), dtype=object)
@@ -117,16 +118,18 @@ if(__name__ == '__main__'):
 
     data = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases'
     ds = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways/masscheck'
-    fs = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs'
+    fs = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/injection'
     
-    run_labels = ['allActive_delay15days', 'allActive_np4_delay15days']
-    delay=15
+    #run_labels = ['allActive_delay15days', 'allActive_np4_delay15days']
+    #delay=15
     #run_labels = ['passive', 'allActive', 'passive_np4', 'allActive_np4']
     #delay=0
+    run_labels = ['passive', 'allActive']
+    delay=0
     
     runs = [''] * len(run_labels)
     for i in range(len(run_labels)):
-        runs[i] = glob.glob('{}/E3SM_ne16_L72_FIDEAL_SAI_{}/run/*eam*h0*0.nc'.format(
+        runs[i] = glob.glob('{}/HSW_SAI_ne16pg2_L72_{}/run/*eam*h0*0.nc'.format(
                                                                               data, run_labels[i]))[0]
         #concatf = '{}/{}_concat_hist.nc'.format(ds, run_config)
         #ctb.concat_run_outputs(run, outFile=concatf, histnum=0, regridded=False, component='eam')

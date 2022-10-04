@@ -1,0 +1,29 @@
+empty_htapes     = .TRUE.              ! output only the varibales listed below
+avgflag_pertape  = 'A'                 ! hist file 1 is avg, 2 is instant, 3 is avg
+
+! output a few quantities for frequently on their instantaneous values for SSW quantification
+fincl1 = 'U','V','T','Z3','OMEGA','PS','E90','ST80_25'
+
+NHTFRQ            = -720            ! output frequency monthly
+MFILT             = 720             ! time samples per hist file
+NDENS             = 2,2             ! single-precision for each hist file
+
+inithist='ENDOFRUN'
+
+! TEMP TO FIX TRUNCATED SPINUP
+NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/HSW_SAI_ne16pg2_L72_e90st80_spinup/run/HSW_SAI_ne16pg2_L72_e90st80_spinup.eam.i.0002-01-01-00000.nc.newCoordNames"
+cldera_passive_read_from_ic_file =.true.
+
+! uses IC from HSW 5-year spinup
+!NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_10year_spinup/run/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
+
+! don't let analytic ICs overwrite input from NCDATA
+ideal_phys_analytic_ic = .false.
+
+! select HSW idealized forcing (nl added by Ben)
+ideal_phys_option = 'held-suarez-williamson'
+
+! turn off any random perturbations (not needed for HS in SE)
+pertlim = 0
+
+

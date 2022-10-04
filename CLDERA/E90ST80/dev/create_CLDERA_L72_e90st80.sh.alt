@@ -157,7 +157,7 @@ empty_htapes     = .TRUE.              ! output only the varibales listed below
 fincl1 = 'U','V','T','Z3','Q','OMEGA','PS','E90','ST80_25','E90j','ST80_25j','SFE90','SFE90j','GS_E90','AQ_E90','GS_ST80_25','AQ_ST80_25','CT_E90','CT_ST80_25','E90_tau','ST80_25_tau','DE90CHM','DST80_25CHM','CT_E90j','CT_ST80j','WDR_E90','WDR_ST80_25'
 
 avgflag_pertape   = 'I'             ! hist file 1 is instantaneous
-NHTFRQ            = -24             ! output frequency every day
+NHTFRQ            = -240            ! output frequency every 10 days
 MFILT             = 360             ! allow 360 time samples per hist file
 NDENS             = 2               ! single-precision for each hist file
 

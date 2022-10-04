@@ -25,7 +25,8 @@ tick_fs = 12
 def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True, center_x=None,
                    xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, gridlines=False, 
                    gridlinesArgs=None, cyclic=True, annotation=None, annotation_loc='lower left', 
-                   annotation_alpha=1, annotation_bbox=None, no_yticklabs=False, no_xticklabs=False):
+                   annotation_alpha=1, annotation_bbox=None, no_yticklabs=False, no_xticklabs=False, 
+                   label_minor_yticks=False):
     '''
     Plot the 2D vertical slice of a variable
 
@@ -109,6 +110,8 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         String to print in a text box in a plot corner, giving the position of the slice 
         (or stating a mean, etc). Defaults to 'SLICE AT ?' as a placeholder. Set to an empty
         string '' to disable the text box.
+    label_minor_yticks : bool
+        Whether or not to label minor ticks on the y-axis. Defaults to False.
     '''
     
     # -------- prepare --------
@@ -266,8 +269,9 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
     # x, y tick labels formats assuming pressure vs. degrees
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: \
                                  ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
-    ax.yaxis.set_minor_formatter(ticker.FuncFormatter(lambda y,pos: \
-                                 ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
+    if(label_minor_yticks):
+        ax.yaxis.set_minor_formatter(ticker.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(
+                                                   int(np.maximum(-np.log10(y),0)))).format(y)))
     ax.xaxis.set_major_formatter(aut.LON_DEG_FORMATTER)
     
     if(gridlines):

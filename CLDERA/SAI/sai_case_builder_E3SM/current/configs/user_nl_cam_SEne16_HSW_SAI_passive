@@ -6,14 +6,15 @@ fincl1 = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COO
 fincl2 = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS','SAI_AOD'
 fincl3 = 'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','SAI_HEAT','SAI_COOL','AIR_MASS','SAI_AOD'
 
-!NHTFRQ           = -6,-6,-48       ! output frequency every 6 hours, 6 hours, 2 days
-NHTFRQ            = -24,-24,-4      ! output frequency every 6 hours, 6 hours, 2 days
+NHTFRQ            = -6,-6,-24     ! output frequency every 6 hours, 6 hours, 2 days
+! --- For tuning !!
+!NHTFRQ            = -720,-720,-720     ! output frequency every 6 hours, 6 hours, 2 days
 MFILT             = 721,721,721     ! time samples per hist file
 NDENS             = 2,2             ! single-precision for each hist file
 
 inithist='ENDOFRUN'
 
-! uses new 5-year spinup with extended stratopause
+! uses IC from HSW 5-year spinup
 NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_10year_spinup/run/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
 
 ! don't let analytic ICs overwrite input from NCDATA

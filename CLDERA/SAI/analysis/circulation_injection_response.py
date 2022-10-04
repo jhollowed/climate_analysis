@@ -17,7 +17,7 @@ from climate_artist import horizontal_slice as plthor
 # ============================================================
 
 
-def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None, 
+def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None, overwrite=False,  
                     sfx='', savedest=None, datsavedest='.', inj_delay=0):
 
     # windows in days over which to compoute means for horizontal slices
@@ -50,12 +50,12 @@ def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None,
     # read native if passed
     if(run1_native is not None and run2_native is not None):
         print('reading native data 1')
-        ndat1 = xr.open_dataset(run1)
-        ndat1 = dat1.assign_coords(time=td1)
+        ndat1 = xr.open_dataset(run1_native)
+        ndat1 = ndat1.assign_coords(time=td1)
         
         print('reading native data 2')
-        ndat2 = xr.open_dataset(run2)
-        ndat2 = dat2.assign_coords(time=td2)
+        ndat2 = xr.open_dataset(run2_native)
+        ndat2 = ndat2.assign_coords(time=td2)
 
         print('using native grid data for computing total tracer masses...')
         ttdat1 = ndat1
@@ -76,9 +76,6 @@ def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None,
     time = td1
     lat = dat1['lat']
     lev = dat1['lev']
-
-    # toggle to force re-computation
-    overwrite=False
     
     # get "anomalies", read from file if previosly computed, or compute and then write out
     try:
@@ -138,8 +135,8 @@ def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None,
     # get total masses of SO2, sulfate for all time, compute analytic solution
     try:
         if(overwrite == True): raise FileNotFoundError
-        SO21 = xr.open_dataset('{}/so21_{}'.format(datsavedest, file_ext))['tot_SO2_mass']
-        sulf1 = xr.open_dataset('{}/sulf1_{}'.format(datsavedest, file_ext))['tot_SULFATE_mass']
+        SO21 = xr.open_dataset('{}/so21_{}{}'.format(datsavedest,file_ext,ttstr))['tot_SO2_mass']
+        sulf1 = xr.open_dataset('{}/sulf1_{}{}'.format(datsavedest,file_ext,ttstr))['tot_SULFATE_mass']
         print('read tracers 1')
     except FileNotFoundError:
         print('computing tracers 1...')
@@ -153,8 +150,8 @@ def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None,
     
     try:
         if(overwrite == True): raise FileNotFoundError
-        SO22 = xr.open_dataset('{}/so22_{}'.format(datsavedest, file_ext))['tot_SO2_mass']
-        sulf2 = xr.open_dataset('{}/sulf2_{}'.format(datsavedest, file_ext))['tot_SULFATE_mass']
+        SO22 = xr.open_dataset('{}/so22_{}{}'.format(datsavedest,file_ext,ttstr))['tot_SO2_mass']
+        sulf2 = xr.open_dataset('{}/sulf2_{}{}'.format(datsavedest,file_ext,ttstr))['tot_SULFATE_mass']
         print('read tracers 2')
     except FileNotFoundError:
         print('computing tracers 2...')
@@ -200,7 +197,8 @@ def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None,
     clev_U_labels = []
     cmap_U = mpl.cm.rainbow
     
-    clev_Tg = np.linspace(-3, 4, 8)
+    # clev_Tg = np.linspace(-3, 4, 8)  #old
+    clev_Tg = np.linspace(-3, 6, 10)
     clev_Tg_fmt = '%.0f'
     clev_Tg_labels = []
     
@@ -276,12 +274,12 @@ def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None,
         'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]#, 'colorFormatter':None}]
     var_dict_c = [{'var':Tdiff.sel({'time':t_windows[1]}).mean('time'), 
                    'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
-    cArgs['label'] = '{}Heating  rate [K/day]'.format(t_labels[1])
+    cArgs['label'] = '{}T anomaly [K]'.format(t_labels[1])
     cf = pltvert(lat, lev, var_dict, ax=axT1, plot_zscale=False,annotation='', gridlines=True)
     pltvert(lat, lev, var_dict_c, ax=axT1, plot_zscale=False, inverty=False, annotation='')
     cf[0].set_ticks(clev_T)
     cf[0].ax.tick_params(rotation=90)
-    
+ 
     # ---------- UDIFF PLOTS ----------
     print('PLOTTING WIND')
     
@@ -304,7 +302,7 @@ def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None,
         'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]#, 'colorFormatter':None}]
     var_dict_c = [{'var':Udiff.sel({'time':t_windows[1]}).mean('time'), 
                    'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
-    cArgs['label'] = '{}Heating  rate [K/day]'.format(t_labels[1])
+    cArgs['label'] = '{}U anomaly [m/s]'.format(t_labels[1])
     cf = pltvert(lat, lev, var_dict, ax=axU1, plot_zscale=False,annotation='', gridlines=True)
     pltvert(lat, lev, var_dict_c, ax=axU1, plot_zscale=False, inverty=False, annotation='')
     cf[0].set_ticks(clev_U)
@@ -379,7 +377,7 @@ def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None,
      
     plt.tight_layout()
     if(savedest is not None):
-        fig.savefig('{}/prelim_e3smFig_pthwy_{}.png'.format(savedest, sfx), dpi=300)
+        fig.savefig('{}/heating_response{}.png'.format(savedest, sfx), dpi=300)
     else: 
         plt.show()
         
@@ -390,57 +388,52 @@ def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None,
 
 if(__name__ == '__main__'):
 
-    use_native_mass = [False, True, True, True]
-    inj_delay = [0, 0, 15, 0]
-    inj_delay_str = ['', '', '_dealy15days', '']
-    np4_str = ['', '', '', '_np4']
-    i = 0 # indexes lists above
-
     fig_dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
-               'e3sm_pathway_figs'
+               'heating_response'
     data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways'
     data_source = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases'
 
-    runs1_config = 'allActive{}{}'.format(inj_dealy_str[i], np4_str[i])
-    runs2_config = 'passive{}{}'.format(inj_delay_str[i], npr_str[i])
-    sfx = '{}-{}'.format(runs1_config, runs2_config)
+    runs1_config = 'allActive'
+    runs2_config = 'passive'
+    sfx = '_{}-{}'.format(runs1_config, runs2_config)
     
-    rundir1 = '{}/E3SM_ne16_L72_FIDEAL_SAI_{}/run/'.format(data, runs1_config)
-    rundir2 = '{}/E3SM_ne16_L72_FIDEAL_SAI_{}/run/'.format(data, runs2_config)
-    runs1 = glob.glob('{}/*regrid*.nc'.format(runs1))
-    runs2 = glob.glob('{}/*regrid*.nc'.format(runs1))
+    rundir1 = '{}/HSW_SAI_ne16pg2_L72_{}/run/'.format(data_source, runs1_config)
+    rundir2 = '{}/HSW_SAI_ne16pg2_L72_{}/run/'.format(data_source, runs2_config)
+    runs1 = glob.glob('{}/*regrid*aave*nc'.format(rundir1))
+    runs2 = glob.glob('{}/*regrid*aave*.nc'.format(rundir2))
     
     if(len(runs1) > 1):
-        run1 = '{}/{}_concat_hist.nc'.format(ds, runs1_config)
+        run1 = '{}/{}_concat_hist.nc'.format(data_dest, runs1_config)
         ctb.concat_run_outputs(runs1, outFile=run1, histnum=0, regridded=True, component='eam')
     else: 
         run1 = runs1[0]
     if(len(runs2) > 1):
-        run2 = '{}/{}_concat_hist.nc'.format(ds, runs2_config)
+        run2 = '{}/{}_concat_hist.nc'.format(data_dest, runs2_config)
         ctb.concat_run_outputs(runs2, outFile=run2, histnum=0, regridded=True, component='eam')
     else: 
         run2 = runs2[0]
     print('\n')
     
-    if(use_native_mass[i]):
-        runs1_native = glob.glob('{}/*0.nc'.format(runs1))
-        runs2_native = glob.glob('{}/*0.nc'.format(runs1))
+    use_native_mass = True
+    if(use_native_mass):
+        runs1_native = glob.glob('{}/*eam.h0.*0.nc'.format(rundir1))
+        runs2_native = glob.glob('{}/*eam.h0.*0.nc'.format(rundir2))
         if(len(runs1_native) > 1):
-            run1_native = '{}/{}_concat_hist.nc'.format(ds, runs1_config)
+            run1_native = '{}/{}_concat_hist.nc'.format(data_dest, runs1_config)
             ctb.concat_run_outputs(runs1_native, outFile=run1_native, 
                                    histnum=0, regridded=True, component='eam')
         else: 
             run1_native = runs1_native[0]
         if(len(runs2_native) > 1):
-            run2_native = '{}/{}_concat_hist.nc'.format(ds, runs2_config)
+            run2_native = '{}/{}_concat_hist.nc'.format(data_dest, runs2_config)
             ctb.concat_run_outputs(runs2_native, outFile=run2_native, 
                                    histnum=0, regridded=True, component='eam')
         else: 
             run2_native = runs2_native[0]
-    print('\n')
-    else
+    else:
         runs1_native = None
         runs2_native = None
+    print('\n')
 
-    prelim_e3sm_fig(run1, run2, run1_native, run2_native, 
-                    sfx=sfx, savedest=dest, datsavedest=ds, inj_delay=inj_delay[i]) 
+    prelim_e3sm_fig(run1, run2, run1_native, run2_native, overwrite=False,
+                    sfx=sfx, savedest=fig_dest, datsavedest=data_dest, inj_delay=0) 

@@ -647,13 +647,3 @@ def concat_run_outputs(run, sel={}, mean=[], outFile=None, overwrite=False,
         
 
 # -----------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-

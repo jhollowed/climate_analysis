@@ -100,7 +100,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # ---------- configure case
     cd $CASE
     ./xmlchange DEBUG=FALSE,DOUT_S=FALSE,STOP_OPTION=ndays,STOP_N=$STOP_N
-    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-cldera_sai_trcs -verbose"
+    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-cldera_sai_trcs -cldera_passive_trcs"
     ./xmlchange JOB_WALLCLOCK_TIME=$WALLCLOCK
     ./xmlchange SAVE_TIMING=TRUE
     ./xmlchange JOB_QUEUE=$QUEUE

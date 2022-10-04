@@ -6,7 +6,7 @@
 #GRID=$3
 
 # JH EAM implementation
-./create_CLDERA_L72_e90st80.sh.alt 1 15
+./create_CLDERA_L72_e90st80.sh.alt 1 360
 
 # AH MAM4 implementation
 #./create_CLDERA_L72_e90st80.sh 2 30

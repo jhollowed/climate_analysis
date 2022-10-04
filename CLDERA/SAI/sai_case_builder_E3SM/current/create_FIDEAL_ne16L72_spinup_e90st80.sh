@@ -14,8 +14,8 @@ MACHINE=cori-knl
 COMPILER=intel
 PROJECT=m4014
 COMPSET=FIDEAL
-GRID=ne16_ne16
-RES=ne16
+GRID=ne16pg2_ne16pg2
+RES=ne16pg2
 
 BUILD_FLAG=$1
 TOT_RUN_LENGTH=$2
@@ -40,14 +40,14 @@ else
 fi
 
 CASES="${wd}/cases"
-CASENAME="E3SM_${RES}_L72_${COMPSET}_SAI${SUFFIX}"
+CASENAME="HSW_SAI_${RES}_L72${SUFFIX}"
 CASE=${CASES}/${CASENAME}
 
 OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
-# if total run length >30 days per run, then require resubmits
-MAX_STOP_N=31
+# if total run length >1/2 year per run (~15 min on Cori with 768 ranks), then require resubmits
+MAX_STOP_N=181
 DO_RESUBS=false
 if [ "$TOT_RUN_LENGTH" -gt "$MAX_STOP_N" ]; then
     STOP_N=$MAX_STOP_N
@@ -100,7 +100,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
     # ---------- configure case
     cd $CASE
     ./xmlchange DEBUG=FALSE,DOUT_S=FALSE,STOP_OPTION=ndays,STOP_N=$STOP_N
-    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-cldera_sai_trcs -verbose"
+    ./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-cldera_passive_trcs "
     ./xmlchange JOB_WALLCLOCK_TIME=$WALLCLOCK
     ./xmlchange SAVE_TIMING=TRUE
     ./xmlchange JOB_QUEUE=$QUEUE

@@ -157,9 +157,10 @@ def compare_q(var, f1, l1, l2, trange='30day', native=None, varIs2d=False, unit=
 
 if __name__ == '__main__':
 
-    remap = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/E90ST80/cases/lowres_output/E3SM_F1850_ne4pg2_oQU480_L72_e90st80_bothimpl/run-1year/E3SM_F1850_ne4pg2_oQU480_L72_e90st80_bothimpl.eam.h0.0001-01-01-00000.nc.regrid.25x48.nc'
-    native = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/E90ST80/cases/lowres_output/E3SM_F1850_ne4pg2_oQU480_L72_e90st80_bothimpl/run-1year/E3SM_F1850_ne4pg2_oQU480_L72_e90st80_bothimpl.eam.h0.0001-01-01-00000.nc'
-    trange='1year'
+    remap = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/E90ST80/cases/lowres_output/E3SM_F1850_ne4pg2_oQU480_L72_e90st80_bothimpl/run/E3SM_F1850_ne4pg2_oQU480_L72_e90st80_bothimpl.eam.h0.0001-01-01-00000.regrid.25x48_aave.nc'
+    native = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/E90ST80/cases/lowres_output/E3SM_F1850_ne4pg2_oQU480_L72_e90st80_bothimpl/run/E3SM_F1850_ne4pg2_oQU480_L72_e90st80_bothimpl.eam.h0.0001-01-01-00000.nc'
+    #trange='1year'
+    trange='30day'
     compare_q('E90', remap, 'EAM', 'MOZART', trange, native)
     compare_q('ST80_25', remap, 'EAM', 'MOZART', trange, native)
     #compare_q('SFE90', remap, 'EAM', 'MOZART', trange, native, True, 'kg/m^2/s')
