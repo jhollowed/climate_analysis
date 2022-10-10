@@ -389,8 +389,8 @@ def prelim_e3sm_fig(run1, run2, run1_native=None, run2_native=None, overwrite=Fa
 if(__name__ == '__main__'):
 
     fig_dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/figs/'\
-               'heating_response'
-    data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways'
+               'heating_response_1year'
+    data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways_1year'
     data_source = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases'
 
     runs1_config = 'allActive'
@@ -404,12 +404,12 @@ if(__name__ == '__main__'):
     
     if(len(runs1) > 1):
         run1 = '{}/{}_concat_hist.nc'.format(data_dest, runs1_config)
-        ctb.concat_run_outputs(runs1, outFile=run1, histnum=0, regridded=True, component='eam')
+        ctb.concat_run_outputs(rundir1, outFile=run1, histnum=0, regridded=True, component='eam')
     else: 
         run1 = runs1[0]
     if(len(runs2) > 1):
         run2 = '{}/{}_concat_hist.nc'.format(data_dest, runs2_config)
-        ctb.concat_run_outputs(runs2, outFile=run2, histnum=0, regridded=True, component='eam')
+        ctb.concat_run_outputs(rundir2, outFile=run2, histnum=0, regridded=True, component='eam')
     else: 
         run2 = runs2[0]
     print('\n')
@@ -420,14 +420,14 @@ if(__name__ == '__main__'):
         runs2_native = glob.glob('{}/*eam.h0.*0.nc'.format(rundir2))
         if(len(runs1_native) > 1):
             run1_native = '{}/{}_concat_hist.nc'.format(data_dest, runs1_config)
-            ctb.concat_run_outputs(runs1_native, outFile=run1_native, 
-                                   histnum=0, regridded=True, component='eam')
+            ctb.concat_run_outputs(rundir1, outFile=run1_native, 
+                                   histnum=0, regridded=False, component='eam')
         else: 
             run1_native = runs1_native[0]
         if(len(runs2_native) > 1):
             run2_native = '{}/{}_concat_hist.nc'.format(data_dest, runs2_config)
-            ctb.concat_run_outputs(runs2_native, outFile=run2_native, 
-                                   histnum=0, regridded=True, component='eam')
+            ctb.concat_run_outputs(rundir2, outFile=run2_native, 
+                                   histnum=0, regridded=False, component='eam')
         else: 
             run2_native = runs2_native[0]
     else:

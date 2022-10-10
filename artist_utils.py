@@ -157,6 +157,12 @@ def add_annotation_box(ax, text, loc='lower right', alpha=1, fs=10, bbox_to_anch
         Alpha of the annotation box. Defaults to 1
     fs : float, optional
         Fontsize of the text in the annotation box. Defaults to 10
+    bbox_to_anchor : a Bbox instance, a list of [left, bottom, width, height], 
+                     or a list of [left, bottom] where the width and height will 
+                     be assumed to be zero, optional
+        Set the bbox that the annotation box is anchored to. Defaults to None, 
+        in which case bbox is automatic from the parent axis. The tansform will
+        be ax.transAxes, i.e. the possible bbox positions span 0->1 across each axis
     '''
     if(bbox_to_anchor is None):
         text_box = AnchoredText(text, frameon=True, loc=loc, pad=0.5, prop=dict(fontsize=fs))

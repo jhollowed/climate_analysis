@@ -29,7 +29,7 @@ QUEUE=debug
 WALLCLOCK=00:30:00
 
 wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/current"
-MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAIBranch"
+MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAI"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
 CONFIGS="${wd}/configs"

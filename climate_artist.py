@@ -2,6 +2,7 @@ import os
 import sys
 import pdb
 import glob
+import inspect
 import warnings
 import numpy as np
 import xarray as xr
@@ -22,11 +23,12 @@ tick_fs = 12
 # ==========================================================================================
 
 
-def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True, center_x=None,
-                   xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, gridlines=False, 
-                   gridlinesArgs=None, cyclic=True, annotation=None, annotation_loc='lower left', 
-                   annotation_alpha=1, annotation_bbox=None, no_yticklabs=False, no_xticklabs=False, 
-                   label_minor_yticks=False):
+def vertical_slice(x, y, var_dict, ax, include_contours=True, plot_zscale=True, inverty=True, logy=True, 
+                   center_x=None, xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, 
+                   gridlines=False, gridlinesArgs=None, cyclic=True, 
+                   annotation=None, annotation_loc='lower left', annotation_alpha=1, annotation_bbox=None,
+                   no_yticklabs=False, no_xticklabs=False, label_minor_yticks=False, 
+                   cbar_ticks_match_levels=True):
     '''
     Plot the 2D vertical slice of a variable
 
@@ -71,6 +73,11 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         default values. If var_dict is a list of dicts, each variable will be overlain on the axis.
     ax : pyplot axis object
         The axis on which to render the plot.
+    include_contours : bool, optional
+        Whether or not to include contours over a base contourf or tricontourf plot. Contour levels
+        will match the base plot, contour colors will be black, and linewidths will be 0.6. Label 
+        format will match the base plot. If wanting to override these defaults, disable this option 
+        and instead call this funciton with plotType=contour. Defaults to True.
     plot_zscale : bool, optional
         Whether or not to include a second y axis of values converting the original y-axis 
         values from pressure to height, assuming an isothermal atmosphere. Assumed that the
@@ -80,22 +87,22 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         Defaults to true.
     logy : string, optional
         Whether or not to set the yscale to 'log'. Defaults to True.
-    center_x: float
+    center_x: float, optional
         x-coordiante on which to center the data. It will be assumed that the x-data is
-        periodic, and defined in degrees. 
-    xlim : list of length 2
+        periodic, and defined in degrees.
+    xlim : list of length 2, optonal
         xlimits to impose on figure.
         Defaults to None, in which case the default chosen by the plotting call is used.
-    ylim : list of length 2
+    ylim : list of length 2, optional
         ylimits to impose on figure.
         Defaults to None, in which case the default chosen by the plotting call is used.
-    xlabel : string
+    xlabel : string, optonal
         The label fot the x-axis. Fontsize will default to 12.
         Defaults to 'x'. Set to an empty string '' to disable. 
-    ylabel : string
+    ylabel : string, optional
         The label for the y-axis. Fontsize will default to 12.
         Default to 'y'. Set to an empty string '' to disable.
-    title : string
+    title : string, optional
         The title for the axis. Fontsize will default to 14. 
         Default is None, in which case the title is blank.
     gridlines : bool, optional
@@ -103,15 +110,27 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         Default is False
     gridlinesArgs : dict, optional 
         Args sent to cartopy gridlines, as a dict.
-    cyclic : bool
+    cyclic : bool, optional
         Whether or not to add a cyclic point to the data, to avoid gaps in any contour plots.
         Defaults to True.
-    annotation : string
-        String to print in a text box in a plot corner, giving the position of the slice 
-        (or stating a mean, etc). Defaults to 'SLICE AT ?' as a placeholder. Set to an empty
-        string '' to disable the text box.
-    label_minor_yticks : bool
+    annotation : string, optonal
+        String to print in a text box in a plot corner. Defaults to None, in which case the 
+        text box is disabled.
+    annotation_alpha : float, optional
+        Alpha for the annotation box. Defaults to 1.
+    annotation_loc : str, optional
+        Alpha location. Defaults to 'lower left'.
+    annotation_bbox : a Bbox instance, a list of [left, bottom, width, height], 
+                     or a list of [left, bottom] where the width and height will 
+                     be assumed to be zero, optional
+        Set the bbox that the annotation box is anchored to. Defaults to None, 
+        in which case bbox is automatic from the parent axis. The tansform will
+        be ax.transAxes, i.e. the possible bbox positions span 0->1 across each axis
+    label_minor_yticks : bool, optonal
         Whether or not to label minor ticks on the y-axis. Defaults to False.
+    cbar_ticks_match_levels : bool, optional
+        Whether or not to set the colorbar ticks to match the levels of the corresponding plot. 
+        Only applies if plotType is contourf, tricontourf, or pcolormesh. Defaults to True.
     '''
     
     # -------- prepare --------
@@ -119,23 +138,27 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
 
     # -------- define default plot args --------
     default_args = {
-                    'contour'  :  {'levels':12, 'colors':'k', 'extend':'both'},
-                    'contourf' :  {'levels':12, 'cmap':'rainbow','extend':'both'},
-                    'clabel'   :  {'inline':True, 'fmt':'%.0f', 'fontsize':tick_fs},
-                    'colorbar' :  {'ax':ax, 'location':'right', 'orientation':'vertical',
-                                   'extend':'both', 'extendrect':False, 'format':'%.2f'},
-                    'gridlines':  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
-                                   'color':'k', 'lw':0.3, 'alpha':0.5, 'xformatter':aut.LON_DEG_FORMATTER}
+                    'contour'     :  {'levels':12, 'colors':'k', 'linewidths':0.6, 
+                                      'extend':'both','zorder':1},
+                    'contourf'    :  {'levels':12, 'cmap':'rainbow','extend':'both','zorder':0},
+                    'tricontourf' :  {'levels':12, 'cmap':'rainbow','extend':'both','zorder':0},
+                    'pcolormesh'  :  {'cmap':'rainbow','shading':'nearest','zorder':0},
+                    'clabel'      :  {'inline':True, 'fmt':'%.2f', 'fontsize':tick_fs},
+                    'colorbar'    :  {'ax':ax, 'location':'right', 'orientation':'vertical',
+                                      'extend':'both', 'extendrect':False, 'format':'%.2f'},
+                    'gridlines'   :  {'draw_labels':True, 'dms':True, 'x_inline':False, 'y_inline':False, 
+                                      'color':'k', 'lw':0.3, 'alpha':0.5, 
+                                      'xformatter':aut.LON_DEG_FORMATTER}
                    }
     color_formatters = {
-                        'contour'  : 'clabel',
-                        'contourf' : 'colorbar'
+                        'contour'     : 'clabel',
+                        'contourf'    : 'colorbar',
+                        'tricontourf' : 'colorbar'
                        }
     if(xlabel is None): xlabel = 'x'
     if(ylabel is None): ylabel = 'y'
-    if(annotation is None): annotation = 'SLICE AT ?'
+   
 
-    
     # -------- check inputs, add missing dict fields --------
     valid_keys = ['var', 'plotType', 'plotArgs', 'colorArgs', 'colorFormatter']
     if isinstance(var_dict, dict): var_dict = [var_dict]
@@ -186,10 +209,41 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         if gridlinesArgs is not None:
             gridlinesArgs = {**default_args['gridlines'], **gridlinesArgs}
         else:
-            gridlinesArgs = default_args['gridlines']
-  
+            gridlinesArgs = default_args['gridlines'] 
+
+
+    # -------- make recursive call is overplotting contours --------
+    valid_plots_to_incl_contours = ['contourf', 'tricontourf', 'pcolormesh']
+    added_plots = 0
+    if(include_contours):
+        for i in range(len(var_dict)):
+            d = var_dict[i]
+            if d['plotType'] not in valid_plots_to_incl_contours:
+                warnings.warn('include_contours = True not valid for plotType {}; '\
+                              'skipping contours'.format(d['plotType']))
+                continue
+            contour_dict = {'var':d['var'], 'plotType':'contour'}
+            if 'levels' in d.keys():
+                contour_dict['levels'] = d['levels']
+            if 'fmt' in d.keys():
+                contour_dict['fmt'] = d['fmt']
+            var_dict.append(contour_dict)
+            added_plots += 1
+        if(added_plots > 0):
+            # get all kwargs, recusively call function with added contour plots
+            frame = inspect.currentframe()
+            argkeys, _, _, argvalues = inspect.getargvalues(frame)
+            kwargs = {}
+            for key in argkeys:
+                if key != 'self':
+                    kwargs[key] = argvalues[key]
+            kwargs['include_contours'] = False # prevent recursion loop
+            return vertical_slice(**kwargs)
+      
+
     # -------- plot variables --------
     for i in range(len(var_dict)):
+        d = var_dict[i]
         if(cyclic):
             d['var'], xcyc = add_cyclic_point(d['var'], coord=x, axis=1)
     if(cyclic):
@@ -231,7 +285,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
                 plots[i].collections[zero].set_linewidth(bold)
             except ValueError:
                 pass
-        
+
         
     # -------- format colors --------
     cf = np.empty(len(var_dict), dtype=object)
@@ -252,7 +306,10 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         cf[i].ax.tick_params(labelsize=tick_fs)
         cf[i].ax.xaxis.get_label().set_fontsize(label_fs)
         cf[i].ax.yaxis.get_label().set_fontsize(label_fs)
-    
+        if(cbar_ticks_match_levels):
+            cf[i].set_ticks(plots[i].levels.tolist())
+  
+
     # -------- format figure -------- 
     if(inverty): ax.invert_yaxis()
     if(logy): ax.set_yscale('log')
@@ -283,7 +340,7 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
         plotterz(X, ctb.ptoz(Y).m, d['var'], **d['plotArgs'], alpha=0)  # pressure must be in hPa
         axz.set_ylim(ylimz)
         axz.set_ylabel(r'Z [km]', fontsize=label_fs)
-    if(annotation != ''):
+    if(annotation is not None):
         aut.add_annotation_box(ax, annotation, loc=annotation_loc, fs=tick_fs, alpha=annotation_alpha,
                                bbox_to_anchor=annotation_bbox)
     return cf
@@ -292,11 +349,12 @@ def vertical_slice(x, y, var_dict, ax, plot_zscale=True, inverty=True, logy=True
 # -------------------------------------------------------------
 
 
-def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),  
-                     xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, 
+def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(), include_contours=True,
+                     xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, cyclic=True,
                      gridlines=True, gridlinesArgs=None, coastlines=True, coastlinesArgs=None, 
-                     cyclic=True, annotation=None, annotation_loc='lower right', 
-                     annotation_alpha=1, annotation_bbox=None, no_yticklabs=False, no_xticklabs=False):
+                     annotation=None, annotation_loc='lower left', annotation_alpha=1, 
+                     annotation_bbox=None,
+                     no_yticklabs=False, no_xticklabs=False, cbar_ticks_match_levels=True):
     '''
     Plot the 2D horizontal slice of a variable
 
@@ -344,6 +402,11 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     projection : cartopy ccrs object, optional
         Projection to apply to the slice, as a catropy.ccrs object instance.
         Default is ccrs.Robinson.
+    include_contours : bool, optional
+        Whether or not to include contours over a base contourf or tricontourf plot. Contour levels
+        will match the base plot, contour colors will be black, and linewidths will be 0.6. Label 
+        format will match the base plot. If wanting to override these defaults, disable this option 
+        and instead call this funciton with plotType=contour. Defaults to True.
     ylim : list of length 2, optional
         ylimits to impose on figure.
         Defaults to None, in which case the default chosen by the plotting call is used.
@@ -371,10 +434,22 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
     cyclic : bool
         Whether or not to add a cyclic point to the data, to avoid gaps in any contour plots.
         Defaults to True.
-    annotation : string
-        String to print in a text box in a plot corner, giving the position of the slice 
-        (or stating a mean, etc). Defaults to 'SLICE AT' as a placeholder. Set to an empty
-        string '' to disable the text box.
+    annotation : string, optonal
+        String to print in a text box in a plot corner. Defaults to None, in which case the 
+        text box is disabled.
+    annotation_alpha : float, optional
+        Alpha for the annotation box. Defaults to 1.
+    annotation_loc : str, optional
+        Alpha location. Defaults to 'lower left'.
+    annotation_bbox : a Bbox instance, a list of [left, bottom, width, height], 
+                     or a list of [left, bottom] where the width and height will 
+                     be assumed to be zero, optional
+        Set the bbox that the annotation box is anchored to. Defaults to None, 
+        in which case bbox is automatic from the parent axis. The tansform will
+        be ax.transAxes, i.e. the possible bbox positions span 0->1 across each axis
+    cbar_ticks_match_levels : bool
+        Whether or not to set the colorbar ticks to match the levels of the corresponding plot. 
+        Only applies if plotType is contourf, tricontourf, or pcolormesh. Defaults to True.
     '''
     
     # -------- prepare --------
@@ -395,12 +470,12 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
             'coastlines':  {'resolution':'110m', 'color':'k', 'linestyle':'-', 'alpha':0.75}
                    }
     color_formatters = {
-                        'contour'  : 'clabel',
-                        'contourf' : 'colorbar',
+                        'contour'     : 'clabel',
+                        'contourf'    : 'colorbar',
+                        'tricontourf' : 'colorbar'
                        }
     if(xlabel is None): xlabel = 'x'
     if(ylabel is None): ylabel = 'y'
-    if(annotation is None): annotation = 'SLICE AT ?'
     
     # -------- check inputs, add missing dict fields --------
     valid_keys = ['var', 'plotType', 'plotArgs', 'colorArgs', 'colorFormatter']
@@ -457,17 +532,63 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.Robinson(),
             coastlinesArgs = {**default_args['coastlines'], **coastlinesArgs}
         else:
             coastlinesArgs = default_args['coastlines']
+    
 
-    # -------- plot variables --------
-     
-    if(cyclic):
-        d['var'], x = add_cyclic_point(d['var'], coord=x, axis=1)
+    # -------- make recursive call is overplotting contours --------
+    valid_plots_to_incl_contours = ['contourf', 'tricontourf', 'pcolormesh']
+    added_plots = 0
+    if(include_contours):
+        for i in range(len(var_dict)):
+            d = var_dict[i]
+            if d['plotType'] not in valid_plots_to_incl_contours:
+                warnings.warn('include_contours = True not valid for plotType {}; '\
+                              'skipping contours'.format(d['plotType']))
+                continue
+            contour_dict = {'var':d['var'], 'plotType':'contour'}
+            if 'levels' in d.keys():
+                contour_dict['levels'] = d['levels']
+            if 'fmt' in d.keys():
+                contour_dict['fmt'] = d['fmt']
+            var_dict.append(contour_dict)
+            added_plots += 1
+        if(added_plots > 0):
+            # get all kwargs, recusively call function with added contour plots
+            frame = inspect.currentframe()
+            argkeys, _, _, argvalues = inspect.getargvalues(frame)
+            kwargs = {}
+            for key in argkeys:
+                if key != 'self':
+                    kwargs[key] = argvalues[key]
+            kwargs['include_contours'] = False # prevent recursion loop
+            return horizontal_slice(**kwargs)
     
-    X, Y = np.meshgrid(x, y)
-    
-    plots = np.empty(len(var_dict), dtype=object)
+
+    # -------- flag vars on native grid ----------
+    native_grid = np.zeros(len(var_dict), dtype=bool)
     for i in range(len(var_dict)):
         d = var_dict[i]
+        if(len(d['var'].shape)) == 1:
+            native_grid[i] = True
+        elif(len(d['var'].shape)) > 1:
+            native_grid[i] = False
+
+
+    # -------- plot variables --------
+    plots = np.empty(len(var_dict), dtype=object)
+    
+    for i in range(len(var_dict)):
+        d = var_dict[i]
+        if(cyclic and not native_grid[i]):
+            pdb.set_trace()
+            d['var'], xcyc = add_cyclic_point(d['var'], coord=x, axis=1)
+        else:
+            xcyc = x
+        
+        if(native_grid[i]):
+            X, Y = x, y
+        else:
+            X, Y = np.meshgrid(xcyc, y)
+
         plotter = getattr(ax, d['plotType'])
         plots[i] = plotter(X, Y, d['var'], **d['plotArgs'])
         # bold zero contour if exists
