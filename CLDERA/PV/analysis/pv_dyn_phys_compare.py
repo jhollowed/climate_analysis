@@ -1,6 +1,7 @@
 import pdb
 import glob
 import textwrap
+import warnings
 import numpy as np
 import xarray as xr
 import artist_utils as art
@@ -61,18 +62,26 @@ class pv_verify:
         self.data   = xr.open_dataset(histfile)
         self.time   = self.data['ndcur']
         self.ncol   = self.data['ncol']
-        self.ncol_d = self.data['ncol_d']
         self.lev    = self.data['lev']
         self.lat    = self.data['lat']
         self.lon    = self.data['lon']
-        self.lat_d  = self.data['lat_d']
-        self.lon_d  = self.data['lon_d']
+        try:
+            self.ncol_d = self.data['ncol_d']
+            self.lat_d  = self.data['lat_d']
+            self.lon_d  = self.data['lon_d']
+        except KeyError:
+            warnings.warn('no lat_d, lon_d, or ncol_d found in dataset; '\
+                          'assuming phys and dyn grids are the same.')
+            self.ncol_d = self.ncol
+            self.lat_d = self.lat
+            self.lon_d = self.lon
+
         self.data = self.data.assign_coords(time=self.time)
 
     def read_data(self):
         print('reading PV, DYN_PV for {}...'.format(self.name))
-        self.pv_phys = self.data['PV']     * 1e-6  # scale to PVU
-        self.pv_dyn  = self.data['DYN_PV'] * 1e-6  # scale to PVU
+        self.pv_phys = self.data['PV']     * 1e6  # scale to PVU
+        self.pv_dyn  = self.data['DYN_PV'] * 1e6  # scale to PVU
         self.data_read = True
 
     def global_maxmin_dyn_phys(self, infig=None):
@@ -385,50 +394,44 @@ class pv_verify:
         # ---- read and/or compute data arrays
         if(self.save_dest is not None):
             
-            pvp_tmpfile   = '{}/tmp_horz_pvp_lev{}.npy'.format(self.save_dest, plevel)
+            pvp_tmpfile   = '{}/tmp_horz_pvp_lev{}_{}.nc'.format(self.save_dest, plevel, self.name)
             try:
-                pvp = np.load(pvp_tmpfile)
+                pvp = xr.open_dataset(pvp_tmpfile)['PV']
                 print('read from {}...'.format(pvp_tmpfile))
             except FileNotFoundError:
                 print('pvp lev={} tmp file not found; computing...'.format(plevel))
                 if(not self.data_read):
                     self.read_data()
                 pvp = self.pv_phys.sel({'lev':plevel}, method='nearest')
-                pvp = pvp.sel(tsel, method=tmethod).mean('time')
+                pvp = pvp.sel(tsel, method=tmethod)
+                if(t2 is not None): pvp = pvp.mean('time')
                 print('writing to {}...'.format(pvp_tmpfile))
-                np.save(pvp_tmpfile, pvp) 
+                pvp.to_netcdf(pvp_tmpfile) 
 
-            pvd_tmpfile   = '{}/tmp_horz_pvd_lev{}.npy'.format(self.save_dest, plevel)
+            pvd_tmpfile   = '{}/tmp_horz_pvd_lev{}_{}.nc'.format(self.save_dest, plevel, self.name)
             try:
-                pvd = np.load(pvd_tmpfile)
+                pvd = xr.open_dataset(pvd_tmpfile)['DYN_PV']
                 print('read from {}...'.format(pvd_tmpfile))
             except FileNotFoundError:
                 print('pvd lev={} tmp file not found; computing...'.format(plevel))
                 if(not self.data_read):
                     self.read_data()
                 pvd = self.pv_dyn.sel({'lev':plevel}, method='nearest')
-                pvd = pvd.sel(tsel, method=tmethod).mean('time')
+                pvd = pvd.sel(tsel, method=tmethod)
+                if(t2 is not None): pvd = pvd.mean('time')
                 print('writing to {}...'.format(pvd_tmpfile))
-                np.save(pvd_tmpfile, pvd)
-            
-            pdiff_tmpfile = '{}/tmp_horz_pdiff_lev{}.npy'.format(self.save_dest, plevel)
-            try:
-                pdiff = np.load(pdiff_tmpfile)
-                print('read from {}...'.format(pdiff_tmpfile))
-            except FileNotFoundError:
-                print('pdiff lev={} tmp file not found; computing...'.format(plevel))
-                pdiff = (pvp - pvd)
-                print('writing to {}...'.format(pdiff_tmpfile))
-                np.save(pdiff_tmpfile, pdiff)
+                pvd.to_netcdf(pvd_tmpfile)
         else:
             print('no save_dest specified; computing {}...'.format(label))
             if(not self.data_read()):
                 seldf.read_data()
             pvp = self.pv_phys.sel({'lev':plevel}, method='nearest')
-            pvp = pvp.sel({'time':tsel}, method=tmethod).mean('time')
+            pvp = pvp.sel({'time':tsel}, method=tmethod)
             pvd = self.pv_dyn.sel({'lev':plevel}, method='nearest')
-            pvd = pvd.sel({'time':tsel}, method=tmethod).mean('time')
-            pdiff = (pvp - pvd)
+            pvd = pvd.sel({'time':tsel}, method=tmethod)
+            if(t2 is not None): 
+                pvd = pvd.mean('time')
+                pvp = pvp.mean('time')
         
         # ---- plot
         xp = self.lon
@@ -437,47 +440,49 @@ class pv_verify:
         yd = self.lat_d
         
         levelsdiff = 12
-        levelsd = np.logspace(1e-1, 1e3, 9)
-        levelsd = np.hstack([-levelsd, levelsd])
-        levelsp = np.logspace(1e-1, 1e3, 9)
-        levelsp = np.hstack([-levelsp, levelsp])
+        levelsd = np.array([1, 3, 10, 30, 100, 300, 1000])
+        levelsd = np.hstack([-levelsd[::-1], [0], levelsd])
+        levelsp = np.array([1, 3, 10, 30, 100, 300, 1000])
+        levelsp = np.hstack([-levelsp[::-1], [0], levelsp])
         
         cmap = plt.cm.rainbow
         norm = colors.SymLogNorm(linthresh=2, linscale=1)
         
-        fig = plt.figure(figsize=(15, 5))
-        ax = fig.add_subplot(133)
-        ax1 = fig.add_subplot(131)
-        ax2 = fig.add_subplot(132)
-       
+        fig = plt.figure(figsize=(10, 5))
+        #ax1 = fig.add_subplot(121, projection=ccrs.PlateCarree())
+        #ax2 = fig.add_subplot(122, projection=ccrs.PlateCarree())
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+
         # ---- pv dyn
         pltargs = {'levels':levelsd, 'cmap':cmap, 'zorder':0, 'norm':norm}
-        cArgs = {'orientation':'horizontal', 'location':'top', 'aspect':30,'format':'%.2f',
+        cArgs = {'orientation':'horizontal', 'location':'top', 'aspect':30,'format':'%.1f',
                  'label':'dyn grid PV [PVU]'}
         var_dict =[{'var':pvd,'plotType':'tricontourf','plotArgs':pltargs,'colorArgs':cArgs}]
-        cf = plthorz(xd, yd, var_dict, ax=ax1, annotation='')
+        cf = plthorz(xd, yd, var_dict, ax=ax1, include_contour_labels=False, 
+                     xlabel='lon [deg]', ylabel='lat [deg]')
+        ax1.set_ylim([-90, 90])
+        ax2.set_xlim([0, 360])
+        cf[0].ax.tick_params(rotation=90)
         
         # ---- pv phys
         pltargs = {'levels':levelsp, 'cmap':cmap, 'norm':norm}
-        cArgs = {'orientation':'horizontal', 'location':'top', 'aspect':30,'format':'%.2f',
+        cArgs = {'orientation':'horizontal', 'location':'top', 'aspect':30,'format':'%.1f',
                  'label':'phys grid PV [PVU]'}
         var_dict =[{'var':pvp,'plotType':'tricontourf','plotArgs':pltargs,'colorArgs':cArgs}]
-        cf = plthorz(xp, yp, var_dict, ax=ax1, annotation='')
+        cf = plthorz(xp, yp, var_dict, ax=ax2, include_contour_labels=False,
+                     xlabel='lon [deg]', ylabel='lat [deg]')
+        ax2.set_ylim([-90, 90])
+        ax2.set_xlim([0, 360])
+        cf[0].ax.tick_params(rotation=90)
         
         # ---- pv diff
-        label = 'phys-dyn grid PV difference [PVU]'.format(self.name, tstr)
-        label = textwrap.fill(label, int(len(label)/2))
-        pltargs = {'levels':levelsdiff, 'cmap':cmap, 'zorder':0}
-        cArgs = {'orientation':'horizontal', 'location':'top', 'label':label, 
-                 'aspect':30,'format':'%.2f'}
-        var_dict = [{'var':pdiff, 'plotType':'tricontourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
-        cf = plthorz(x, y, var_dict, ax=ax, annotation='')
-        
-        fig.suptitle('{}, lev={}, {}'.format(self.name, pvp['lev'][0], tstr))
-        plt.tight_layout()
+        fig.suptitle('{}, lev={:.2f}, {}'.format(self.name, float(pvp['lev']), tstr))
+        fig.tight_layout()
         
         if self.save_dest is not None:
-            plt.savefig('{}/{}_pvdiff_hor_lev{}_{}.png'.format(self.save_dest, name, plevel, tstr), 
+            plt.savefig('{}/{}_pv_hor_lev{}_{}.png'.format(
+                        self.save_dest, self.name, plevel, tstr.replace(' ', '_')), 
                         dpi=300)
         if(self.show_fig):
             plt.show()        
@@ -488,16 +493,17 @@ class pv_verify:
 
 
 topdir = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/pv_cases'
-#rundirs = glob.glob('{}/E3SM*/run/'.format(topdir))
-rundirs = glob.glob('{}/E3SM*F1850*/run/'.format(topdir))
+rundirs = glob.glob('{}/E3SM*/run/'.format(topdir))
+#rundirs = glob.glob('{}/E3SM*F1850*/run/'.format(topdir))
 print(rundirs)
 for rundir in rundirs:
     histfile = glob.glob('{}/*eam.h0*00.nc'.format(rundir))[0]
     remapped_histfiles = sorted(glob.glob('{}/*eam.h0*regrid*bilinear.nc'.format(rundir)))[::-1]
-    name = histfile.split('/')[-3]
-    pvv = pv_verify(histfile, name, save_dest='.', show_fig=True)
+    name = histfile.split('/')[-3].split('E3SM_')[-1].split('_PV')[0].replace('_L72_', '_')
+    pvv = pv_verify(histfile, name, save_dest='.', show_fig=False)
     #pvv.global_maxmin_dyn_phys()
     #pvv.levels_maxmin_dyn_phys()
     #pvv.zonal_mean_dyn_phys(remapped_histfiles, 20, 30)
-    pvv.hslice_dyn_phys(20, 30)
+    #pvv.hslice_dyn_phys(20, 30)
+    pvv.hslice_dyn_phys(30)
 plt.show()
