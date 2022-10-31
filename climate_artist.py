@@ -23,12 +23,14 @@ tick_fs = 12
 # ==========================================================================================
 
 
-def vertical_slice(x, y, var_dict, ax, include_contours=True, plot_zscale=True, inverty=True, logy=True, 
+def vertical_slice(x, y, var_dict, ax, include_contours=True, 
+                   plot_zscale=True, inverty=True, logy=True, 
                    center_x=None, xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, 
                    grid=False, gridArgs=None, cyclic=True, 
-                   annotation=None, annotation_loc='lower left', annotation_alpha=1, annotation_bbox=None,
+                   annotation=None, annotation_loc='lower left', annotation_alpha=1, 
+                   annotation_bbox=None,
                    no_yticklabs=False, no_xticklabs=False, label_minor_yticks=False, 
-                   cbar_ticks_match_levels=True, include_contour_labels=True):
+                   cbar_ticks_match_levels=True, include_contour_labels=False):
     '''
     Plot the 2D vertical slice of a variable
 
@@ -82,7 +84,7 @@ def vertical_slice(x, y, var_dict, ax, include_contours=True, plot_zscale=True, 
     include_contour_labels : bool, optional
         whether or not toinclude labels on the contours automatically generated when using 
         include_contours = True. This has no effect on contour plots that are included manually
-        in var_dict. Defaults to True.
+        in var_dict. Defaults to False.
     plot_zscale : bool, optional
         Whether or not to include a second y axis of values converting the original y-axis 
         values from pressure to height, assuming an isothermal atmosphere. Assumed that the
@@ -369,7 +371,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.PlateCarree(), include_
                      xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, cyclic=True,
                      grid=True, gridArgs=None, coastlines=True, coastlinesArgs=None, 
                      annotation=None, annotation_loc='lower left', annotation_alpha=1, 
-                     annotation_bbox=None, include_contour_labels = True,
+                     annotation_bbox=None, include_contour_labels = False,
                      no_yticklabs=False, no_xticklabs=False, cbar_ticks_match_levels=True):
     '''
     Plot the 2D horizontal slice of a variable
@@ -428,7 +430,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.PlateCarree(), include_
     include_contour_labels : bool, optional
         whether or not toinclude labels on the contours automatically generated when using 
         include_contours = True. This has no effect on contour plots that are included manually
-        in var_dict. Defaults to True.
+        in var_dict. Defaults to False.
     ylim : list of length 2, optional
         ylimits to impose on figure.
         Defaults to None, in which case the default chosen by the plotting call is used.
