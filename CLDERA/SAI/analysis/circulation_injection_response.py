@@ -396,7 +396,8 @@ if(__name__ == '__main__'):
     data_source_ens = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/gamma_clones'
     histnum=2
 
-    gamma = [4, 8, 10]
+    #gamma = [4, 8, 10]
+    gamma = [11, 12, 13]
     for g in gamma:
         print('\n---------- GAMMA = {}'.format(g))
         

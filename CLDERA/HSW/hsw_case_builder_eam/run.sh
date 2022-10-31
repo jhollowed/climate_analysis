@@ -1,9 +1,20 @@
 #!/bin/bash
 
-# --------- for spinup
-TOT_RUN_LENGTH_YEARS=10
+
+# --------- for doing autocorrelation test
+TOT_RUN_LENGTH_YEARS=15
 TOT_RUN_LENGTH=$(expr $TOT_RUN_LENGTH_YEARS \* 360)
-./create_FIDEAL_case_ne16L72.sh 1 $TOT_RUN_LENGTH "_10year_spinup" /global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/configs/user_nl_eam_10yearSpinup
+./create_FIDEAL_case_ne16L72.sh 1 $TOT_RUN_LENGTH "_autoCorr_15year" /global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/configs/user_nl_eam_autoCorr_15year
+
+# --------- for generating monthly ICs
+#TOT_RUN_LENGTH_YEARS=4
+#TOT_RUN_LENGTH=$(expr $TOT_RUN_LENGTH_YEARS \* 360)
+#./create_FIDEAL_case_ne16L72.sh 1 $TOT_RUN_LENGTH "_3year_ensICs" /global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/configs/user_nl_eam_3yearEnsICS
+
+# --------- for spinup
+#TOT_RUN_LENGTH_YEARS=10
+#TOT_RUN_LENGTH=$(expr $TOT_RUN_LENGTH_YEARS \* 360)
+#./create_FIDEAL_case_ne16L72.sh 1 $TOT_RUN_LENGTH "_10year_spinup" /global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/configs/user_nl_eam_10yearSpinup
 
 # ---------- for scaling tests
 # run with 192, 384, 768, 1536, 3072, 6144
