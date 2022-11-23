@@ -436,10 +436,11 @@ def l2_norm(dat, varname='U', norm_type=15, compdat=None, compMean=False):
 # -------------------------------------------------------------
 
 
-def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=False):
+def ensemble_mean(ensemble, std=False, incl_vars=None, outFile=None, overwrite=False):
     '''
     Returns the mean of an ensemble for all variables included in the input ensemble members.
-    Each member is expected as an xarray DataWet, and must have the same dimensions and coordinates.
+    Each member is expected as an xarray DataSet, and must have the same dimensions and 
+    coordinates.
 
     Parameters
     ----------
@@ -447,14 +448,15 @@ def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=Fa
         The ensemble members. Each entry can be a xarray Dataset, Datarray, or string giving 
         a file location
     std : bool, optional
-        Whether or not to compute and also return the standard deviation of the ensemble members,
-        in addition to the mean.
+        Whether or not to compute and also return the standard deviation of the ensemble 
+        members,in addition to the mean.
         Defaults to False, in which case only the mean will be computed and returned.
-    avg_vars : list of strings, optional
-        A list of variables to average over, in the case that it is not desired to average
-        all varibales present, or if all members varibales match only for this list.
-        Defaults to None, in which case all ensemble members will be expected to have identical
-        variables.
+    incl_vars : list of strings, optional
+        A list of variables to include in the ensemble mean, in the case that it is not 
+        desired to include all varibales present, or if all members variables match only for 
+        this list. Defaults to None, in which case all ensemble members will be expected to 
+        have identical variables, and all uppercase variables will be included in the mean
+        computation.
     outFile : str, optional
         File location to write out the ensemble mean and std files in netcdf format.
         Default is None, in which case nothing is written out, and the ensemble mean and std
@@ -487,10 +489,10 @@ def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=Fa
             except OSError: pass
         try: 
             ensMean = xr.open_dataset(outFile)
-            print('Read data from file {}'.format(outFile.split('/')[-1]))
+            print('---Read data from file {}'.format(outFile.split('/')[-1]))
             if(std):
                 ensStd = xr.open_dataset(outFile_std)
-                print('Read data from file {}'.format(outFile_std.split('/')[-1]))
+                print('--- Read data from file {}'.format(outFile_std.split('/')[-1]))
                 return [ensMean, ensStd]
             else:
                 return ensMean
@@ -498,38 +500,59 @@ def ensemble_mean(ensemble, std=False, avg_vars=None, outFile=None, overwrite=Fa
             pass
     
     # ---- check input
+    pdb.set_trace()
     N = len(ensemble)
     ens = np.empty(N, dtype=object)
     ens[0] = check_data_inputs(ensemble[0])
-
-    if(avg_vars is None):
+    if(incl_vars is None):
         all_vars = sorted(list(ens[0].keys()))
+        all_vars = [l.isupper() for l in all_vars]
     else:
-        all_vars = avg_vars
+        all_vars = incl_vars
     
     for i in range(N-1):
+        print('opening ens {}...'.format(i), end='\r', flush=True)
         ens[i+1] = check_data_inputs(ensemble[i+1])
-        assert np.sum([vv in sorted(list(ens[i+1].keys())) for vv in all_vars]) == len(all_vars), \
+        assert np.sum([vv in sorted(list(ens[i+1].keys())) for vv in all_vars]) == \
+                                                                  len(all_vars),   \
                 'not all ensemble members contain these variables:\n{}'.format(all_vars)
+    pdb.set_trace()
 
-    # ---- concat and take mean
-    ens = xr.concat(ens, dim='ensemble_member', data_vars=all_vars, compat='override', coords='minimal')
-    ensMean = ens.mean('ensemble_member')
-    if(std): ensStd = ens.std('ensemble_member')
+    # ---- sum members
+    ensMean = ens[0]
+    if(std): rms = ens[0]**2
+    for i in range(len(ens)-1):
+        print('--- summing ensemble {}...'.format(i))
+        ensMean = xr.concat([ensMean, ens[i+1]], dim='ens', data_vars=all_vars,
+                                                compat='override', coords='minimal')
+        ensMean = ensMean.sum('ens')
+        if(std):
+            pdb.set_trace()
+            rms = rms + ens[i+1]**2
+
+    print('---taking ensemble mean...')
+    ensMean = ensMean / len(ens)
+    if(std): ensStd = np.sqrt( rms/len(ens) - ensMean**2)
 
     # ---- write out, return
     if(outFile is not None):
         ensMean.to_netcdf(outFile)
-        print('Wrote ensemble data to file {}'.format(outFile.split('/')[-1]))
+        print('--- Wrote ensemble data to file {}'.format(outFile.split('/')[-1]))
         if(std):
             ensStd.to_netcdf(outFile_std)
-            print('Wrote ensemble std data to file {}'.format(outFile.split('/')[-1]))
-    pdb.set_trace()
+            print('--- Wrote ensemble std data to file {}'.format(outFile.split('/')[-1]))
     if(std):    
         return ensMean, ensStd
     else:
         return ensMean
     
+
+
+# -------------------------------------------------------------
+
+
+def reduce_netcdf(runs, g):
+    return
 
 
 # -------------------------------------------------------------

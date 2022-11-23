@@ -2,7 +2,7 @@ import pdb
 import sys
 import pathlib
 
-sys.path.append('/global/homes/j/jhollo/repos/CIME_namelist_automator')
+sys.path.append('/global/homes/j/jhollo/repos/cime_ensemble_automator')
 from ensembler import ensembler
 
 ic_dir = "/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/"\
@@ -18,6 +18,6 @@ ens = ensembler()
 ens.add_members(ic_dir, globstr="*newCoordNames")
 
 ens.create_members(root_case, top_clone_dir, top_output_dir, cime_dir, 
-                   clone_prefix, overwrite=True, resubmits=4)
+                   clone_prefix, overwrite=True, resubmits=3)
 ens.submit_members(dry=False)
 

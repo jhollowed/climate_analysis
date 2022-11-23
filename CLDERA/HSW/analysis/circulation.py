@@ -86,7 +86,9 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
     if(auto_levels):
         ulev = 9
     else:
-        ulev = np.hstack([np.linspace(-30, 0, 6), np.linspace(15, 75, 5)]).astype(int)
+        #ulev = np.hstack([np.linspace(-30, 0, 6), np.linspace(15, 75, 5)]).astype(int)
+        # for matching animation VV
+        ulev = np.hstack([np.linspace(-35, 0, 8), np.linspace(15, 90, 6)]).astype(int)
     divnorm=colors.TwoSlopeNorm(vcenter=0.)
     
     #cmap = claut.ncar_rgb_to_cmap(gmt)
@@ -107,9 +109,11 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
     axT = figT.add_subplot(111)
 
     if(tismean):
-        annot = 'mean from year 5-10'
+        annot = 'mean from year 3-7'
     else:
         annot = 'zonal mean at year 5'
+    #tmp
+    #annot = ''
 
     # ----- vertical
     pltargs = {'levels':ulev, 'cmap':cmap_u, 'zorder':0, 'norm':divnorm}
@@ -119,8 +123,8 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
     var_dict = [{'var':U, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
     var_dict_c = [{'var':U, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
     cf = pltvert(lat, lev, var_dict, ax=axu, plot_zscale=True,
-                 annotation=annot, annotation_alpha=0.85, annotation_loc='lower right')
-    pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False, inverty=False, annotation='', xlabel='')
+                 annotation=annot, annotation_alpha=0.85, annotation_loc='upper right')
+    pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False, inverty=False, annotation=None, xlabel='')
     if(not(auto_levels)): cf[0].set_ticks(ulev)
     
     pltargs = {'levels':Tlev, 'cmap':cmap_T, 'zorder':0}
@@ -130,8 +134,8 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
     var_dict = [{'var':T, 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
     var_dict_c = [{'var':T, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]    
     cf = pltvert(lat, lev, var_dict, ax=axT, plot_zscale=True, 
-                 annotation=annot, annotation_alpha=0.85, annotation_loc='lower right')
-    pltvert(lat, lev, var_dict_c, ax=axT, plot_zscale=False, inverty=False, annotation='', xlabel='')
+                 annotation=annot, annotation_alpha=0.85, annotation_loc='upper right')
+    pltvert(lat, lev, var_dict_c, ax=axT, plot_zscale=False, inverty=False, annotation=None, xlabel='')
     if(not(auto_levels)): cf[0].set_ticks(Tlev)
 
     if inclTracers:
@@ -139,7 +143,7 @@ def circulation_snapshot(runf, tsnap, title, ttitle=None, maketitle=True,
         pltargs_c = {'levels':[-7, -5.5], 'colors':'m', 'linewidths':1.6, "linestyles":'-'}
         cargs = {'fmt':'%.0f', 'manual':[(18.8, 201), (14.89, 26.2)]} 
         var_dict_c = [{'var':np.log10(C), 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cargs}]
-        pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False,inverty=False,annotation='',xlabel='')
+        pltvert(lat, lev, var_dict_c, ax=axu, plot_zscale=False,inverty=False,annotation=None,xlabel='')
         axu.plot([0,0],[100,100],'-m', label='log10(concentration)')
         axu.legend(loc='lower right', fancybox=False, framealpha=1)
 
@@ -188,7 +192,7 @@ if(__name__ == '__main__'):
                                  ttitle='year{}'.format(year), savedest=dest, inclTracers=False)
     
     # TIME MEAN OF SPINUP FOR REBASED FIDEAL
-    if(0):
+    if(1):
         avg_file = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/'\
                    'E3SM_ne16_L72_FIDEAL_10year_spinup/run/'\
                    'E3SM_ne16_L72_FIDEAL_10year_spinup.eam.h0.0001-01-01-00000'\
@@ -200,7 +204,7 @@ if(__name__ == '__main__'):
                              ttitle='', inclTracers=False, savedest=dest)
     
     # DIFFERENCE IN CIRUCLATION FROM PRE-REBASE STATE
-    if(1):
+    if(0):
         initfiles = sorted(glob.glob('/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/'\
                                      'hsw_cases/E3SM_ne16_L72_FIDEAL_10year_'\
                                      'spinup/run/*eam.i*PREREBASE_DIFF'))[::-1]

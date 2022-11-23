@@ -145,9 +145,9 @@ def vertical_slice(x, y, var_dict, ax, include_contours=True,
 
     # -------- define default plot args --------
     default_args = {
-                    'contour'     :  {'levels':12, 'colors':'k', 'linewidths':0.6, 
+                    'contour'     :  {'levels':12, 'colors':'k', 'linewidths':0.4, 
                                       'extend':'both','zorder':1},
-                    'tricontour'  :  {'levels':12, 'colors':'k', 'linewidths':0.6, 
+                    'tricontour'  :  {'levels':12, 'colors':'k', 'linewidths':0.4, 
                                       'extend':'both','zorder':1},
                     'contourf'    :  {'levels':12, 'cmap':'rainbow','extend':'both','zorder':0},
                     'tricontourf' :  {'levels':12, 'cmap':'rainbow','extend':'both','zorder':0},
@@ -639,7 +639,6 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.PlateCarree(), include_
     for i in range(len(var_dict)):
         d = var_dict[i]
         if(cyclic and not native_grid[i]):
-            pdb.set_trace()
             d['var'], xcyc = add_cyclic_point(d['var'], coord=x, axis=1)
         else:
             xcyc = x
@@ -659,7 +658,7 @@ def horizontal_slice(x, y, var_dict, ax, projection=ccrs.PlateCarree(), include_
                     zero = plots[i].levels.tolist().index(0)
                 else:
                     zero = plots[i].levels.index(0)
-                bold = plots[i].collections[zero].get_linewidth() * 1.5
+                bold = plots[i].collections[zero].get_linewidth() * 1.66
                 plots[i].collections[zero].set_linewidth(bold)
             except ValueError:
                 pass

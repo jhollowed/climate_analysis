@@ -25,7 +25,7 @@ TOT_RUN_LENGTH=$2
 QUEUE=debug
 WALLCLOCK=00:30:00
 
-wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/PV/pv_case_builder_E3SM"
+wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/PV/"
 MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_PV"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
@@ -111,11 +111,11 @@ cat << EOF >> ./user_nl_eam
 empty_htapes     = .TRUE.              ! output only the varibales listed below
 avgflag_pertape  = 'I'                 ! hist file 1 is instantaneous
 
-fincl1 = 'U','V','T','Z3','OMEGA','PS','DYN_PV','PV'
+fincl1 = 'U','V','T','PS','PV','DYN_U','DYN_V','DYN_T','DYN_PS','DYN_PV'
 
 NHTFRQ           = -24      ! output frequency every 6 hours
 MFILT            = 360      ! allow 360 time samples per hist file (90 days)
-NDENS            = 2        ! single-precision for each hist file
+NDENS            = 1        ! single-precision for each hist file
 
 inithist='NONE'
 

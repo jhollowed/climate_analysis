@@ -444,6 +444,13 @@ class pv_verify:
         levelsd = np.hstack([-levelsd[::-1], [0], levelsd])
         levelsp = np.array([1, 3, 10, 30, 100, 300, 1000])
         levelsp = np.hstack([-levelsp[::-1], [0], levelsp])
+        if(plevel==950):
+            print('===== USING 950 LEVELS')
+            levelsdiff = 12
+            levelsd = np.array([1, 2, 3, 4, 5, 6, 7])
+            levelsd = np.hstack([-levelsd[::-1], [0], levelsd])
+            levelsp = np.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4])
+            levelsp = np.hstack([-levelsp[::-1], [0], levelsp])
         
         cmap = plt.cm.rainbow
         norm = colors.SymLogNorm(linthresh=2, linscale=1)
@@ -466,7 +473,8 @@ class pv_verify:
         cf[0].ax.tick_params(rotation=90)
         
         # ---- pv phys
-        pltargs = {'levels':levelsp, 'cmap':cmap, 'norm':norm}
+        #pltargs = {'levels':levelsp, 'cmap':cmap, 'norm':norm}
+        pltargs = {'levels':levelsp, 'cmap':cmap}
         cArgs = {'orientation':'horizontal', 'location':'top', 'aspect':30,'format':'%.1f',
                  'label':'phys grid PV [PVU]'}
         var_dict =[{'var':pvp,'plotType':'tricontourf','plotArgs':pltargs,'colorArgs':cArgs}]
@@ -493,17 +501,19 @@ class pv_verify:
 
 
 topdir = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/pv_cases'
-rundirs = glob.glob('{}/E3SM*/run/'.format(topdir))
+#rundirs = glob.glob('{}/E3SM*/run/'.format(topdir))
 #rundirs = glob.glob('{}/E3SM*F1850*/run/'.format(topdir))
+rundirs = glob.glob('{}/E3SM*ne16pg2*FIDEAL*/run/'.format(topdir))
 print(rundirs)
 for rundir in rundirs:
     histfile = glob.glob('{}/*eam.h0*00.nc'.format(rundir))[0]
     remapped_histfiles = sorted(glob.glob('{}/*eam.h0*regrid*bilinear.nc'.format(rundir)))[::-1]
     name = histfile.split('/')[-3].split('E3SM_')[-1].split('_PV')[0].replace('_L72_', '_')
-    pvv = pv_verify(histfile, name, save_dest='.', show_fig=False)
+    pvv = pv_verify(histfile, name, save_dest='.', show_fig=True)
     #pvv.global_maxmin_dyn_phys()
     #pvv.levels_maxmin_dyn_phys()
     #pvv.zonal_mean_dyn_phys(remapped_histfiles, 20, 30)
     #pvv.hslice_dyn_phys(20, 30)
-    pvv.hslice_dyn_phys(30)
+    #pvv.hslice_dyn_phys(30, plevel=100)
+    pvv.hslice_dyn_phys(30, plevel=950)
 plt.show()

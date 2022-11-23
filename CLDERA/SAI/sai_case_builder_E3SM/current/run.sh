@@ -7,7 +7,8 @@
 #CUSTOMNL=$4
 
 # --- all tracers passive
-./create_FIDEAL_ne16L72_SAI_passive.sh 1 540
+#./create_FIDEAL_ne16L72_SAI_passive.sh 1 540
+./create_FIDEAL_ne16L72_SAI_passive.sh 1 720
 
 # --- all pathways active
 #./create_FIDEAL_ne16L72_SAI.sh 1 540
