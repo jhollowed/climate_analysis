@@ -390,7 +390,6 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
     plt.tight_layout()
     if(savedest is not None):
         fig.savefig('{}/heating_response{}.png'.format(savedest, sfx), dpi=300)
-        plt.show()
     else: 
         plt.show()
         
@@ -401,17 +400,14 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
 
 if(__name__ == '__main__'):
 
-    fig_dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/pre_analyzer/figs/heating_response_1.5year'
-    data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways_1.5year'
+    fig_dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/pre_analyzer/figs/heating_response_sigmoid'
+    data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/process_pathways'
     data_source = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases'
-
-    # for ens
     data_source_ens = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/gamma_clones'
-    histnum=2
-
-    #gamma = [4, 8, 10]
-    #gamma = [11, 12, 13]
-    gamma = [10]
+    histnum1=0
+    histnum2=2
+    
+    gamma = [2, 3, 4, 5]
     for g in gamma:
         print('\n---------- GAMMA = {}'.format(g))
         
@@ -422,35 +418,37 @@ if(__name__ == '__main__'):
         
         rundir1 = '{}/HSW_SAI_ne16pg2_L72_{}/run/'.format(data_source_ens, runs1_config)
         rundir2 = '{}/HSW_SAI_ne16pg2_L72_{}/run/'.format(data_source, runs2_config)
-        runs1 = glob.glob('{}/*eam.h{}*regrid*aave*nc'.format(rundir1, histnum))
-        runs2 = glob.glob('{}/*eam.h{}*regrid*aave*nc'.format(rundir2, histnum))
+        runs1 = glob.glob('{}/*eam.h{}*regrid*aave*nc'.format(rundir1, histnum1))
+        runs2 = glob.glob('{}/*eam.h{}*regrid*aave*nc'.format(rundir2, histnum2))
         
         if(len(runs1) > 1):
             run1 = '{}/{}_concat_hist.nc'.format(data_dest, runs1_config)
-            ctb.concat_run_outputs(rundir1, outFile=run1, histnum=histnum, regridded=True, component='eam')
+            ctb.concat_run_outputs(rundir1, outFile=run1, histnum=histnum1, 
+                                   regridded=True, component='eam')
         else: 
             run1 = runs1[0]
         if(len(runs2) > 1):
             run2 = '{}/{}_concat_hist.nc'.format(data_dest, runs2_config)
-            ctb.concat_run_outputs(rundir2, outFile=run2, histnum=histnum, regridded=True, component='eam')
+            ctb.concat_run_outputs(rundir2, outFile=run2, histnum=histnum2, 
+                                   regridded=True, component='eam')
         else: 
             run2 = runs2[0]
         print('\n')
         
         use_native_mass = True
         if(use_native_mass):
-            runs1_native = glob.glob('{}/*eam.h{}.*0.nc'.format(rundir1, histnum))
-            runs2_native = glob.glob('{}/*eam.h{}.*0.nc'.format(rundir2, histnum))
+            runs1_native = glob.glob('{}/*eam.h{}.*0.nc'.format(rundir1, histnum1))
+            runs2_native = glob.glob('{}/*eam.h{}.*0.nc'.format(rundir2, histnum2))
             if(len(runs1_native) > 1):
                 run1_native = '{}/{}_concat_hist.nc'.format(data_dest, runs1_config)
                 ctb.concat_run_outputs(rundir1, outFile=run1_native, 
-                                       histnum=0, regridded=False, component='eam')
+                                       histnum=histnum1, regridded=False, component='eam')
             else: 
                 run1_native = runs1_native[0]
             if(len(runs2_native) > 1):
                 run2_native = '{}/{}_concat_hist.nc'.format(data_dest, runs2_config)
                 ctb.concat_run_outputs(rundir2, outFile=run2_native, 
-                                       histnum=0, regridded=False, component='eam')
+                                       histnum=histnum2, regridded=False, component='eam')
             else: 
                 run2_native = runs2_native[0]
         else:

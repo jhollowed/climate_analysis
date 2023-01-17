@@ -19,7 +19,7 @@ from climate_artist import horizontal_slice as plthor
 
 
 def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=False,  
-                     sfx='', savedest=None, datsavedest='.', inj_delay=0):
+                     sfx='', savedest=None, datsavedest='.', inj_delay=0, skip_heat_plots=False):
 
     # windows in days over which to compoute means for horizontal slices
     # second month, fourth month
@@ -45,6 +45,7 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
     
     print('reading data 2')
     dat2 = xr.open_dataset(run2)
+    dat2 = dat2.sel({'time':dat2.time[0]}) # make time 0d rather than 1d
     print('found 0 timesteps; subtracting single field at all times')
 
     # read native if passed
@@ -54,6 +55,7 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
         ndat1 = ndat1.assign_coords(time=td1)        
         print('reading native data 2')
         ndat2 = xr.open_dataset(run2_native)
+        ndat2 = ndat2.sel({'time':ndat2.time[0]}) # make time 0d rather than 1d
 
         print('using native grid data for computing total tracer masses...')
         ttdat1 = ndat1
@@ -115,21 +117,22 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
                                 '{}/Tdiff_global_{}'.format(datsavedest, file_ext))
         print('wrote Tdiff_global')
     
-    try:
-        if(overwrite == True): raise FileNotFoundError
-        Hdiff = xr.open_dataset('{}/Hdiff_{}'.format(datsavedest, file_ext))['Hdiff']
-        print('read Hdiff')
-    except FileNotFoundError:
-        print('computing Hdiff...', end='\r')
-        H1   = dat1['SAI_HEAT']+dat1['SAI_COOL']
-        H1   = H1.mean('lon')
-        print('computing Hdiff... H1', end='\r')
-        H2   = H1*0  #--- no heating for mean state...
-        print('computing Hdiff... H1 H2')
-        # ---- diff of zonal means
-        Hdiff = H1-H2
-        Hdiff.to_dataset(name='Hdiff').to_netcdf('{}/Hdiff_{}'.format(datsavedest, file_ext))
-        print('wrote Hdiff')
+    if not skip_heat_plots:
+        try:
+            if(overwrite == True): raise FileNotFoundError
+            Hdiff = xr.open_dataset('{}/Hdiff_{}'.format(datsavedest, file_ext))['Hdiff']
+            print('read Hdiff')
+        except FileNotFoundError:
+            print('computing Hdiff...', end='\r')
+            H1   = dat1['SAI_HEAT']+dat1['SAI_COOL']
+            H1   = H1.mean('lon')
+            print('computing Hdiff... H1', end='\r')
+            H2   = H1*0  #--- no heating for mean state...
+            print('computing Hdiff... H1 H2')
+            # ---- diff of zonal means
+            Hdiff = H1-H2
+            Hdiff.to_dataset(name='Hdiff').to_netcdf('{}/Hdiff_{}'.format(datsavedest, file_ext))
+            print('wrote Hdiff')
 
 
     # get total masses of SO2, sulfate for all time, compute analytic solution
@@ -163,27 +166,30 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
 
     print('plotting...')
     # define colormaps, colormap levels, format, and contour labels per-dataset
-    clev_H = np.hstack([np.linspace(-0.03, 0, 4), 
-                        np.linspace(0.05, 0.3, 6)])
-    clev_H_divnorm=colors.TwoSlopeNorm(vmin=-0.03, vcenter=0., vmax=0.3)
-    clev_H_cticks = clev_H
-    clev_H_fmt = '%.2f'
-    cmap_H = mpl.cm.RdYlGn_r
+    if(not skip_heat_plots):
+        clev_H = np.hstack([np.linspace(-0.03, 0, 4), 
+                            np.linspace(0.05, 0.3, 6)])
+        clev_H_divnorm=colors.TwoSlopeNorm(vmin=-0.03, vcenter=0., vmax=0.3)
+        clev_H_cticks = clev_H
+        clev_H_fmt = '%.2f'
+        cmap_H = mpl.cm.RdYlGn_r
     
-    clev_T_divnorm=colors.TwoSlopeNorm(vmin=-4, vcenter=0., vmax=8)
-    clev_T = np.linspace(-3, 6, 10)
+    clev_T_divnorm=colors.TwoSlopeNorm(vmin=-2, vcenter=0., vmax=5)
+    #clev_T = np.linspace(-3, 6, 10)
+    clev_T = np.linspace(-2, 5, 8)
     clev_T_cticks = clev_T[clev_T % 1==0]
     clev_T_fmt = '%.0f'
     cmap_T = mpl.cm.RdYlBu_r
     
-    clev_U_divnorm=colors.TwoSlopeNorm(vmin=-10, vcenter=0., vmax=15)
-    clev_U = np.linspace(-8, 12, 11)
+    clev_U_divnorm=colors.TwoSlopeNorm(vmin=-12, vcenter=0., vmax=10)
+    #clev_U = np.linspace(-8, 12, 11)
+    clev_U = np.linspace(-12, 10, 12)
     clev_U_cticks = clev_U[clev_U % 1==0]
     clev_U_fmt = '%.0f'
     cmap_U = mpl.cm.rainbow
     
-    clev_Tg_divnorm=colors.TwoSlopeNorm(vmin=-2, vcenter=0., vmax=4)
-    clev_Tg = np.linspace(-2, 4, 13)
+    clev_Tg_divnorm=colors.TwoSlopeNorm(vmin=-1, vcenter=0., vmax=2.5)
+    clev_Tg = np.linspace(-1, 2.5, 15)
     clev_Tg_cticks = clev_Tg[clev_Tg % 1==0]
     clev_Tg_fmt = '%.0f'
     
@@ -197,42 +203,64 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
     # last 2 rows:
     # T anom vs t, T anom vs t at select levels
     fig   = plt.figure(figsize=(8, 14))
-    gs    = fig.add_gridspec(nrows=5, ncols=3)
-    axH0  = fig.add_subplot(gs[0, 0])
-    axT0  = fig.add_subplot(gs[0, 1])
-    axU0  = fig.add_subplot(gs[0, 2])
-    axH1  = fig.add_subplot(gs[1, 0])
-    axT1  = fig.add_subplot(gs[1, 1])
-    axU1  = fig.add_subplot(gs[1, 2])
-    axTg  = fig.add_subplot(gs[2, :])
-    axTgl = fig.add_subplot(gs[3, :])
-    axTr  = fig.add_subplot(gs[4, :])
-    top_axes = [axH0, axT0, axU0, axH1, axT1, axU1]
-    bottom_axes = [axTg, axTgl, axTr]
+    if(skip_heat_plots):
+        gs    = fig.add_gridspec(nrows=5, ncols=2)
+        axT0  = fig.add_subplot(gs[0, 0])
+        axU0  = fig.add_subplot(gs[0, 1])
+        axT1  = fig.add_subplot(gs[1, 0])
+        axU1  = fig.add_subplot(gs[1, 1])
+        axTg  = fig.add_subplot(gs[2, :])
+        axTgl = fig.add_subplot(gs[3, :])
+        axTr  = fig.add_subplot(gs[4, :])
+        top_axes = [axT0, axU0, axT1, axU1]
+        bottom_axes = [axTg, axTgl, axTr]
+        ylab_axes = [axT0, axT1, axU0, axU1]
+        noytick_axes = []
+        righty_axes = [axU0, axU1]
+        xlab_axes = [axT1, axU1]
+        noxtick_axes = [axT0, axU0]
+    else:
+        gs    = fig.add_gridspec(nrows=5, ncols=3)
+        axH0  = fig.add_subplot(gs[0, 0])
+        axT0  = fig.add_subplot(gs[0, 1])
+        axU0  = fig.add_subplot(gs[0, 2])
+        axH1  = fig.add_subplot(gs[1, 0])
+        axT1  = fig.add_subplot(gs[1, 1])
+        axU1  = fig.add_subplot(gs[1, 2])
+        axTg  = fig.add_subplot(gs[2, :])
+        axTgl = fig.add_subplot(gs[3, :])
+        axTr  = fig.add_subplot(gs[4, :])
+        top_axes = [axH0, axT0, axU0, axH1, axT1, axU1]
+        bottom_axes = [axTg, axTgl, axTr]
+        ylab_axes = [axH0, axH1, axU0, axU1]
+        noytick_axes = [axT0, axT1]
+        righty_axes = [axU0, axU1]
+        xlab_axes = [axH1, axT1, axU1]
+        noxtick_axes = [axH0, axT0, axU0]
     
     # ---------- HDIFF PLOTS ----------
-    print('PLOTTING HEATING')
+    if(not skip_heat_plots):
+        print('PLOTTING HEATING')
 
-    pltargs = {'levels':clev_H, 'cmap':cmap_H, 'zorder':0, 'norm':clev_H_divnorm}
-    cArgs = {'orientation':'horizontal', 'location':'top', 
-             'label':'{}Heating  rate [K/day]'.format(t_labels[0]), 'aspect':20, 'format':clev_H_fmt}
-    var_dict = [{'var':Hdiff.sel({'time':t_windows[0]}).mean('time'), 
-                 'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
-    cf = pltvert(lat, lev, var_dict, ax=axH0, plot_zscale=False, grid=True)
-    cf[0].set_ticks(clev_H_cticks)
-    cf[0].ax.tick_params(rotation=90)
-    
-    # lower plot (second time window) will have no colobar; levels agree with above
-    var_dict = [{'var':Hdiff.sel({'time':t_windows[1]}).mean('time'), 
-        'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]#, 'colorFormatter':None}]
-    cArgs['label'] = '{}Heating  rate [K/day]'.format(t_labels[1])
-    cf = pltvert(lat, lev, var_dict, ax=axH1, plot_zscale=False,grid=True)
-    cf[0].set_ticks(clev_H_cticks)
-    cf[0].ax.tick_params(rotation=90)
-    
+        pltargs = {'levels':clev_H, 'cmap':cmap_H, 'zorder':0, 'norm':clev_H_divnorm}
+        cArgs = {'orientation':'horizontal', 'location':'top', 
+                 'label':'{}Heating  rate [K/day]'.format(t_labels[0]), 'aspect':20, 'format':clev_H_fmt}
+        var_dict = [{'var':Hdiff.sel({'time':t_windows[0]}).mean('time'), 
+                     'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]
+        cf = pltvert(lat, lev, var_dict, ax=axH0, plot_zscale=False, grid=True)
+        cf[0].set_ticks(clev_H_cticks)
+        cf[0].ax.tick_params(rotation=90)
+        
+        # lower plot (second time window) will have no colobar; levels agree with above
+        var_dict = [{'var':Hdiff.sel({'time':t_windows[1]}).mean('time'), 
+            'plotType':'contourf', 'plotArgs':pltargs, 'colorArgs':cArgs}]#, 'colorFormatter':None}]
+        cArgs['label'] = '{}Heating  rate [K/day]'.format(t_labels[1])
+        cf = pltvert(lat, lev, var_dict, ax=axH1, plot_zscale=False,grid=True)
+        cf[0].set_ticks(clev_H_cticks)
+        cf[0].ax.tick_params(rotation=90)
+        
     # ---------- TDIFF PLOTS ----------
     print('PLOTTING TEMP')
-
     pltargs = {'levels':clev_T, 'cmap':cmap_T, 'zorder':0, 'norm':clev_T_divnorm}
     cArgs = {'orientation':'horizontal', 'location':'top', 
              'label':'{}T anomaly [K]'.format(t_labels[0]), 'aspect':20, 'format':clev_T_fmt}
@@ -286,6 +314,7 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
     cfl.collections[np.where(clev_Tg == 0)[0][0]].set_linewidth(contour_lw*1.66)
     cb.set_ticks(clev_Tg_cticks)
 
+    axTg.set_ylim([1, 1000])
     axTg.set_yscale('log')
     axTg.invert_yaxis()
     axTg.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: \
@@ -302,7 +331,8 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
     print('PLOTTING GLOBAL NLEV TEMP')
    
     #Tg_lev = [3, 30, 100, 850]
-    Tg_lev = [30, 50, 100]
+    #Tg_lev = [30, 50, 100]
+    Tg_lev = [10, 50, 100, 1000] 
     cls = plt.cm.viridis(np.linspace(0.2, 0.8, len(Tg_lev)))
     for i in range(len(Tg_lev)):
         axTgl.plot(time, Tdiff_global.sel({'lev':Tg_lev[i]}, method='nearest')*1.2, 
@@ -327,17 +357,17 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
         ax.set_ylabel('')
         aut.format_ticks(ax)
     
-    for ax in [axH0, axH1, axU0, axU1]:
+    for ax in ylab_axes:
         ax.set_ylabel('pressure  [hPa]')
-    for ax in [axT0, axT1]:
+    for ax in noytick_axes:
         ax.yaxis.set_ticklabels([])
-    for ax in [axU0, axU1]:
+    for ax in righty_axes:
          ax.yaxis.set_label_position("right")
          ax.yaxis.tick_right()
     
-    for ax in [axH1, axT1, axU1]:
+    for ax in xlab_axes:
         ax.set_xlabel('latitude')
-    for ax in [axH0, axT0, axU0]:
+    for ax in noxtick_axes:
         ax.xaxis.set_ticklabels([])
     
     for ax in [axTg, axTgl, axTr]:
@@ -360,15 +390,15 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
 if(__name__ == '__main__'):
 
     # for ens
-    fig_dest = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/analysis/pre_analyzer/figs/heating_response_gamma10_ens'
-    data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/processes_pathways_gamma10_ens'
-    data_source_ens = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens'
-    sfx = '_gamma10ens'
+    fig_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/figs'
+    data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/tmp'
+    data_source_ens = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/ens_stats'
+    sfx = ''
    
-    run1 = glob.glob('{}/ens_mean.regrid*.nc'.format(data_source_ens))[0]
+    run1 = glob.glob('{}/ens_mean.h2.regrid*.nc'.format(data_source_ens))[0]
     run2 = glob.glob('{}/mean_climate.regrid*.nc'.format(data_source_ens))[0]
-    run1_native = glob.glob('{}/ens_mean.nc'.format(data_source_ens))[0]
+    run1_native = glob.glob('{}/ens_mean.h2.nc'.format(data_source_ens))[0]
     run2_native = glob.glob('{}/mean_climate.nc'.format(data_source_ens))[0]
     
-    analyze_response(run1, run2, run1_native, run2_native, overwrite=False,
-                     sfx=sfx, savedest=fig_dest, datsavedest=data_dest, inj_delay=0) 
+    analyze_response(run1, run2, run1_native, run2_native, overwrite=False, skip_heat_plots=True,
+                     sfx=sfx, savedest=fig_dest, datsavedest=data_dest, inj_delay=180) 

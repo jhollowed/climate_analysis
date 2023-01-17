@@ -1,0 +1,26 @@
+empty_htapes    = .TRUE.
+NDENS           = 2
+
+! hist file 1 is annual avg, 2 is monthly avg
+avgflag_pertape = 'A'
+fincl1          = 'U','V','T','PS','OMEGA','T050','TREFHT'
+
+! daily, in hours
+NHTFRQ          = -24
+
+! allow 60 samples (1 year/sample) = 30 years/file annual means,
+MFILT           = 60 
+
+! select HSW idealized forcing (nl added by Ben)
+ideal_phys_option = 'held-suarez-williamson'
+
+! turn off any random perturbations (not needed for HS in SE)
+pertlim = 0
+
+inithist='ENDOFRUN'
+
+! uses IC from HSW 5-year spinup
+NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_10year_spinup/run/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
+
+! don't let analytic ICs overwrite input from NCDATA
+ideal_phys_analytic_ic = .false.
