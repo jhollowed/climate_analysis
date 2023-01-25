@@ -31,12 +31,12 @@ MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAI"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
 #CASES="${wd}/cases"
-CASES="${wd}/cases/ic_ens"
+CASES="${wd}/cases/mass_ens"
 CASENAME="HSW_SAI_${RES}_L72_${TOT_RUN_LENGTH}day${SUFFIX}"
 CASE=${CASES}/${CASENAME}
 
 #OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases"
-OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens"
+OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/mass_ens"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
 # if total run length >300 days per run (~18 min on Cori with 768 ranks), then require resubmits
@@ -159,7 +159,9 @@ fincl3 = ${OUTVARS}
 inithist='ENDOFRUN'
 
 ! uses IC from HSW 5-year spinup
-NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_10year_spinup/run/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
+!NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_10year_spinup/run/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
+! uses IC of ens05
+NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_3year_ensICs/run/E3SM_ne16_L72_FIDEAL_3year_ensICs.eam.i.0002-05-01-00000.nc.newCoordNames"
 
 ! don't let analytic ICs overwrite input from NCDATA
 ideal_phys_analytic_ic = .false.
