@@ -111,7 +111,7 @@ if $DO_RESUBS; then
 fi
 
 #if [[ $SUFFIX == "noinject" ]]; then
-if [[ $SUFFIX == "_180delay_cf" ]]; then
+if [[ $SUFFIX == *"_cf" ]]; then
   # counterfactual run with no injection
   DOHEAT=".false."
   OUTVARS="'U','V','T','Z3','OMEGA','PS','T1000','T050','T025'"
