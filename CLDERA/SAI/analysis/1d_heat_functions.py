@@ -25,11 +25,11 @@ integ_sw = (np.pi*Re)**2 * S
 
 # -------- heating balance fig
 
-fig = plt.figure()
+fig = plt.figure(figsize=(4,3.5))
 ax = fig.add_subplot(111)
-ax.plot(latd, Ilw, '-r', label='outgoing longwave radiation')
-ax.plot(latd, Isw, '-b', label='absorbed solar radiation')
-ax.plot(latd, Isw - Ilw, '-k', lw=1, label='Net radiation')
+ax.plot(latd, Ilw, '-r', lw=2.5, label='outgoing longwave')
+ax.plot(latd, Isw, '-b', lw=2.5, label='incident shortwave')
+ax.plot(latd, Isw - Ilw, '-k', lw=1.5, label='net radiation')
 ax.plot([-90, 90], [0, 0], '--k', lw=0.75)
 ax.set_xlim([-90, 90])
 ax.grid(alpha=0.4)
@@ -38,9 +38,11 @@ ax.xaxis.set_ticks_position('both')
 ax.legend(loc='upper left', frameon=False)
 ax.set_xlabel('Latitude')
 ax.set_ylabel('Flux Density (W/m2)')
-ax.set_ylim([-250, 725])
+ax.set_ylim([-250, 825])
 
-plt.savefig('toa.png', dpi=300)
+plt.tight_layout()
+plt.savefig('toa_pres.png', dpi=300)
+plt.show()
 
 
 # --------- heating functions with AOD, vmr

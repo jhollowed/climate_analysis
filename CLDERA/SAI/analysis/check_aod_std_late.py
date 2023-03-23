@@ -15,10 +15,10 @@ from climate_artist import horizontal_slice as pltvert
 # --- miniroomba
 loc = '/Users/joe/tmp'
 out = '/Users/joe/tmp'
-figs = '/Users/joe/repos/climate_analysis/CLDERA/SAI/analysis/figs/aod_check'
+figs = '/Users/joe/repos/climate_analysis/CLDERA/SAI/analysis/figs/aod_check_late'
 
 ens = [xr.open_dataset(glob.glob('{}/ens0{}/AOD.h2*'.format(loc, i+1))[0])['AOD'] for i in range(5)]
-pdb.set_trace()
+
 # zero out almost-zeros
 #for i in range(5):
 #    pdb.set_trace()
@@ -50,24 +50,30 @@ ensstd.to_netcdf('{}/ensstd.nc'.format(out))
 
 # ==================== plot ===========
 
-tstart = 89
+tstart = 135
 cm = plt.cm.rainbow
-clev = np.linspace(0, 1, 6) + 1e-3
+clev = np.linspace(0, 0.07, 6) + 1e-4
 pltargs = {'levels':clev, 'cmap':cm, 'extend':'both'}
 
-clev_c = np.linspace(0.25, 0.75, 3) + 1e-3
+clev_c = np.linspace(0.01, 0.06, 3) + 1e-4
 pltargs_c = {'levels':clev_c, 'colors':None, 'linewidths':1.25}
 
-clev_mean = np.linspace(0, 0.4, 7) + 1e-3
+clev_mean = np.linspace(0, 0.07, 7) + 1e-4
+clev_mean = clev_mean*1000000 #tmp
 cm_mean = plt.cm.Greys
-pltargs_mean = {'levels':clev, 'cmap':cm_mean, 'extend':'both', 'alpha':1}
+pltargs_mean = {'levels':clev_mean, 'cmap':cm_mean, 'extend':'both', 'alpha':1}
 
-clev_std = np.linspace(0, 1, 6) + 1e-3
+clev_std = np.linspace(0, 0.01, 6) + 1e-4
+clev_std = clev_std * 10 #tmp
 cm_std = plt.cm.rainbow
 pltargs_std = {'levels':clev_std, 'cmap':cm_std, 'extend':'both', 'alpha':1}
 
 LON, LAT = np.meshgrid(lon, lat)
 colors = ['r', 'b', 'g', 'm', 'c']
+
+fac = 5
+clev = clev * fac
+clev_c = clev_c * fac
 
 for j in range(nt-tstart):
     
@@ -81,8 +87,8 @@ for j in range(nt-tstart):
     #ax6 = fig.add_subplot(326, projection=ccrs.PlateCarree())
     ax = [ax1, ax2, ax3, ax4]
     fig2 = plt.figure(figsize=(12, 3))
-    ax6 = fig2.add_subplot(121, projection=ccrs.Mercator())
-    ax7 = fig2.add_subplot(122, projection=ccrs.Mercator())
+    ax6 = fig2.add_subplot(121, projection=ccrs.PlateCarree())
+    ax7 = fig2.add_subplot(122, projection=ccrs.PlateCarree())
     fig.suptitle('Day {:.0f}'.format((tstart+j) * 2), fontsize=14)
     fig2.suptitle('Day {:.0f}'.format((tstart+j) * 2), fontsize=14)
         
@@ -113,12 +119,13 @@ for j in range(nt-tstart):
             plthor(lon, lat, var_dict, ax=ax6, annotation=None, include_contours=False, 
                    coastlines=False)
         ax6.plot([0,0], [0,0], color=colors[i], label='ens0{}'.format(i+1))
-        ax6.set_extent((-180, 180, -40, 60))
-        ax7.set_extent((-180, 180, -40, 60))
-        ax6.set_aspect(1.5)
-        ax7.set_aspect(1.65)
+        #ax6.set_extent((-180, 180, -40, 60))
+        #ax7.set_extent((-180, 180, -40, 60))
+        #ax6.set_aspect(1.5)
+        #ax7.set_aspect(1.65)
     ax6.legend(loc='lower left', ncol=2)
     fig.tight_layout()
     fig2.tight_layout()
+    plt.show()
     fig.savefig('{}/ens{:03d}.png'.format(figs, j))
     fig2.savefig('{}/std{:03d}.png'.format(figs, j))

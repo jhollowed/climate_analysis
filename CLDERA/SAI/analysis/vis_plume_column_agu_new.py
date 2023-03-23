@@ -20,9 +20,9 @@ cmap_gmt = claut.ncar_rgb_to_cmap(gmt)
 # ---------- parameters ----------
 lat0 = 15.15 * u.deg
 lon0 = 120.35 * u.deg
-mu = (17 * u.km).to(u.m)
+mu = (14 * u.km).to(u.m)
 sigma = (1.5 * u.km).to(u.m)
-t0 = (30*u.day).to(u.s)
+t0 = (0*u.day).to(u.s)
 tf = t0 + (24 * u.hr).to(u.s)
 dt = tf-t0
 kso2 = 1/((25 * u.day).to(u.s))
@@ -60,12 +60,17 @@ def compute_tracer_evolution(nlev = 'e3sm', zk = None, dt_inject = None, dt_deca
         True, the return for the numerical result is None
     '''
     # ---------- vertical distribution ----------
-    z0 = 12 * u.km
-    zT = 24 * u.km
+    z0 = 8 * u.km
+    zT = 22 * u.km
     if(zk is None):
         if(nlev == 'e3sm'):
-           zk = np.array([12066.939, 12551.622, 13032.191, 13509.571, 13984.683, 14458.534, 14931.965, 15405.396, 15879.088, 16353.361, 
-                          16828.559, 17318.906, 17882.68, 18564.715, 19366.602, 20290.275, 21337.922, 22513.977, 23836.834, 25323.637, 
+           #try:
+           #    zk = xr.open_dataset('data/E3SM_Z3_HSyr6_horzAvg.nc')['Z3'].values * u.m
+           #except FileNotFoundError:
+           zk = np.array([12066.939, 12551.622, 13032.191, 13509.571, 13984.683, 
+                          14458.534, 14931.965, 15405.396, 15879.088, 16353.361, 
+                          16828.559, 17318.906, 17882.68, 18564.715, 19366.602, 
+                          20290.275, 21337.922, 22513.977, 23836.834, 25323.637, 
                           26980.406, 28813.516, 30832.33, 33047.85]) * u.m
         else:
             zk = (np.linspace(z0, zT, nlev)).to(u.m)
@@ -183,9 +188,9 @@ if(z_figure):
     A = 17*1e9*u.kg/(9*3600*u.s * np.sum(V_e3sm))
     dmdt = A * V_e3sm
 if(heating_figure):
-    #zk = xr.open_dataset('data/E3SM_Z3_HSyr6_horzAvg.nc')['Z3']
-    #zk = sorted(zk.values) * u(zk.units)
-    m_analytic_heat, _, zk_heat, _, t_heat = compute_tracer_evolution(zk=zk, analytic_only=True)
+    zk_heat = xr.open_dataset('data/E3SM_Z3_HSyr6_horzAvg.nc')['Z3']
+    zk_heat = sorted(zk_heat.values) * u(zk_heat.units)
+    m_analytic_heat, _, zk_heat, _, t_heat = compute_tracer_evolution(zk=zk_heat, analytic_only=True)
 
     
 # ==================================================================
@@ -204,26 +209,22 @@ if(main_figure):
     m_tot_num = np.sum(m_numerical.to('Mt'), axis=2)
 
     # ---------- vis ----------
-    fig = plt.figure(figsize=(9,10))
+    fig = plt.figure(figsize=(7,6))
     gs = fig.add_gridspec(nrows=4, ncols=4)
     ax0 = fig.add_subplot(gs[:,0])
-    ax1 = fig.add_subplot(gs[0,1:])
-    ax2 = fig.add_subplot(gs[1,1:])
-    ax3 = fig.add_subplot(gs[2,1:])
-    ax4 = fig.add_subplot(gs[3,1:])
+    ax3 = fig.add_subplot(gs[0:2,1:])
+    ax4 = fig.add_subplot(gs[2:,1:])
 
     # ---- plotting properties
     clev = np.linspace(-7, -4, 10)
     clev_thin_contours = clev[clev % 1 != 0]
-    clev_contours = np.linspace(-7, -4, 4)
-    cm = plt.cm.RdYlBu_r
-    cm = cmap_gmt
+    clev_contours = clev[clev % 1 == 0]
     cm = plt.cm.YlOrRd
     cbar_tick_labels = np.array(['{:.0f}'.format(lev) for lev in clev])
     cbar_tick_labels[clev % 1 != 0] = ''
 
     # ---- global ax settings
-    for ax in [ax0, ax1, ax2, ax3, ax4]:
+    for ax in [ax0, ax3, ax4]:
         if(ax != ax0):
             ax.yaxis.set_label_position("right")
             ax.yaxis.tick_right()
@@ -231,39 +232,26 @@ if(main_figure):
         ax.set_ylabel('$z$ [km]', fontsize=label_fs)
         ax.tick_params(axis='both', which='major', labelsize=tick_fs)
         claut.format_ticks(ax)
-    for ax in [ax1, ax2, ax3]:
+    for ax in [ax3]:
         ax.set_facecolor((1,1,204/255))
 
     # ----- plot V(z) profile
-    #  get higher res zk
-    zk_fine = (np.linspace(10, 26, 1000) * u.km).to(u.m)
+    zk_fine = (np.linspace(8, 22, 1000) * u.km).to(u.m)
     V_fine = f(zk_fine)
     ax0.plot(V_fine.to(u.km**(-1)), zk_fine.to(u.km), '-k', lw=2.5)
     ax0.set_xlabel('$V(z)$ [km$^{-1}$]', fontsize=label_fs)
-    ax0.set_ylim([10, 26])
+    ax0.set_ylim([8, 22])
 
     # ----- contour plots of denisty evolution
-    #cf1 = ax1.contourf(t.to(u.day), zk.to(u.km), m_dens[1].T, cmap=cm, levels=clev, extend='both', vmin=-7.5)
-    cf1 = ax1.contourf(t.to(u.day), zk.to(u.km), m_dens[1].T, cmap=cm, levels=clev, extend='both')
-    ax1.contour(t.to(u.day), zk.to(u.km), m_dens[1].T, levels=clev_thin_contours, colors=['k']*len(clev_contours), linewidths=0.5)
-    ax1.set_xlim([t0.to(u.day).m-1.33, t0.to(u.day).m+14])
-    ax1.set_xlabel('$t$ [days]', fontsize=label_fs)
-    claut.add_annotation_box(ax1, 'ash', loc='upper right', fs=label_fs)
-
-    ax2.contourf(t.to(u.month), zk.to(u.km), m_dens[0].T, cmap=cm, levels=clev, extend='both', vmin=-7.5)
-    ax2.contour(t.to(u.day), zk.to(u.km), m_dens[0].T, levels=clev_thin_contours, colors=['k']*len(clev_contours), linewidths=0.5)
-    ax2.set_xlim([0, 12])
-    ax2.set_xlabel('$t$ [months]', fontsize=label_fs)
-    claut.add_annotation_box(ax2, 'SO$_2$', loc='upper right', fs=label_fs)
-
-    ax3.contourf(t.to(u.year), zk.to(u.km), m_dens[2].T, cmap=cm, levels=clev, extend='both', vmin=-7.5)
+    cf = ax3.contourf(t.to(u.year), zk.to(u.km), m_dens[2].T, cmap=cm, levels=clev, extend='both')
     ax3.contour(t.to(u.day), zk.to(u.km), m_dens[2].T, levels=clev_thin_contours, colors=['k']*len(clev_contours), linewidths=0.5)
-    ax3.set_xlim([-0.35, 5])
+    ax3.set_xlim([-5*0.05, 5])
     ax3.set_xlabel('$t$ [years]', fontsize=label_fs)
+    ax3.set_ylim([8, 22])
     claut.add_annotation_box(ax3, 'sulfate', loc='upper right', fs=label_fs)
 
     # ----- color bar
-    cbar = fig.colorbar(cf1, ax=ax1, orientation='horizontal', location='top')
+    cbar = fig.colorbar(cf, ax=ax3, orientation='horizontal', location='top')
     cbar.set_label('log$_{10}$( density [kg/m$^3$] )', fontsize=label_fs)
     cbar.set_ticklabels(cbar_tick_labels)
     cbar.ax.tick_params(labelsize=tick_fs)
@@ -272,24 +260,16 @@ if(main_figure):
     #ax4.plot(t.to(u.month), m_tot[1], 'c', label='ash')
     ax4.plot(t.to(u.month), m_tot[0], 'c', label='SO$_2$', lw=4)
     ax4.plot(t.to(u.month), m_tot[2], 'orange', label='sulfate', lw=4)
-    ax4.plot(t.to(u.month), m_tot[3], ':', color='orange', label='sulfate validation', lw=3)
-    ax4.plot(t.to(u.month), m_tot_num[0], 'k', label='numerical solutions', lw=0.85)
-    ax4.plot(t.to(u.month), m_tot_num[2], 'k', lw=0.85)
-    ax4.plot(t.to(u.month), m_tot_num[3], 'k', lw=0.85)
     ax4.set_xlabel('$t$ [months]', fontsize=label_fs)
     ax4.set_ylabel('total mass [Mt]', fontsize=label_fs)
     ax4.legend(fancybox=False, fontsize=tick_fs, loc='upper right', ncol=2, frameon=False)
-    ax4.set_xlim([0, 24])
+    ax4.set_xlim([-24*0.05, 24])
 
     plt.tight_layout()
 
     # manually add contour labels after tight layout
     cc3 = ax3.contour(t.to(u.day), zk.to(u.km), m_dens[2].T, levels=clev_contours, colors=['k']*len(clev_contours))
-    ax3.clabel(cc3, cc3.levels, inline=True, fmt='%.0f', fontsize=tick_fs)
-    cc1 = ax1.contour(t.to(u.day), zk.to(u.km), m_dens[1].T, levels=clev_contours, colors=['k']*len(clev_contours))
-    ax1.clabel(cc1, cc1.levels, inline=True, fmt='%.0f', fontsize=tick_fs, manual=((31, 15.2), (33.5, 18.3), (35.4, 18.9), (37.3, 19.4)))
-    cc2 = ax2.contour(t.to(u.day), zk.to(u.km), m_dens[0].T, levels=clev_contours, colors=['k']*len(clev_contours))
-    ax2.clabel(cc2, cc2.levels, inline=True, fmt='%.0f', fontsize=tick_fs, manual=((2.45, 18.53), (4, 18.9), (5.64, 19.3)))
+    #ax3.clabel(cc3, cc3.levels, inline=True, fmt='%.0f', fontsize=tick_fs)
 
     plt.savefig('figs/sai_column_main_fig_new.png', dpi=300)
 
@@ -324,7 +304,7 @@ if(z_figure):
     axV.legend(fancybox=False, fontsize=tick_fs, loc='upper right')
     axV.set_xlabel('$V(z)$ [km$^{-1}$]', fontsize=label_fs)
     axV.set_ylabel('$z$ [km]', fontsize=label_fs)
-    axV.set_ylim([12, 24])
+    axV.set_ylim([8, 22])
 
     # ----- line plots of total mass
     axM.plot(t.to(u.month), (m_tot_8[0]-m_tot_100[0]) * 1e14, '-b', lw=2, 
@@ -413,9 +393,9 @@ if(heating_figure):
     sb= 5.670374419e-8 * u.W/u.m**2/u.K**4
     cp = const.Cp_d
     cell_area = (200*u.km)**2
-    maxaod_z = 0.2 * u.km
+    maxaod_z = 0.1 * u.km
     maxaod_idx = np.searchsorted(zk_heat, maxaod_z)
-    zeta = 4.7e-4
+    zeta = 4e-3
     lat = 0 *np.pi/180
     Isw = 558.54*u.W/u.m**2 * np.cos(lat)
     Ilw = sb*(315*u.K - 60*u.K * np.sin(lat)**2)**4
@@ -423,7 +403,7 @@ if(heating_figure):
     # turn off sulfate_control contribution via toggle at index 3 V
     
     if(retune):
-        blw = np.array([1, 1, 1, 0]) * 0.0042 * u.m**2/u.kg # for single column
+        blw = np.array([1, 1, 1, 0]) * 0.0082 * u.m**2/u.kg # for single column
         bsw = np.array([1, 1, 1, 0]) * 0.3 * u.m**2/u.kg # for single column
     else:
         blw = np.array([1, 1, 1, 0]) * 0.062 * u.m**2/u.kg # for E3SM
@@ -553,7 +533,7 @@ if(heating_figure):
     
     if(retune):
         clev1 = np.linspace(0.05, 0.35, 7)
-        clev2 = np.linspace(-0.02, 0, 5)
+        clev2 = np.linspace(-0.3, 0, 4)
         clev = np.hstack([clev2, clev1])
         clev_lab = [-0.02, -0.01, 0.1, 0.2, 0.3]
         clab_fmt = '.2f'
@@ -594,9 +574,9 @@ if(heating_figure):
     ax2.set_xlabel('$t$ [months]', fontsize=label_fs)
     ax2.set_ylabel('$z$ [m]', fontsize=label_fs)
     ax1.set_ylabel('$z$ [km]', fontsize=label_fs)
-    ax1.set_ylim([10, 23])
+    ax1.set_ylim([8, 22])
     ax1.set_xlim([0, 12])
-    ax2.set_ylim([0, 400])
+    ax2.set_ylim([0, 200])
     ax2.set_xlim([0, 12])
     claut.add_annotation_box(ax1, 'stratosphere', loc='lower right', fs=tick_fs)
     claut.add_annotation_box(ax2, 'surface', loc='upper right', fs=tick_fs)

@@ -168,18 +168,20 @@ levels1 = np.arange(140, 320, 20)
 fig = plt.figure(figsize=(7,5))
 ax = fig.add_subplot(111)
 
-axx = ax.twiny()
-axx.plot(kr.to(1/u.day), pmid/100, '-r', lw=2)
-axx.set_xlabel('RF damping timescale [1/day]', fontsize=12, color='r')
-axx.tick_params(axis='x', colors='red')
-axx.set_xlim([-0.003, 0.35])
+plotRF = False
+if plotRF:
+    axx = ax.twiny()
+    axx.plot(kr.to(1/u.day), pmid/100, '-r', lw=2)
+    axx.set_xlabel('RF damping timescale [1/day]', fontsize=12, color='r')
+    axx.tick_params(axis='x', colors='red')
+    axx.set_xlim([-0.003, 0.35])
 
 cArgs_c = {'fmt':'%d', 'manual':((-43.2, 228), (-26.57, 305), (0, 399), (26.87, 533), 
                                  (40.55, 814), (0, 870))}
 pltargs_c = {'levels':levels1, 'colors':'k', 'linewidths':1.5, 'zorder':1}
 var_dict_c = [{'var':teq_trunc1.T, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]
 cc = pltvert(clat * 180/np.pi, pref_mid_norm*psurf_ref/100, var_dict_c, ax=ax, 
-        plot_zscale=True, slice_at='', xlabel='latitude', ylabel='p  [hPa]')
+        plot_zscale=True, annotation='', xlabel='latitude', ylabel='p  [hPa]')
 for label in cc[0]:
     label.set_rotation(0)
 
@@ -189,10 +191,10 @@ cArgs_c = {'fmt':'%d', 'manual':((0, 105), (0, 29), (0, 16), (0, 9), (0, 6),(0, 
 pltargs_c = {'levels':levels2, 'colors':'k', 'linewidths':1.5, 'zorder':1}
 var_dict_c = [{'var':teq_trunc2.T, 'plotType':'contour', 'plotArgs':pltargs_c, 'colorArgs':cArgs_c}]
 cc = pltvert(clat * 180/np.pi, pref_mid_norm*psurf_ref/100, var_dict_c, ax=ax, 
-        plot_zscale=False, inverty=False, slice_at='', xlabel='latitude', ylabel='p  [hPa]')
+        plot_zscale=False, inverty=False, annotation='', xlabel='latitude', ylabel='p  [hPa]')
 
 
 plt.tight_layout()
-fig.savefig('WHS_newTeq.png', dpi=300)
-#plt.show()
+fig.savefig('WHS_newTeq_noRF.png', dpi=300)
+plt.show()
 
