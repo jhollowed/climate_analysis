@@ -390,15 +390,31 @@ def analyze_response(run1, run2, run1_native=None, run2_native=None, overwrite=F
 if(__name__ == '__main__'):
 
     # for ens
-    fig_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/figs'
-    data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/tmp'
-    data_source_ens = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/ens_stats'
+    #fig_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/figs'
+    #data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/tmp'
+    #data_source_ens = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/ens_stats'
+    #sfx = ''
+
+    #run1 = glob.glob('{}/iens_stats/ens_mean.h2.regrid*.nc'.format(data_source_ens))[0]
+    #run2 = glob.glob('{}/mean_climate.regrid*.nc'.format(data_source_ens))[0]
+    #run1_native = glob.glob('{}/ens_mean.h2.nc'.format(data_source_ens))[0]
+    #run2_native = glob.glob('{}/mean_climate.nc'.format(data_source_ens))[0]
+    
+    #analyze_response(run1, run2, run1_native, run2_native, overwrite=False, skip_heat_plots=True,
+    #                 sfx=sfx, savedest=fig_dest, datsavedest=data_dest, inj_delay=180) 
+
+
+    # for pertlim ens
+    fig_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ic_ens/figs'
+    data_dest = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ic_ens/tmp'
+    data_source_ens = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ic_ens/ens_stats'
+    mean_data_source_ens = '/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/ens_stats'
     sfx = ''
-   
-    run1 = glob.glob('{}/ens_mean.h2.regrid*.nc'.format(data_source_ens))[0]
-    run2 = glob.glob('{}/mean_climate.regrid*.nc'.format(data_source_ens))[0]
-    run1_native = glob.glob('{}/ens_mean.h2.nc'.format(data_source_ens))[0]
-    run2_native = glob.glob('{}/mean_climate.nc'.format(data_source_ens))[0]
+
+    run1 = glob.glob('{}/out_regrid.nc'.format(data_source_ens))[0]
+    run2 = glob.glob('{}/mean_climate.regrid*.nc'.format(mean_data_source_ens))[0]
+    run1_native = glob.glob('{}/out.nc'.format(data_source_ens))[0]
+    run2_native = glob.glob('{}/mean_climate.nc'.format(mean_data_source_ens))[0]
     
     analyze_response(run1, run2, run1_native, run2_native, overwrite=False, skip_heat_plots=True,
-                     sfx=sfx, savedest=fig_dest, datsavedest=data_dest, inj_delay=180) 
+                     sfx=sfx, savedest=fig_dest, datsavedest=data_dest, inj_delay=90) 

@@ -43,6 +43,7 @@ ensstd.to_netcdf('{}/ensstd.nc'.format(out))
 
 tstart = 91
 clev = np.linspace(0, 0.5, 6)
+clev_c = np.linspace(0, 0.5, 3)
 cm = plt.cm.jet
 pltargs = {'levels':clev, 'cmap':cm, 'extend':'both'}
 LON, LAT = np.meshgrid(lon, lat)
@@ -61,7 +62,7 @@ for j in range(nt-tstart-1):
     print('plotting time {}...'.format(j+1))
     for i in range(5):
         print('    plotting ens {}...'.format(i+1))
-        var_dict = [{'var':ens[i][j], 'plotType':'contourf', 'plotArgs':pltargs, 'colorFormatter':None}]
-        plthor(lon, lat, var_dict, ax=ax[i], annotation='ens0{}'.format(i+1))
-        #ax[i].contourf(LON, LAT, ens[i][tstart+j], levels=clev, cmap=cm, extend='both')
+        #var_dict = [{'var':ens[i][j], 'plotType':'contourf', 'plotArgs':pltargs, 'colorFormatter':None}]
+        #plthor(lon, lat, var_dict, ax=ax[i], annotation='ens0{}'.format(i+1))
+        ax[i].contourf(LON, LAT, ens[i][tstart+j], levels=clev, cmap=cm, extend='both')
     plt.show()

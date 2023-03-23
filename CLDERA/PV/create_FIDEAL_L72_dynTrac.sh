@@ -1,49 +1,43 @@
 #!/bin/bash
 
 set -e
-
-pause(){
-    while read -r -t 0.001; do :; done # dump the buffer
-    read -n1 -rsp $'Press any key to continue or Ctrl+C to exit...\n'
-}
-
-# 2/9/22
-# script for performing E3SM runs with enabled AOA clock tracers
+wd=$(cd $(dirname $0) && pwd)
 
 MACHINE=cori-knl
 COMPILER=intel
 PROJECT=m4014
-COMPSET=F1850
-GRID=ne4pg2_oQU480
-RES=ne4pg2
-PECOUNT=S
+COMPSET=FIDEAL
+GRID=ne16pg2_ne16pg2
+RES=ne16
 
 BUILD_FLAG=$1
 TOT_RUN_LENGTH=$2
 
 # ----- for debug queueing -----
+PECOUNT=768   # half the number of cubedsphere elements in ne16
 QUEUE=debug
 WALLCLOCK=00:30:00
 
-wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/PV/pv_case_builder_E3SM"
+wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/PV"
 MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_PV"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
 CASES="${wd}/cases"
-CASENAME="E3SM_${RES}_L72_${COMPSET}_PV"
+CASENAME="E3SM_${RES}_L72_${COMPSET}_dynTrac"
 CASE=${CASES}/${CASENAME}
 
 OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/pv_cases"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
-# if total run length >1/2 year per run (~15 min on Cori with 768 ranks), then require resubmits
-MAX_STOP_N=30
 DO_RESUBS=false
-if [ "$TOT_RUN_LENGTH" -gt "$MAX_STOP_N" ]; then
-    STOP_N=$MAX_STOP_N
-    DO_RESUBS=true
-else
-    STOP_N=$TOT_RUN_LENGTH
+STOP_N=$TOT_RUN_LENGTH
+if [[ "$QUEUE" == "debug" ]]; then
+    # if total run length >300 days per run (~20 min on Cori with 768 ranks), then require resubmits
+    MAX_STOP_N=300
+    if [ "$TOT_RUN_LENGTH" -gt "$MAX_STOP_N" ]; then
+        STOP_N=$MAX_STOP_N
+        DO_RESUBS=true
+    fi
 fi
 
 # if do resubs, compute number of resubs to effectively round up total length of simulation 
@@ -94,6 +88,7 @@ $MODEL --compset $COMPSET --res $GRID --case $CASE --pecount $PECOUNT \
 # ---------- configure case
 cd $CASE
 ./xmlchange DEBUG=FALSE,DOUT_S=FALSE,STOP_OPTION=ndays,STOP_N=$STOP_N
+./xmlchange --append --file env_build.xml --id CAM_CONFIG_OPTS --val "-cldera_dynamic_trcs "
 ./xmlchange JOB_WALLCLOCK_TIME=$WALLCLOCK
 ./xmlchange SAVE_TIMING=TRUE
 ./xmlchange JOB_QUEUE=$QUEUE
@@ -109,18 +104,19 @@ fi
 printf "\n\n========== POPULATING NAMELIST SETTINGS ==========\n"
 cat << EOF >> ./user_nl_eam
 empty_htapes     = .TRUE.              ! output only the varibales listed below
-avgflag_pertape  = 'I'                 ! hist file 1 is instantaneous
 
-fincl1 = 'U','V','T','Z3','OMEGA','PS','DYN_PV','PV'
+! output a few quantities for frequently on their instantaneous values for SSW quantification
+fincl1 = 'PV','PV_TRCR','PT_TRCR'
 
-NHTFRQ           = -24      ! output frequency every 6 hours
-MFILT            = 360      ! allow 360 time samples per hist file (90 days)
-NDENS            = 2        ! single-precision for each hist file
+avgflag_pertape  = 'A'               ! hist file 1 is avg, 2 is instant, 3 is avg
+NHTFRQ            = -6               ! output frequency every day
+MFILT             = 720              ! allow 720 time samples per hist file
+NDENS             = 2                ! single-precision for each hist file
 
-inithist='NONE'
+inithist='ENDOFRUN'
 
-! uses new 5-year spinup with extended stratopause
-NCDATA="/project/projectdirs/m4014/data/HSW/initial_conditions/netcdf/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
+! uses IC from HSW 5-year spinup
+NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_10year_spinup/run/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
 
 ! don't let analytic ICs overwrite input from NCDATA
 ideal_phys_analytic_ic = .false.

@@ -23,30 +23,35 @@ SUFFIX=$3
 
 # ----- for debug queueing -----
 PECOUNT=768   # half the number of cubedsphere elements in ne16
-QUEUE=debug
-WALLCLOCK=00:30:00
+#QUEUE=debug
+#WALLCLOCK=00:30:00
+QUEUE=regular
+WALLCLOCK=03:00:00
 
 wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/"
 MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAI"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
 #CASES="${wd}/cases"
-CASES="${wd}/cases/mass_ens"
+#CASES="${wd}/cases/pertlim_ens"
+CASES="${wd}/cases/pertlim_ic_ens"
 CASENAME="HSW_SAI_${RES}_L72_${TOT_RUN_LENGTH}day${SUFFIX}"
 CASE=${CASES}/${CASENAME}
 
 #OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases"
-OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/mass_ens"
+#OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ens"
+OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ic_ens"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
-# if total run length >300 days per run (~18 min on Cori with 768 ranks), then require resubmits
-MAX_STOP_N=300
 DO_RESUBS=false
-if [ "$TOT_RUN_LENGTH" -gt "$MAX_STOP_N" ]; then
-    STOP_N=$MAX_STOP_N
-    DO_RESUBS=true
-else
-    STOP_N=$TOT_RUN_LENGTH
+STOP_N=$TOT_RUN_LENGTH
+if [[ "$QUEUE" == "debug" ]]; then
+    # if total run length >300 days per run (~18 min on Cori with 768 ranks), then require resubmits
+    MAX_STOP_N=300
+    if [ "$TOT_RUN_LENGTH" -gt "$MAX_STOP_N" ]; then
+        STOP_N=$MAX_STOP_N
+        DO_RESUBS=true
+    fi
 fi
 
 # if do resubs, compute number of resubs to effectively round up total length of simulation 
@@ -118,6 +123,26 @@ if [[ $SUFFIX == *"_cf" ]]; then
   NHTFRQ="-6,-6,-48"
   AVGFLG="'A','I','A'"
   MFILT="720,720,720"
+  INITHIST="'ENDOFRUN'"
+  DELAY="180"
+elif [[ $SUFFIX == *"_pertT" ]]; then
+  # counterfactual run with no injection, small T pertubations
+  DOHEAT=".false."
+  OUTVARS="'U','V','T','Z3','OMEGA','PS','T1000','T050','T025'"
+  NHTFRQ="-6,-24"
+  AVGFLG="'A','A'"
+  MFILT="720,720"
+  INITHIST="'DAILY'"
+  DELAY="180"
+elif [[ $SUFFIX == *"_ptens" ]]; then
+  # ic ensemble of small T pertubations
+  DOHEAT=".true."
+  OUTVARS="'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','AIR_MASS','AOD','T1000','T050','T025'"
+  NHTFRQ="-6,-99999,-24" # suppress instantaneous data
+  AVGFLG="'A','I','A'"
+  MFILT="720,720,720"
+  INITHIST="'ENDOFRUN'"
+  DELAY="90"             # this should be the number of days post-pertubation to trigger the injection
 elif [[ $SUFFIX == "_mc" ]]; then
   # long-time mean climate run; yearly avgs only
   DOHEAT=".false."
@@ -125,6 +150,8 @@ elif [[ $SUFFIX == "_mc" ]]; then
   NHTFRQ="-8640,-99999,-99999"
   AVGFLG="'A','A','A'"
   MFILT="100,1,1"
+  INITHIST="'ENDOFRUN'"
+  DELAY="180"
 else
   # ensemble members
   DOHEAT=".true."
@@ -132,6 +159,8 @@ else
   NHTFRQ="-6,-6,-48"
   AVGFLG="'A','I','A'"
   MFILT="720,720,720"
+  INITHIST="'ENDOFRUN'"
+  DELAY="180"
 fi
 
 printf "\n\n========== POPULATING NAMELIST SETTINGS ==========\n"
@@ -139,11 +168,12 @@ cat << EOF >> ./user_nl_eam
 empty_htapes     = .TRUE.              ! output only the varibales listed below
 
 ! --- for prod runs
-NHTFRQ            = ${NHTFRQ}      ! output frequency every 6 hours, 6 hours, daily
-avgflag_pertape   = ${AVGFLG}      ! hist file 1 is avg, 2 is instant, 3 is avg
-MFILT             = ${MFILT}       ! 720 --> 6monthly at 6hr sampling,
-                                   !         4years at 2day sampling
-cldera_sai_t0     = 180            ! injection starts at 6 months, in days
+NHTFRQ            = ${NHTFRQ}      ! output frequency
+avgflag_pertape   = ${AVGFLG}      ! history flags
+MFILT             = ${MFILT}       ! history write frequency
+                                   ! 720 --> 6-month files at 6hr sampling,
+                                   !         4-year files at  2day sampling
+cldera_sai_t0     = ${DELAY}       ! injection delay, in days
 fincl1 = ${OUTVARS}
 fincl2 = ${OUTVARS}
 fincl3 = ${OUTVARS}
@@ -156,7 +186,7 @@ fincl3 = ${OUTVARS}
 !cldera_sai_t0 = 5                   ! injection starts at 5 days
 !fincl1 = 'T','SO2','ASH','SULFATE','SAI_HEAT','AOD','T1000','T975','T050','T025','ATTEN_LW','ATTEN_SW','I_SW','I_LW','COL_SAI','AREA'
 
-inithist='ENDOFRUN'
+inithist=${INITHIST}
 
 ! uses IC from HSW 5-year spinup
 !NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_10year_spinup/run/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
