@@ -10,7 +10,8 @@ pause(){
 # 2/9/22
 # script for performing E3SM runs with enabled AOA clock tracers
 
-MACHINE=cori-knl
+#MACHINE=cori-knl
+MACHINE=pm-cpu
 COMPILER=intel
 PROJECT=m4014
 COMPSET=FIDEAL
@@ -22,25 +23,26 @@ TOT_RUN_LENGTH=$2
 SUFFIX=$3
 
 # ----- for debug queueing -----
-PECOUNT=768   # half the number of cubedsphere elements in ne16
-#QUEUE=debug
-#WALLCLOCK=00:30:00
-QUEUE=regular
-WALLCLOCK=03:00:00
+#PECOUNT=768   # half the number of cubedsphere elements in ne16
+PECOUNT=384   # quarter the number of cubedsphere elements in ne16
+QUEUE=debug
+WALLCLOCK=00:30:00
+#QUEUE=regular
+#WALLCLOCK=03:00:00
 
 wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/"
 MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAI"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
-#CASES="${wd}/cases"
+CASES="${wd}/cases"
 #CASES="${wd}/cases/pertlim_ens"
-CASES="${wd}/cases/pertlim_ic_ens"
+#CASES="${wd}/cases/pertlim_ic_ens"
 CASENAME="HSW_SAI_${RES}_L72_${TOT_RUN_LENGTH}day${SUFFIX}"
 CASE=${CASES}/${CASENAME}
 
 #OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases"
 #OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ens"
-OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ic_ens"
+OUTROOT="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/sai_cases/tests"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
 DO_RESUBS=false
@@ -97,7 +99,7 @@ fi
 
 printf "\n\n========== CREATING CASE ==========\n"
 $MODEL --compset $COMPSET --res $GRID --case $CASE --pecount $PECOUNT \
-       --output-root $OUTROOT --machine $MACHINE --compiler $COMPILER --project $PROJECT
+       --output-root $OUTROOT --machine $MACHINE --project $PROJECT
 
 # ---------- configure case
 cd $CASE
@@ -152,6 +154,15 @@ elif [[ $SUFFIX == "_mc" ]]; then
   MFILT="100,1,1"
   INITHIST="'ENDOFRUN'"
   DELAY="180"
+elif [[ $SUFFIX == *"_TEST" ]]; then
+  # for random testing...
+  DOHEAT=".true."
+  OUTVARS="'SAI_HEAT','ATTEN_LW','ATTEN_SW','AOD','SO2','SULFATE','ASH','T1000','T050'"
+  NHTFRQ="-6, -48, -48"
+  AVGFLG="'A', 'I', 'A'"
+  MFILT="720,720,720"
+  INITHIST="'ENDOFRUN'"
+  DELAY="10"
 else
   # ensemble members
   DOHEAT=".true."
@@ -191,7 +202,7 @@ inithist=${INITHIST}
 ! uses IC from HSW 5-year spinup
 !NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_10year_spinup/run/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
 ! uses IC of ens05
-NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_3year_ensICs/run/E3SM_ne16_L72_FIDEAL_3year_ensICs.eam.i.0002-05-01-00000.nc.newCoordNames"
+NCDATA="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_3year_ensICs/run/E3SM_ne16_L72_FIDEAL_3year_ensICs.eam.i.0002-05-01-00000.nc.newCoordNames"
 
 ! don't let analytic ICs overwrite input from NCDATA
 ideal_phys_analytic_ic = .false.

@@ -17,4 +17,11 @@
 #./create_FIDEAL_ne16L72_SAI.sh 1 1200 _ptens
 
 # --- for T pertlim injection ensemble
-./create_FIDEAL_ne16L72_SAI.sh 1 1200 _ptens
+#./create_FIDEAL_ne16L72_SAI.sh 1 1200 _ptens
+
+# --- testing ttend outputs...
+#./create_FIDEAL_ne16L72_SAI.sh 1 3 _TEST
+
+# --- testing ttend outputs...
+#./create_FIDEAL_ne16L72_SAI.sh 1 90 _PERLMUTTER_INJECTION_TEST
+./create_FIDEAL_ne16L72_SAI.sh 1 300 _PERLMUTTER_INJECTION_TEST
