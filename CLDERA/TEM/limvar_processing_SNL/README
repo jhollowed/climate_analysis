@@ -1,0 +1,24 @@
+These directories contain various scripts for processing and analyzing limvar ensemble data. 
+The intended order of operations is as follows:
+
+1. limvar_zinterp.py
+    Interpolates limvar atmospheric variables to pure pressure levels for TEM analysis, writes
+    out as a set of new files.
+
+2. limvar_TEM.py
+    Performs TEM analysis given the data produced from step 1.
+
+3. limvar_zonalmeans.py
+    Performs zonal averaging of the vertically interpolated limvar data from step 1
+
+4. limvar_timeConcat.py
+    Processes the data produced in step 3 by concatanating in time
+
+5. limvar_monthly_seasonal_means.py
+    computes monthly and seasonal means of the zonally-averaged data
+
+6. limvar_TEM_budget_monthly
+    comptues TEM budget quantities on the monthly averaged data
+
+7. limvar_TEM_budget_latbands
+    comptues TEM budget quantities on the latitude band-averaged data
