@@ -16,12 +16,23 @@ from ensembler import ensembler
 # for production runs of tighter variability
 # run starts at day 1 post-pertubation, 90-day injection delay;
 # achieves same atm state at time of injection as testing configuration above, with lead time included
-ic_dir = "/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ens/pertlim_ics_day1"
-root_case = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cases/pertlim_ic_ens/HSW_SAI_ne16pg2_L72_1200day_ptens'
-clone_prefix='HSW_SAI_ne16pg2_L72_1200day_90delay'
+#ic_dir = "/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ens/pertlim_ics_day1"
+#root_case = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cases/pertlim_ic_ens/HSW_SAI_ne16pg2_L72_1200day_ptens'
+#clone_prefix='HSW_SAI_ne16pg2_L72_1200day_90delay'
 
-top_clone_dir = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cases/pertlim_ic_ens'
-top_output_dir='/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ic_ens'
+#top_clone_dir = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cases/pertlim_ic_ens'
+#top_output_dir='/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ic_ens'
+#cime_dir='/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAI/cime/scripts'
+
+# for testing used in reporting results of variability meeting 03/09/23 -- (RERUNNING on 11/10/23 for paper plot)
+# run starts at day 90 post-pertubation, with no injection delay; 
+# guess for sufficient level of variability
+ic_dir = "/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ens/pertlim_ics_day90"
+root_case = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cases/HSW_SAI_ne16pg2_L72_300day_ptens'
+clone_prefix='HSW_SAI_ne16pg2_L72_300day'
+
+top_clone_dir = '/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/cases/pertlim_ic_ens/for_hsdwpaperfigs_11.10.23'
+top_output_dir='/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ic_ens/for_hsdwpaperfigs_11.10.23'
 cime_dir='/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAI/cime/scripts'
 
 ens = ensembler()

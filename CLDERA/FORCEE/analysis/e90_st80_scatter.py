@@ -32,7 +32,7 @@ plt.rc('figure', titlesize=LABEL_FS)  # fontsize of the figure title
 # --------------- ANALYSIS SETTINGS ---------------
 WEIGHT_LAT = True       # whether or not to weight horizontal averages in by cos(lat)
 WEIGHT_LEV = True       # whether or not to weight veritcal averages by pdel
-DO_ANNUAL  = True      # whether or not to use annually-averaged data fror this analysis
+DO_ANNUAL  = False      # whether or not to use annually-averaged data fror this analysis
                         # if true, climatological anomalies will not be taken in E90, ST80, 
                         # or the tropopause; averaged raw ppb values will be plotting
                         # instead
@@ -41,10 +41,10 @@ USE_EVA    = False      # whether or not to use the minimal eruption dataset man
                         # from Toohey+ (Easy Volcanic Aerosols, EVAv1.0). If False, will use 
                         # the much more expansive table collected from the CLDERA E3SM 
                         # emissions file metadata. Should be False.
-PLOT_ERUPTIONS = True   # whether or not to display vertical lines on figures giving 
+PLOT_ERUPTIONS = False   # whether or not to display vertical lines on figures giving 
                         # times and strengths of eruptions
 PLOT_TRENDS    = True   # whether or not to plot best-fit lines
-ERUPT_FIT_MONTHS = 12    # number of months to use for post-eruption regression
+ERUPT_FIT_MONTHS = 6    # number of months to use for post-eruption regression
 TROPICAL_MEANS = True   # whether or not to restrict measures of the mean strat/trop tracer content
                         # to the tropics
 MIN_LEV = 50            # "global" tracer distributions only considered up to MIN_LEV hPa
@@ -55,6 +55,11 @@ TROP_SLICE = slice(-TROP_BOUND,TROP_BOUND)
 REG_CI = 95            # confidence interval to estiamte via bootstrap for regression (%)
 REG_NBOOT = 10000      # number of bootstrap samples to draw for regressions ci
 REG_MIN_TGS = 0.5        # minimum eruption mag (TgS) to include in regression
+
+SHOW_TROP_ANOM = False # whether or not to plot the time series of the tropopause position 
+                      # (and e90 90ppb) anomaly. If false, plot the raw data (including seasonal signal)
+    
+SHOW_LEGENDS = False
 
 # --------------- organize historical eruption data ---------------
 # These data are moslty used for visual purposes, and will mark when eruptions occur
@@ -79,7 +84,7 @@ else:
     # This is the volcanic SO2 emissions file used for CLDERA E3SM coupled runs. 
     # Parsing code here puts the data into the same format as seen for the EVA 
     # 'eruptions' dictionary above
-    emissions_file = '/pscratch/sd/j/jhollo/E3SM/historical/CLDERA_2ndHistorical_1950-2014_monthly/'\
+    emissions_file = '/pscratch/sd/j/jhollo/E3SM/historical_data/CLDERA_2ndHistorical_1950-2014_monthly/'\
                      'emissions/VolcanEESMv3.11_SO2_850-2016_Mscale_Zreduc_2deg_c180812.nc'
     emissions = xr.open_dataset(emissions_file, decode_times=False)
     emissions_data = emissions.data_summary.split('\n')[53:]
@@ -116,7 +121,7 @@ if(not DO_ANNUAL):
 # --------------- read data ---------------
 
 print('---- reading data...')
-pdir         = '/pscratch/sd/j/jhollo/E3SM/historical/CLDERA_2ndHistorical_1950-2014_monthly'
+pdir         = '/pscratch/sd/j/jhollo/E3SM/historical_data/CLDERA_2ndHistorical_1950-2014_monthly'
 # full data (we'll pull meta data, coordiante info, etc from here)
 E90     = '{}/histoircal_h0_E90j_1850-2014.regrid.fv0.9x1.25_bilinear.nc'.format(pdir)
 # zonal mean data
@@ -685,7 +690,8 @@ if(PLOT_ERUPTIONS):
 ax1.set_title(tracertracer_strat_title)
 ax1.set_xlabel(tracertracer_xlabel)
 ax1.set_ylabel(tracertracer_ylabel)
-legend = ax1.legend(loc='upper left', fancybox=False)
+if(SHOW_LEGENDS):
+    legend = ax1.legend(loc='upper left', fancybox=False)
 
 
 # colorbar axis. This won't be used, and is just a padding to make sure both the strat 
@@ -750,12 +756,13 @@ if(PLOT_ERUPTIONS):
     # dummy plot for legend
     ax3.plot([1980,1980], [ypos,ypos], color=eruption_color, label='eruption (line width = TgS)')
 
-ax3.legend(fancybox=False, loc='lower left')
+if(SHOW_LEGENDS):
+    ax3.legend(fancybox=False, loc='lower left')
 
 if(not DO_ANNUAL):
     # these were eyeballed and work well for this historical data
-    ax3.set_xlim([1960, 2000])
-    ax3.set_ylim([-0.4, 0.4])
+    ax3.set_xlim([1973, 2000])
+    #ax3.set_ylim([-0.4, 0.4])
     ax33.set_ylim([-0.3, 0.3])
 else:
     # buffer lower ylim by 20% to make room for legend
@@ -775,6 +782,10 @@ ax3.set_ylabel(e90_label)
 ax33.set_ylabel(st80_label)
 ax33.yaxis.label.set_color(st80_color)
 ax3.yaxis.label.set_color(e90_color)
+
+# For now, until ST80 is fixed, do not show this data on the figure
+ax33.clear()
+ax33.set_yticks([])
     
     
     
@@ -782,19 +793,32 @@ ax3.yaxis.label.set_color(e90_color)
 # --------------- e90 tropical 90ppb evolution ---------------
 
 # if we're not analyzing the annual data, then we will plot anomalies 
-# here, and show them over a righter time window (near Pinatubo)
+# here, and show them over a tighter time window (near Pinatubo)
+
 if(not DO_ANNUAL):
     
+    if(not SHOW_TROP_ANOM):
+        ax4_plot_data_e90 = e90_90ppb_eq_lev
+        ax4_plot_data_trop = trop_t_eq_mean
+        ylim = [85, 120]
+    else:
+        ax4_plot_data_e90 = e90_90ppb_eq_lev_anom
+        ax4_plot_data_trop = trop_t_eq_mean_anom
+        ylim = [-11, 11]
+    
     # We show both the e90 90ppb position anomaly (blue), and the tropopause anoamly (grey)
-    ax4.plot(time, e90_90ppb_eq_lev_anom, linestyle, color=e90_color, lw=0.75, 
+    ax4.plot(time, ax4_plot_data_e90, linestyle, color=e90_color, lw=0.75, 
              label='e90 tropical mean (+- 20 deg) 90 ppb position anomaly')
-    ax4.plot(time, trop_t_eq_mean_anom, linestyle, color=trop_color, lw=0.75, 
+    ax4.plot(time, ax4_plot_data_trop, linestyle, color=trop_color, lw=0.75, 
             label='tropical mean (+- 20 deg) tropopause position anomaly')
     ax4.set_title('Tropopause evolution')
     ax4.set_xlabel('time [years]')
     ax4.set_ylabel('lev [hPa]')
-    ax4.legend(fancybox=False, loc='lower left')
-    ax4.set_ylim([-11, 11])
+    ax4.set_ylim(ylim)
+    
+    if(SHOW_LEGENDS):
+        ax4.legend(fancybox=False, loc='lower left')
+    
 else:
 
     # if we are analyzing annual data, don't show anomalies, just plot
@@ -840,17 +864,18 @@ if(PLOT_ERUPTIONS):
 # if we aren't analyzing the annual data, then zoom these fgures into the 
 # volcanically active period contining Pinatubio and El Chichon
 if(not DO_ANNUAL):
-    ax4.set_xlim([1960, 2000])
+    ax4.set_xlim([1973, 2000])
     
 # done; draw legend
-ax4.legend(fancybox=False, loc='lower left', ncol=2)
+if(SHOW_LEGENDS):
+    ax4.legend(fancybox=False, loc='lower left', ncol=2)
 ax4.invert_yaxis()
 
 
 # -------------------------------------------
 # --------------- save figure ---------------
 plt.tight_layout()
-plt.savefig('figs/SCATTER_{}_trend{}_tropical{}_erupt{}_tb{}_ml{}_wlev{}_wlat{}.png'.format(['monthly', 'annual'][int(DO_ANNUAL)], int(PLOT_TRENDS), int(TROPICAL_MEANS),int(PLOT_ERUPTIONS), TROP_BOUND, MIN_LEV, int(WEIGHT_LEV), int(WEIGHT_LAT)))
+plt.savefig('figs/SCATTER_{}_trend{}_tropical{}_erupt{}_tb{}_ml{}_wlev{}_wlat{}_tropAnom{}_NEW.png'.format(['monthly', 'annual'][int(DO_ANNUAL)], int(PLOT_TRENDS), int(TROPICAL_MEANS),int(PLOT_ERUPTIONS), TROP_BOUND, MIN_LEV, int(WEIGHT_LEV), int(WEIGHT_LAT), int(SHOW_TROP_ANOM)))
 
 
 if(DO_ANNUAL): exit()
@@ -954,7 +979,7 @@ ax2.invert_yaxis()
 # -------------------------------------------
 # --------------- save figure ---------------
 plt.tight_layout()
-plt.savefig('figs/TRENDS_{}_tropical{}_erm{:02d}_tb{}_ml{}_wlev{}_wlat{}.png'.format(
+plt.savefig('figs/TRENDS_{}_tropical{}_erm{:02d}_tb{}_ml{}_wlev{}_wlat{}_NEW.png'.format(
             ['monthly', 'annual'][int(DO_ANNUAL)], int(TROPICAL_MEANS), 
             ERM, TROP_BOUND, MIN_LEV, int(WEIGHT_LEV), int(WEIGHT_LAT)))
 

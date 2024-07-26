@@ -25,31 +25,34 @@ SUFFIX=$3
 # ----- for debug queueing -----
 #PECOUNT=768   # half the number of cubedsphere elements in ne16
 PECOUNT=384   # quarter the number of cubedsphere elements in ne16
-QUEUE=debug
-WALLCLOCK=00:30:00
-#QUEUE=regular
-#WALLCLOCK=03:00:00
+#QUEUE=debug
+#WALLCLOCK=00:30:00
+QUEUE=regular
+WALLCLOCK=01:30:00
 
 wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/"
-MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAI"
+MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM"
+#MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAI"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
-CASES="${wd}/cases"
+#CASES="${wd}/cases"
 #CASES="${wd}/cases/pertlim_ens"
 #CASES="${wd}/cases/pertlim_ic_ens"
+CASES="${wd}/cases/pertlim_ic_ens/for_hsdwpaperfigs_12.7.23/root_case"
 CASENAME="HSW_SAI_${RES}_L72_${TOT_RUN_LENGTH}day${SUFFIX}"
 CASE=${CASES}/${CASENAME}
 
 #OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases"
 #OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/sai_cases/pertlim_ens"
-OUTROOT="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/sai_cases/tests"
+OUTROOT="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/sai_cases/ic_ens/extra_LIMVAR_outputs_for_hsw_paper/root_case"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
 DO_RESUBS=false
 STOP_N=$TOT_RUN_LENGTH
 if [[ "$QUEUE" == "debug" ]]; then
-    # if total run length >300 days per run (~18 min on Cori with 768 ranks), then require resubmits
-    MAX_STOP_N=300
+    # if total run length >600 days per run (360 days is ~10 min on PM with 384 ranks), 
+    # then require resubmits
+    MAX_STOP_N=600
     if [ "$TOT_RUN_LENGTH" -gt "$MAX_STOP_N" ]; then
         STOP_N=$MAX_STOP_N
         DO_RESUBS=true
@@ -163,6 +166,24 @@ elif [[ $SUFFIX == *"_TEST" ]]; then
   MFILT="720,720,720"
   INITHIST="'ENDOFRUN'"
   DELAY="10"
+elif [[ $SUFFIX == *"_extraRunsForHSWPaper" ]]; then
+  # for rerunning high-variability root case on PM for HSW paper figures
+  DOHEAT=".true."
+  OUTVARS="'SAI_HEAT','ATTEN_LW','ATTEN_SW','TROP_P','TROP_Z'"
+  NHTFRQ="-9999, -9999, -48"
+  AVGFLG="'A', 'I', 'A'"
+  MFILT="720,720,720"
+  INITHIST="'ENDOFRUN'"
+  DELAY="180"
+elif [[ $SUFFIX == *"_extraRunsForHSWPaper_LIMVAR" ]]; then
+  # for rerunning high-variability root case on PM for HSW paper figures
+  DOHEAT=".true."
+  OUTVARS="'AOD','U'"
+  NHTFRQ="-9999, -9999, -48"
+  AVGFLG="'A', 'I', 'A'"
+  MFILT="720,720,900"
+  INITHIST="'ENDOFRUN'"
+  DELAY="90"
 else
   # ensemble members
   DOHEAT=".true."
@@ -200,8 +221,8 @@ fincl3 = ${OUTVARS}
 inithist=${INITHIST}
 
 ! uses IC from HSW 5-year spinup
-!NCDATA="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_10year_spinup/run/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
-! uses IC of ens05
+!NCDATA="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_10year_spinup/run/E3SM_ne16_L72_FIDEAL_10year_spinup.eam.i.0005-01-01-00000.nc.newCoordNames"
+! uses IC of ens05 (FOR LOW-VAR)
 NCDATA="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_3year_ensICs/run/E3SM_ne16_L72_FIDEAL_3year_ensICs.eam.i.0002-05-01-00000.nc.newCoordNames"
 
 ! don't let analytic ICs overwrite input from NCDATA

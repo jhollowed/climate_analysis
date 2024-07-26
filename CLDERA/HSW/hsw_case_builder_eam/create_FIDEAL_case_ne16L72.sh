@@ -10,7 +10,7 @@ pause(){
 # 2/9/22
 # script for performing E3SM runs with enabled AOA clock tracers
 
-MACHINE=cori-knl
+MACHINE=pm-cpu
 COMPILER=intel
 PROJECT=m4014
 COMPSET=FIDEAL
@@ -28,9 +28,10 @@ PECOUNT=384   # quarter number of cubedsphere elements in ne16
 QUEUE=debug
 WALLCLOCK=00:30:00
 
-wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/SAI/sai_case_builder_E3SM/current"
 #MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_SAI"
-MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_PV"
+#MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_PV"
+#MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_HSWVanillaOpt"
+MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
 CONFIGS="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder_eam/configs"
@@ -44,17 +45,19 @@ CASES="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/HSW/hsw_case_builder
 CASENAME="E3SM_${RES}_L72_${COMPSET}${SUFFIX}"
 CASE=${CASES}/${CASENAME}
 
-OUTROOT="/global/cscratch1/sd/jhollo/E3SM/E3SMv2_cases/hsw_cases"
+OUTROOT="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/hsw_cases/extra_runs_for_hswPaper"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
-# if total run length >1/2 year per run (~15 min on Cori with 768 ranks), then require resubmits
-MAX_STOP_N=181
 DO_RESUBS=false
-if [ "$TOT_RUN_LENGTH" -gt "$MAX_STOP_N" ]; then
-    STOP_N=$MAX_STOP_N
-    DO_RESUBS=true
-else
-    STOP_N=$TOT_RUN_LENGTH
+STOP_N=$TOT_RUN_LENGTH
+if [[ "$QUEUE" == "debug" ]]; then
+    # if total run length >600 days per run (360 days is ~10 min on PM with 384 ranks for ne16),
+    # then require resubmits
+    MAX_STOP_N=600
+    if [ "$TOT_RUN_LENGTH" -gt "$MAX_STOP_N" ]; then
+        STOP_N=$MAX_STOP_N
+        DO_RESUBS=true
+    fi
 fi
 
 # if do resubs, compute number of resubs to effectively round up total length of simulation 
@@ -96,7 +99,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
 
     printf "\n\n========== CREATING CASE ==========\n"
     $MODEL --compset $COMPSET --res $GRID --case $CASE --pecount $PECOUNT \
-           --output-root $OUTROOT --machine $MACHINE --compiler $COMPILER --project $PROJECT
+           --output-root $OUTROOT --machine $MACHINE --project $PROJECT
     
     # ---------- configure case
     cd $CASE

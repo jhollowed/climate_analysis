@@ -6,6 +6,12 @@
 #SUFFIX=$3
 #CUSTOMNL=$4
 
+# --- for rerunning high-var data release root case on PM for extra runs for HSW paper...
+#./create_FIDEAL_ne16L72_SAI.sh 1 541 _extraRunsForHSWPaper
+
+# --- for rerunning lim-var data release root case on PM for extra runs for HSW paper sanity checks...
+./create_FIDEAL_ne16L72_SAI.sh 1 1200 _extraRunsForHSWPaper_LIMVAR
+
 # --- all pathways active
 #./create_FIDEAL_ne16L72_SAI.sh 1 150
 #./create_FIDEAL_ne16L72_SAI.sh 1 900 _180delay
@@ -14,6 +20,7 @@
 
 # --- for T pertlim investigations
 #./create_FIDEAL_ne16L72_SAI.sh 1 300 _pertT
+#./create_FIDEAL_ne16L72_SAI.sh 1 300 _ptens
 #./create_FIDEAL_ne16L72_SAI.sh 1 1200 _ptens
 
 # --- for T pertlim injection ensemble
@@ -24,4 +31,4 @@
 
 # --- testing ttend outputs...
 #./create_FIDEAL_ne16L72_SAI.sh 1 90 _PERLMUTTER_INJECTION_TEST
-./create_FIDEAL_ne16L72_SAI.sh 1 300 _PERLMUTTER_INJECTION_TEST
+#./create_FIDEAL_ne16L72_SAI.sh 1 300 _PERLMUTTER_INJECTION_TEST

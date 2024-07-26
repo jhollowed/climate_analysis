@@ -85,7 +85,7 @@ if [[ ! -d "$CASE"  ||  $BUILD_FLAG != "0" ]]; then
            --pecount $PE --output-root $OUT
 
     # ---------- configure case
-    # nadv_11 = 1 for passive clock tracer
+    # nadv_tt = 1 for passive clock tracer
     cd $CASE
     ./xmlchange DEBUG=FALSE,DOUT_S=FALSE,STOP_OPTION=ndays,STOP_N=$STOP_N
     ./xmlchange --file env_build.xml --id CAM_CONFIG_OPTS --val "-phys held_suarez -analytic_ic"

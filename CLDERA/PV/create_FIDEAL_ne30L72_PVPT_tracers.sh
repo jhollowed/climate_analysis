@@ -25,20 +25,22 @@ SUFFIX=$3
 #PECOUNT=768   # half the number of cubedsphere elements in ne16
 #PECOUNT=384   # quarter the number of cubedsphere elements in ne16
 PECOUNT=256    # max number of processes for perlmutter debug queue
-QUEUE=regular
-WALLCLOCK=00:20:00
-#QUEUE=debug
-#WALLCLOCK=03:00:00
+#QUEUE=regular
+#WALLCLOCK=00:20:00
+QUEUE=debug
+WALLCLOCK=00:05:00
 
 wd="/global/homes/j/jhollo/repos/climate_analysis/CLDERA/PV"
-MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_PV"
+#MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM_PV"
+MY_E3SM_ROOT="/global/homes/j/jhollo/E3SM/CLDERA-E3SM"
 MODEL="${MY_E3SM_ROOT}/cime/scripts/create_newcase"
 
 CASES="${wd}/cases"
 CASENAME="HSW_PVPT_${RES}_L72_${TOT_RUN_LENGTH}day${SUFFIX}"
 CASE=${CASES}/${CASENAME}
 
-OUTROOT="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/pv_cases"
+#OUTROOT="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/pv_cases"
+OUTROOT="/pscratch/sd/j/jhollo/E3SM/historical_data/TEM_test_data"
 RUNDIR="${OUTROOT}/${CASENAME}/run"
 
 DO_RESUBS=false
@@ -116,7 +118,8 @@ fi
 # ---------- configure namelist settings
 DOHEAT=".true."
 #OUTVARS="'U','V','T','Z3','OMEGA','PS','SO2','ASH','SULFATE','AIR_MASS','AOD','T1000','T050','T025','PV','PV_TRCR','PT','PT_TRCR'"
-OUTVARS="'T','U','T1000','T050','T025','PS','SULFATE','SO2','AOD','PV','PV_TRCR','PT','PT_TRCR'"
+#OUTVARS="'T','U','T1000','T050','T025','PS','SULFATE','SO2','AOD','PV','PV_TRCR','PT','PT_TRCR','AREA'"
+OUTVARS="'AREA'"
 NHTFRQ="-1"
 AVGFLG="'A'"
 MFILT="900"
@@ -138,10 +141,11 @@ fincl1 = ${OUTVARS}
 inithist=${INITHIST}
 
 ! uses IC of ens05
-NCDATA="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_3year_ensICs/run/E3SM_ne16_L72_FIDEAL_3year_ensICs.eam.i.0002-05-01-00000.nc.newCoordNames"
+! THIS WILL NOT WORK (ne16): NCDATA="/pscratch/sd/j/jhollo/E3SM/E3SMv2_cases/hsw_cases/E3SM_ne16_L72_FIDEAL_3year_ensICs/run/E3SM_ne16_L72_FIDEAL_3year_ensICs.eam.i.0002-05-01-00000.nc.newCoordNames"
 
 ! don't let analytic ICs overwrite input from NCDATA
-ideal_phys_analytic_ic = .false.
+! ideal_phys_analytic_ic = .false.
+ideal_phys_analytic_ic = .true.
 
 ! select HSW idealized forcing
 ideal_phys_option = 'held-suarez-williamson'

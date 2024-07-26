@@ -21,19 +21,19 @@ plt.rc('figure', titlesize=LABEL_FS)  # fontsize of the figure title
 # --------------------------------------------------------------
 
 # ------ monthly zonally-meaned data
-pdir         = '/pscratch/sd/j/jhollo/E3SM/historical/CLDERA_2ndHistorical_1950-2014_monthly'
+pdir         = '/pscratch/sd/j/jhollo/E3SM/historical_data/CLDERA_2ndHistorical_1950-2014_monthly'
 E90_E3SM     = '{}/histoircal_h0_E90j_1850-2014.regrid.fv0.9x1.25_bilinear.nc'.format(pdir)
 zm_E90_E3SM  = '{}/histoircal_h0_E90j_1850-2014.regrid.fv0.9x1.25_bilinear.zonalmean.nc'.format(pdir)
 zm_ST80_E3SM = '{}/histoircal_h0_ST80_25j_1850-2014.regrid.fv0.9x1.25_bilinear.zonalmean.nc'.format(pdir)
 zm_AOA_E3SM  = '{}/histoircal_h0_AOA_1850-2014.regrid.fv0.9x1.25_bilinear.zonalmean.nc'.format(pdir)
 zm_PS_E3SM   = '{}/histoircal_h0_PS_1850-2014.regrid.fv0.9x1.25_bilinear.zonalmean.nc'.format(pdir)
 
-pdir_WACCM   = '/pscratch/sd/j/jhollo/E3SM/historical/WACCM_CCMI_2022'
+pdir_WACCM   = '/pscratch/sd/j/jhollo/E3SM/historical_data/WACCM_CCMI_2022'
 zm_WACCM     = '{}/f.e21.FWHIST.f09_f09_mg17.cesm2.1.4.REFD1.ens_mean.cam.h0zm.196001-201812.nc'.format(pdir_WACCM)
-#zm_AOA_WACCM = '{}/AoA_waccm6_refd1.04_AOA1mf_1970-2019_ba_0_100.0_ck_0_50.0.nc'.format(pdir_WACCM)
-#AOA_NAME='AOA'
-zm_AOA_WACCM     = '{}/f.e21.FWHIST.f09_f09_mg17.cesm2.1.4.REFD1.H4.cam.h0zm.196001-201812.AOA1mf.nc'.format(pdir_WACCM)
-AOA_NAME='AOA1mf'
+zm_AOA_WACCM = '{}/AoA_waccm6_refd1.04_AOA1mf_1970-2019_ba_0_100.0_ck_0_50.0.nc'.format(pdir_WACCM)
+AOA_NAME='AOA'
+#zm_AOA_WACCM     = '{}/f.e21.FWHIST.f09_f09_mg17.cesm2.1.4.REFD1.H4.cam.h0zm.196001-201812.AOA1mf.nc'.format(pdir_WACCM)
+#AOA_NAME='AOA1mf'
 
 
 
@@ -58,7 +58,7 @@ ps_waccm   = dat_waccm['PS']                           # in Pa
 p0_waccm   = dat_waccm['P0']
 hy_waccm   = [dat_waccm['hyam'], dat_waccm['hyai'], 
               dat_waccm['hybm'], dat_waccm['hybi']]
-pdb.set_trace()
+#pdb.set_trace()
 
 # ------ take time means
 print('taking time means...')
@@ -70,8 +70,8 @@ ps_e3sm    = ps_e3sm.mean('time')
 e90_waccm  = e90_waccm.mean('time')
 st80_waccm = st80_waccm.mean('time')
 aoa_waccm  = aoa_waccm.mean('time')
-aoa1_waccm = aoa1_waccm.mean('time')
-aoa2_waccm = aoa2_waccm.mean('time')
+#aoa1_waccm = aoa1_waccm.mean('time')
+#aoa2_waccm = aoa2_waccm.mean('time')
 ps_waccm   = ps_waccm.mean('time')
 
 # ------ get coords
