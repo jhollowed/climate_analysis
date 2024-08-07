@@ -2,6 +2,9 @@
 
 overlay=0
 
+python ./plot_monthly_impact.py U 1991 $overlay
+exit
+
 if [ $1 == 1 ]; then
     # 1-year time series
     python ./plot_latband_impact.py U 1 $overlay

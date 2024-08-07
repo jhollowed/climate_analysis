@@ -162,7 +162,7 @@ for qi in range(3):
             tem_impact_ensmean.to_netcdf('{}/tem_impact_ensmean{}.nc'.format(outdir, qstr))
 
         # ---------- significance
-        if(tem_tstat_read):
+        if(tem_tstat_read == 0):
             print('getting ttest')
             tem_tstat = xr.zeros_like(tem_ensmean)
             tem_pval  = xr.zeros_like(tem_ensmean) 
@@ -177,9 +177,9 @@ for qi in range(3):
         # ---------- coherence
         if(tem_coherence_read == 0):
             print('getting coherence')
-            coherence = np.sign(tem_impact) == np.sign(tem_impact_ensmean)
-            coherence = coherence.sum(dim='ens') / N
-            coherence.to_netcdf('{}/tem_impact_coherence.nc'.format(outdir))
+            tem_coherence = np.sign(tem_impact) == np.sign(tem_impact_ensmean)
+            tem_coherence = tem_coherence.sum(dim='ens') / N
+            tem_coherence.to_netcdf('{}/tem_impact_coherence.nc'.format(outdir))
 
 
 # -------------------------------------------------------
@@ -264,9 +264,9 @@ for qi in range(3):
         # ---------- coherence
         if(budget_coherence_read == 0):
             print('getting coherence')
-            coherence = np.sign(budget_impact) == np.sign(budget_impact_ensmean)
-            coherence = coherence.sum(dim='ens') / N
-            coherence.to_netcdf('{}/budget_impact_coherence.nc'.format(outdir))
+            budget_coherence = np.sign(budget_impact) == np.sign(budget_impact_ensmean)
+            budget_coherence = budget_coherence.sum(dim='ens') / N
+            budget_coherence.to_netcdf('{}/tem_impact_coherence.nc'.format(outdir))
 
 # ------------------------------------------------------------------
 

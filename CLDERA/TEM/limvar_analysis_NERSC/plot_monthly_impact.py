@@ -30,42 +30,49 @@ except IndexError:
 loc = '/pscratch/sd/j/jhollo/E3SM/historical_data/limvar/analysis'
 
 print('reading data for variable {}...'.format(var))
-data   = xr.open_dataset('{}/data_ensmean.nc'.format(loc))
-cf     = xr.open_dataset('{}/cf_ensmean.nc'.format(loc))
-impact = xr.open_dataset('{}/impact_ensmean.nc'.format(loc))
-pval   = xr.open_dataset('{}/pval.nc'.format(loc))
+data      = xr.open_dataset('{}/data_ensmean.nc'.format(loc))
+cf        = xr.open_dataset('{}/cf_ensmean.nc'.format(loc))
+impact    = xr.open_dataset('{}/impact_ensmean.nc'.format(loc))
+pval      = xr.open_dataset('{}/pval.nc'.format(loc))
+coherence = xr.open_dataset('{}/impact_coherence.nc'.format(loc))
 #print('available data vars: {}'.format(list(data.data_...vars)))
 
-tem_data      = xr.open_dataset('{}/tem_data_ensmean.nc'.format(loc))
-tem_cf        = xr.open_dataset('{}/tem_cf_ensmean.nc'.format(loc))
-tem_impact    = xr.open_dataset('{}/tem_impact_ensmean.nc'.format(loc))
-tem_pval      = xr.open_dataset('{}/tem_pval.nc'.format(loc))
-budget_data   = xr.open_dataset('{}/budget_data_ensmean.nc'.format(loc))
-budget_cf     = xr.open_dataset('{}/budget_cf_ensmean.nc'.format(loc))
-budget_impact = xr.open_dataset('{}/budget_impact_ensmean.nc'.format(loc))
-budget_pval   = xr.open_dataset('{}/budget_pval.nc'.format(loc))
+tem_data         = xr.open_dataset('{}/tem_data_ensmean.nc'.format(loc))
+tem_cf           = xr.open_dataset('{}/tem_cf_ensmean.nc'.format(loc))
+tem_impact       = xr.open_dataset('{}/tem_impact_ensmean.nc'.format(loc))
+tem_pval         = xr.open_dataset('{}/tem_pval.nc'.format(loc))
+tem_coherence    = xr.open_dataset('{}/tem_impact_coherence.nc'.format(loc))
+budget_data      = xr.open_dataset('{}/budget_data_ensmean.nc'.format(loc))
+budget_cf        = xr.open_dataset('{}/budget_cf_ensmean.nc'.format(loc))
+budget_impact    = xr.open_dataset('{}/budget_impact_ensmean.nc'.format(loc))
+budget_pval      = xr.open_dataset('{}/budget_pval.nc'.format(loc))
+budget_coherence = xr.open_dataset('{}/budget_impact_coherence.nc'.format(loc))
 #print('available TEM vars: {}'.format(list(tem_data.data_vars)))
 #print('available TEM budget vars: {}'.format(list(budget_data.data_vars)))
 
-aoa_tem_data      = xr.open_dataset('{}/tem_data_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_tem_cf        = xr.open_dataset('{}/tem_cf_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_tem_impact    = xr.open_dataset('{}/tem_impact_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_tem_pval      = xr.open_dataset('{}/tem_pval_TRACER-AOA.nc'.format(loc))
-aoa_budget_data   = xr.open_dataset('{}/budget_data_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_budget_cf     = xr.open_dataset('{}/budget_cf_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_budget_impact = xr.open_dataset('{}/budget_impact_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_budget_pval   = xr.open_dataset('{}/budget_pval_TRACER-AOA.nc'.format(loc))
+aoa_tem_data         = xr.open_dataset('{}/tem_data_ensmean_TRACER-AOA.nc'.format(loc))
+aoa_tem_cf           = xr.open_dataset('{}/tem_cf_ensmean_TRACER-AOA.nc'.format(loc))
+aoa_tem_impact       = xr.open_dataset('{}/tem_impact_ensmean_TRACER-AOA.nc'.format(loc))
+aoa_tem_pval         = xr.open_dataset('{}/tem_pval_TRACER-AOA.nc'.format(loc))
+aoa_tem_coherence    = xr.open_dataset('{}/tem_impact_coherence_TRACER-AOA.nc'.format(loc))
+aoa_budget_data      = xr.open_dataset('{}/budget_data_ensmean_TRACER-AOA.nc'.format(loc))
+aoa_budget_cf        = xr.open_dataset('{}/budget_cf_ensmean_TRACER-AOA.nc'.format(loc))
+aoa_budget_impact    = xr.open_dataset('{}/budget_impact_ensmean_TRACER-AOA.nc'.format(loc))
+aoa_budget_pval      = xr.open_dataset('{}/budget_pval_TRACER-AOA.nc'.format(loc))
+aoa_budget_coherence = xr.open_dataset('{}/budget_impact_coherence_TRACER-AOA.nc'.format(loc))
 #print('available AOA TEM vars: {}'.format(list(aoa_tem_data.data_vars)))
 #print('available AOA budget vars: {}'.format(list(aoa_budget_data.data_vars)))
 
-e90_tem_data      = xr.open_dataset('{}/tem_data_ensmean_TRACER-E90j.nc'.format(loc))
-e90_tem_cf        = xr.open_dataset('{}/tem_cf_ensmean_TRACER-E90j.nc'.format(loc))
-e90_tem_impact    = xr.open_dataset('{}/tem_impact_ensmean_TRACER-E90j.nc'.format(loc))
-e90_tem_pval      = xr.open_dataset('{}/tem_pval_TRACER-E90j.nc'.format(loc))
-e90_budget_data   = xr.open_dataset('{}/budget_data_ensmean_TRACER-E90j.nc'.format(loc))
-e90_budget_cf     = xr.open_dataset('{}/budget_cf_ensmean_TRACER-E90j.nc'.format(loc))
-e90_budget_impact = xr.open_dataset('{}/budget_impact_ensmean_TRACER-E90j.nc'.format(loc))
-e90_budget_pval   = xr.open_dataset('{}/budget_pval_TRACER-E90j.nc'.format(loc))
+e90_tem_data         = xr.open_dataset('{}/tem_data_ensmean_TRACER-E90j.nc'.format(loc))
+e90_tem_cf           = xr.open_dataset('{}/tem_cf_ensmean_TRACER-E90j.nc'.format(loc))
+e90_tem_impact       = xr.open_dataset('{}/tem_impact_ensmean_TRACER-E90j.nc'.format(loc))
+e90_tem_pval         = xr.open_dataset('{}/tem_pval_TRACER-E90j.nc'.format(loc))
+e90_tem_coherence    = xr.open_dataset('{}/tem_impact_coherence_TRACER-E90j.nc'.format(loc))
+e90_budget_data      = xr.open_dataset('{}/budget_data_ensmean_TRACER-E90j.nc'.format(loc))
+e90_budget_cf        = xr.open_dataset('{}/budget_cf_ensmean_TRACER-E90j.nc'.format(loc))
+e90_budget_impact    = xr.open_dataset('{}/budget_impact_ensmean_TRACER-E90j.nc'.format(loc))
+e90_budget_pval      = xr.open_dataset('{}/budget_pval_TRACER-E90j.nc'.format(loc))
+e90_budget_coherence = xr.open_dataset('{}/budget_impact_coherence_TRACER-E90j.nc'.format(loc))
 #print('available E90 TEM vars: {}'.format(list(e90_tem_data.data_vars)))
 #print('available E90 budget vars: {}'.format(list(e90_budget_data.data_vars)))
 
@@ -75,32 +82,37 @@ data_tropp, cf_tropp, impact_tropp = [data['TROP_P']/100, cf['TROP_P']/100, impa
 # find which dataset the variable belongs to, read
 print('extracting variable...')
 try:
-    data, cf, impact, pval = [data[var], cf[var], impact[var], pval[var]]
+    data, cf, impact, pval, coherence = [data[var], cf[var], impact[var], 
+                                         pval[var], coherence[val]]
 except KeyError: pass
 try:
-    data, cf, impact, pval = [tem_data[var], tem_cf[var], tem_impact[var], tem_pval[var]]
+    data, cf, impact, pval, coherence = [tem_data[var], tem_cf[var], tem_impact[var], 
+                                         tem_pval[var], tem_coherence[val]]
 except KeyError: pass
 try:
-    data, cf, impact, pval = [budget_data[var], budget_cf[var], budget_impact[var], budget_pval[var]]
+    data, cf, impact, pval, coherence = [budget_data[var], budget_cf[var], budget_impact[var], 
+                                         budget_pval[var], budget_coherence[val]]
 except KeyError: pass
 try:
     if(q == 'aoa'):
-        data, cf, impact, pval = [aoa_tem_data[var], aoa_tem_cf[var], 
-                                  aoa_tem_impact[var], aoa_tem_pval[var]]
+        data, cf, impact, pval, coherence = [aoa_tem_data[var], aoa_tem_cf[var], aoa_tem_impact[var], 
+                                             aoa_tem_pval[var], aoa_coherence[val]]
         var = '{}_aoa'.format(var)
     elif(q == 'e90'):
-        data, cf, impact, pval = [e90_tem_data[var], e90_tem_cf[var], 
-                                  e90_tem_impact[var], e90_tem_pval[var]]
+        data, cf, impact, pval, coherence = [e90_tem_data[var], e90_tem_cf[var], e90_tem_impact[var], 
+                                             e90_tem_pval[var], e90_coherence[val]]
         var = '{}_e90'.format(var)
 except KeyError: pass
 try:
     if(q == 'aoa'):
-        data, cf, impact, pval = [aoa_budget_data[var], aoa_budget_cf[var], 
-                                  aoa_budget_impact[var], aoa_budget_pval[var]]
+        data, cf, impact, pval, coherence = [aoa_budget_data[var], aoa_budget_cf[var], 
+                                             aoa_budget_impact[var], aoa_budget_pval[var], 
+                                             aoa_coherence[val]]
         var = '{}_aoa'.format(var)
     elif(q == 'e90'):
-        data, cf, impact, pval = [e90_budget_data[var], e90_budget_cf[var], 
-                                  e90_budget_impact[var], e90_budget_pval[var]]
+        data, cf, impact, pval, coherence = [e90_budget_data[var], e90_budget_cf[var], 
+                                             e90_budget_impact[var], e90_budget_pval[var], 
+                                             e90_coherence[val]]
         var = '{}_e90'.format(var)
 except KeyError: pass
 
@@ -120,31 +132,34 @@ if(year == 1991): ti, tf = 0, 6
 elif(year == 1992): ti, tf = 7, 7+12
 elif(year == 1993): ti, tf, = 19, 19+12
 elif(year == 1994): ti, tf, = 30, len(years)-1
-tsl    = slice(ti, tf)
-data   = data.isel(time=tsl)
-cf     = cf.isel(time=tsl)
-impact = impact.isel(time=tsl)
-pval   = pval.isel(time=tsl)
-time   = data.time
+tsl       = slice(ti, tf)
+data      = data.isel(time=tsl)
+cf        = cf.isel(time=tsl)
+impact    = impact.isel(time=tsl)
+pval      = pval.isel(time=tsl)
+coherence = coherence.isel(time=tsl)
+time      = data.time
 
 # extract single month if provided
 if(month is not None):
-    tidx   = [t.month for t in time.values].index(month)
-    tidx   = slice(tidx, tidx+1)
-    data   = data.isel(time=tidx)
-    cf     = cf.isel(time=tidx)
-    impact = impact.isel(time=tidx)
-    pval   = pval.isel(time=tidx)
-    time   = data.time
+    tidx      = [t.month for t in time.values].index(month)
+    tidx      = slice(tidx, tidx+1)
+    data      = data.isel(time=tidx)
+    cf        = cf.isel(time=tidx)
+    impact    = impact.isel(time=tidx)
+    pval      = pval.isel(time=tidx)
+    coherence = coherence.isel(time=tidx)
+    time      = data.time
 
 # --- do vertical slicing
 pmin, pmax = 1, 400
-levslice = slice(pmin, pmax)
-plev     = plev.sel(plev = levslice)
-data     = data.sel(plev = levslice)
-cf       = cf.sel(plev = levslice)
-impact   = impact.sel(plev = levslice)
-pval     = pval.sel(plev = levslice)
+levslice  = slice(pmin, pmax)
+plev      = plev.sel(plev = levslice)
+data      = data.sel(plev = levslice)
+cf        = cf.sel(plev = levslice)
+impact    = impact.sel(plev = levslice)
+pval      = pval.sel(plev = levslice)
+coherence = coherence.sel(plev = levslice)
 
 # ---- get plotting settings for this variable
 opt = variable_plotting_settings.lat_p_plots
@@ -220,6 +235,8 @@ mpl.rcParams['hatch.linewidth'] = 0.25
 var_lw = 0.75
 pthresh  = 0.05 # p-value threshold for significance
 pval_levels = [0.025, 0.05] # contours to plot in pvalue
+coherence_levels = [0.799] # contours to plot in pvalue
+coherence_color = 'yellow'
 
 # --- font sizes
 suptitlefs = 15
@@ -332,13 +349,11 @@ for j in range(len(time)):
     x4 = pval.isel(time=j)
     c4 = ax[2,j].contour(lat, plev, x4.T, colors='k', levels=pval_levels, linewidths=var_lw*1.25)
     c5 = ax[2,j].contourf(lat, plev, x4.T, levels=[pthresh, x4.max()], 
-                           hatches=['////'], extend='right', colors='none', alpha=0)
-    
+                           hatches=['////'], extend='right', colors='none', alpha=0) 
     # ---- imapct coherence
-    x4 = pval.isel(time=j)
-    c4 = ax[2,j].contour(lat, plev, x4.T, colors='k', levels=pval_levels, linewidths=var_lw*1.25)
-    c5 = ax[2,j].contourf(lat, plev, x4.T, levels=[pthresh, x4.max()], 
-                           hatches=['////'], extend='right', colors='none', alpha=0)
+    x4_c = coherence.isel(time=j)
+    c4_c = ax[2,j].contour(lat, coherence, x4_c.T, colors = coherence_color, 
+                           levels=coherence_levels, linewidths=var_lw*1.25)
 
     if(overlay_panel):
         # ---- plot sign agVreement of significant impact with counterfactual
@@ -370,8 +385,9 @@ for j in range(len(time)):
     # --- legend
     if(j == 0):
         with warnings.catch_warnings(action="ignore"):
-            cc4 = plt.plot([0,0], [0,0], '-k', lw=var_lw*1.25)[0]
-            cc5 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) for pc in c5.collections][0]
+            cc4   = plt.plot([0,0], [0,0], '-k', lw=var_lw*1.25)[0]
+            cc4_2 = plt.plot([0,0], [0,0], '-', color=coherence_color, lw=var_lw*1.25)[0]
+            cc5   = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) for pc in c5.collections][0]
             if(overlay_panel):
                 if(c6 is not None):
                     cc6 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) \
@@ -379,18 +395,15 @@ for j in range(len(time)):
                 if(c7 is not None):
                     cc7 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) \
                                                    for pc in c7.collections][0]
+        legend_lines = [cc4, cc5, cc4_2]
+        labels = ['pval = 0.05', 'pval > 0.05', 'coherence = 0.8']
         if(overlay_panel):
-            legend_lines = [cc4, cc5]
-            labels = ['pval = 0.05', 'pval > 0.05']
             if(c6 is not None):
                 legend_lines.extend([cc6])
                 labels.extend('impact decelerates')
             if(c7 is not None):
                 legend_lines.extend([cc7])
                 labels.extend('impact accelerates')
-        else:
-            legend_lines = [cc4, cc5]
-            labels = ['pval = 0.05', 'pval > 0.05']
         fig.legend(legend_lines, labels, bbox_to_anchor=[0.55, 0], 
                    loc='lower center', ncol=[2,4][month is None], fontsize=titlefs-1)
 
@@ -461,5 +474,5 @@ for j in range(len(time)):
 print('saving figure...')
 month_str = ['_{}'.format(month), ''][month is None]
 overlay_str = ['_overlay', ''][overlay_panel is None]
-plt.savefig('figs/{}_{}{}{}.png'.format(var, year, month_str, overlay_str), dpi=200)
-#plt.show()
+#plt.savefig('figs/{}_{}{}{}.png'.format(var, year, month_str, overlay_str), dpi=200)
+plt.show()

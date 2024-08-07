@@ -135,8 +135,8 @@ for band in bands:
             tem_impact_ensmean_read = 1
             tem_tstat               = xr.load_dataset('{}/tem_tstat{}_{}.nc'.format(*fmt))
             tem_pval                = xr.load_dataset('{}/tem_pval{}_{}.nc'.format(*fmt))
-            coherence               = xr.load_dataset('{}/tem_impact_coherence{}_{}.nc'.format(*fmt))
             tem_coherence_read      = 1
+            coherence               = xr.load_dataset('{}/tem_impact_coherence{}_{}.nc'.format(*fmt))
             print('data read from files...')
 
         except FileNotFoundError:
@@ -200,9 +200,9 @@ for band in bands:
                 # ---------- coherence
                 if(tem_coherence_read == 0):
                     print('getting coherence')
-                    coherence = np.sign(tem_impact) == np.sign(tem_impact_ensmean)
-                    coherence = coherence.sum(dim='ens') / N
-                    coherence.to_netcdf('{}/budget_impact_coherence{}_{}.nc'.format(*fmt))
+                    tem_coherence = np.sign(tem_impact) == np.sign(tem_impact_ensmean)
+                    tem_coherence = tem_coherence.sum(dim='ens') / N
+                    coherence.to_netcdf('{}/tem_impact_coherence{}_{}.nc'.format(*fmt))
             else: 
                 print('skipping')
 
@@ -232,7 +232,8 @@ for band in bands:
             budget_impact_ensmean_read = 1
             budget_tstat               = xr.load_dataset('{}/budget_tstat{}_{}.nc'.format(*fmt))
             budget_pval                = xr.load_dataset('{}/budget_pval{}_{}.nc'.format(*fmt))
-            coherence             = xr.load_dataset('{}/budget_impact_coherence{}_{}.nc'.format(*fmt))
+            budget_tstat_read          = 1
+            budget_coherence      = xr.load_dataset('{}/budget_impact_coherence{}_{}.nc'.format(*fmt))
             budget_coherence_read = 1
             print('data read from files...')
 
@@ -301,9 +302,9 @@ for band in bands:
                 # ---------- coherence
                 if(budget_coherence_read == 0):
                     print('getting coherence')
-                    coherence = np.sign(budget_impact) == np.sign(budget_impact_ensmean)
-                    coherence = coherence.sum(dim='ens') / N
-                    coherence.to_netcdf('{}/budget_impact_coherence{}_{}.nc'.format(*fmt))
+                    budget_coherence = np.sign(budget_impact) == np.sign(budget_impact_ensmean)
+                    budget_coherence = budget_coherence.sum(dim='ens') / N
+                    budget_coherence.to_netcdf('{}/budget_impact_coherence{}_{}.nc'.format(*fmt))
             else:
                 print('skipping')
 
