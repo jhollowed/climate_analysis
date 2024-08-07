@@ -29,12 +29,12 @@ except IndexError:
 
 loc = '/pscratch/sd/j/jhollo/E3SM/historical_data/limvar/analysis'
 
-print('reading data')
+print('reading data for variable {}...'.format(var))
 data   = xr.open_dataset('{}/data_ensmean.nc'.format(loc))
 cf     = xr.open_dataset('{}/cf_ensmean.nc'.format(loc))
 impact = xr.open_dataset('{}/impact_ensmean.nc'.format(loc))
 pval   = xr.open_dataset('{}/pval.nc'.format(loc))
-print('available data vars: {}'.format(list(data.data_vars)))
+#print('available data vars: {}'.format(list(data.data_...vars)))
 
 tem_data      = xr.open_dataset('{}/tem_data_ensmean.nc'.format(loc))
 tem_cf        = xr.open_dataset('{}/tem_cf_ensmean.nc'.format(loc))
@@ -44,8 +44,8 @@ budget_data   = xr.open_dataset('{}/budget_data_ensmean.nc'.format(loc))
 budget_cf     = xr.open_dataset('{}/budget_cf_ensmean.nc'.format(loc))
 budget_impact = xr.open_dataset('{}/budget_impact_ensmean.nc'.format(loc))
 budget_pval   = xr.open_dataset('{}/budget_pval.nc'.format(loc))
-print('available TEM vars: {}'.format(list(tem_data.data_vars)))
-print('available TEM budget vars: {}'.format(list(budget_data.data_vars)))
+#print('available TEM vars: {}'.format(list(tem_data.data_vars)))
+#print('available TEM budget vars: {}'.format(list(budget_data.data_vars)))
 
 aoa_tem_data      = xr.open_dataset('{}/tem_data_ensmean_TRACER-AOA.nc'.format(loc))
 aoa_tem_cf        = xr.open_dataset('{}/tem_cf_ensmean_TRACER-AOA.nc'.format(loc))
@@ -55,8 +55,8 @@ aoa_budget_data   = xr.open_dataset('{}/budget_data_ensmean_TRACER-AOA.nc'.forma
 aoa_budget_cf     = xr.open_dataset('{}/budget_cf_ensmean_TRACER-AOA.nc'.format(loc))
 aoa_budget_impact = xr.open_dataset('{}/budget_impact_ensmean_TRACER-AOA.nc'.format(loc))
 aoa_budget_pval   = xr.open_dataset('{}/budget_pval_TRACER-AOA.nc'.format(loc))
-print('available AOA TEM vars: {}'.format(list(aoa_tem_data.data_vars)))
-print('available AOA budget vars: {}'.format(list(aoa_budget_data.data_vars)))
+#print('available AOA TEM vars: {}'.format(list(aoa_tem_data.data_vars)))
+#print('available AOA budget vars: {}'.format(list(aoa_budget_data.data_vars)))
 
 e90_tem_data      = xr.open_dataset('{}/tem_data_ensmean_TRACER-E90j.nc'.format(loc))
 e90_tem_cf        = xr.open_dataset('{}/tem_cf_ensmean_TRACER-E90j.nc'.format(loc))
@@ -66,9 +66,11 @@ e90_budget_data   = xr.open_dataset('{}/budget_data_ensmean_TRACER-E90j.nc'.form
 e90_budget_cf     = xr.open_dataset('{}/budget_cf_ensmean_TRACER-E90j.nc'.format(loc))
 e90_budget_impact = xr.open_dataset('{}/budget_impact_ensmean_TRACER-E90j.nc'.format(loc))
 e90_budget_pval   = xr.open_dataset('{}/budget_pval_TRACER-E90j.nc'.format(loc))
-print('available E90 TEM vars: {}'.format(list(e90_tem_data.data_vars)))
-print('available E90 budget vars: {}'.format(list(e90_budget_data.data_vars)))
+#print('available E90 TEM vars: {}'.format(list(e90_tem_data.data_vars)))
+#print('available E90 budget vars: {}'.format(list(e90_budget_data.data_vars)))
 
+# get tropopause data
+data_tropp, cf_tropp, impact_tropp = [data['TROP_P']/100, cf['TROP_P']/100, impact['TROP_P']/100]
 
 # find which dataset the variable belongs to, read
 print('extracting variable...')
@@ -102,6 +104,10 @@ try:
         var = '{}_e90'.format(var)
 except KeyError: pass
 
+    
+# if variable hasn't been found by here, it doesn't exist
+assert isinstance(data, xr.core.dataarray.DataArray), 'variable {} not found!'.format(var)
+
 # --------------------------------------------------------------------------
 
 lat = data.lat
@@ -132,7 +138,7 @@ if(month is not None):
     time   = data.time
 
 # --- do vertical slicing
-pmin, pmax = 1, 250
+pmin, pmax = 1, 400
 levslice = slice(pmin, pmax)
 plev     = plev.sel(plev = levslice)
 data     = data.sel(plev = levslice)
@@ -152,6 +158,13 @@ units          = opt[var]['units']
 impact_units   = opt[var]['impact_units']
 cmap           = opt[var]['cmap']
 fmt            = opt[var]['fmt']
+
+# ---- plotting settings for tropopause
+trop_lw = 3.2 # suppressed for now
+trop_data_color='pink'
+trop_cf_color='pink'
+trop_ls = '-'
+trop_label = 'tropopause'
 
 # ---- get default settings
 if(var == 'E90j'): var = 'E90'
@@ -278,7 +291,11 @@ if(len(time)==1):
 
 for j in range(len(time)):
 
-    print('plotting month {}'.format(j+1))
+    print('plotting month {}...'.format(j+1))
+
+    # get tropopause data
+    data_troppj = data_tropp.isel(time=j)
+    cf_troppj = cf_tropp.isel(time=j)
     
     # ---- forced run
     x1 = data.isel(time=j)
@@ -288,6 +305,8 @@ for j in range(len(time)):
     # if zero-contour exists, make bold
     if(0 in data_levels):
         ax[0,j].contour(lat, plev, x1.T, colors='k', levels=[0], alpha=0.5, linewidths=var_lw*1.5)
+    # overlay tropopause
+    ax[0, j].plot(lat, data_troppj, ls=trop_ls, color=trop_data_color, lw=trop_lw)
 
 
     # ---- counterfactual
@@ -297,11 +316,16 @@ for j in range(len(time)):
     # if zero-contour exists, make bold
     if(0 in c1.levels):
         ax[1,j].contour(lat, plev, x2.T, colors='k', levels=[0], alpha=0.5, linewidths=var_lw*2)
+    # overlay tropopause
+    ax[1, j].plot(lat, cf_troppj, ls=trop_ls, color=trop_cf_color, lw=trop_lw)
     
     # ---- impact
     x3 = impact.isel(time=j)
     c3 = ax[2,j].contourf(lat, plev, x3.T, cmap=impact_cmap, norm=impact_norm, 
                           levels=impact_levels, extend='both')
+    # overlay tropopause
+    ax[2, j].plot(lat, cf_troppj, ls=trop_ls, color=trop_cf_color, lw=trop_lw)
+    #ax[2, j].plot(lat, data_troppj, ls=trop_ls, color=trop_data_color, lw=trop_lw)
 
     # ---- imapct significance
     x4 = pval.isel(time=j)
@@ -312,17 +336,25 @@ for j in range(len(time)):
     if(overlay_panel):
         # ---- plot sign agVreement of significant impact with counterfactual
         ax[3,j].contourf(lat, plev, x2.T, cmap=cmap, norm=c2.norm, levels=c2.levels, extend='both')
+        
+        # overlay tropopause
+        ax[3, j].plot(lat, cf_troppj, ls=trop_ls, color=trop_cf_color, lw=trop_lw)
+        #ax[3, j].plot(lat, data_troppj, ls=trop_ls, color=trop_data_color, lw=trop_lw)
      
         pmask = x4 < pthresh
         x5    = x3.where(pmask, other=0) * np.sign(x2)
         x5neg = x5.where(x5<0, other=0)
         x5pos = x5.where(x5>0, other=0)
         if(x5neg.values.min() < 0):
-            c6 = ax[3,j].contourf(lat, plev, x5neg.T, colors='none', levels=[x5neg.values.min(), -1e-20], 
-                            hatches=['**'], extend='left')
+            c6 = ax[3,j].contourf(lat, plev, x5neg.T, colors='none', 
+                                  levels=[x5neg.values.min(), -1e-20], hatches=['**'], extend='left')
+        else:  
+            c6 = None
         if(x5pos.values.max() > 0):
-            c7 = ax[3,j].contourf(lat, plev, x5pos.T, colors='none', levels=[1e-20, x5pos.values.max()], 
-                            hatches=['OO'], extend='right')
+            c7 = ax[3,j].contourf(lat, plev, x5pos.T, colors='none', 
+                                  levels=[1e-20, x5pos.values.max()], hatches=['OO'], extend='right')
+        else:
+            c7 = None
         #c8 = ax[3,j].contour(lat, plev, x5neg.T, colors='blue', levels=[c3.levels[c3.levels < 0][-1]], 
         #                linewidths=var_lw*1.25)
         #c9 = ax[3,j].contour(lat, plev, x5pos.T, colors='red', levels=[c3.levels[c3.levels > 0][0]], 
@@ -334,11 +366,21 @@ for j in range(len(time)):
             cc4 = plt.plot([0,0], [0,0], '-k', lw=var_lw*1.25)[0]
             cc5 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) for pc in c5.collections][0]
             if(overlay_panel):
-                cc6 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) for pc in c6.collections][0]
-                cc7 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) for pc in c7.collections][0]
+                if(c6 is not None):
+                    cc6 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) \
+                                                   for pc in c6.collections][0]
+                if(c7 is not None):
+                    cc7 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) \
+                                                   for pc in c7.collections][0]
         if(overlay_panel):
-            legend_lines = [cc4, cc5, cc6, cc7]
-            labels = ['pval = 0.05', 'pval > 0.05', 'impact decelerates', 'impact accelerates']
+            legend_lines = [cc4, cc5]
+            labels = ['pval = 0.05', 'pval > 0.05']
+            if(c6 is not None):
+                legend_lines.extend([cc6])
+                labels.extend('impact decelerates')
+            if(c7 is not None):
+                legend_lines.extend([cc7])
+                labels.extend('impact accelerates')
         else:
             legend_lines = [cc4, cc5]
             labels = ['pval = 0.05', 'pval > 0.05']
@@ -409,7 +451,8 @@ for j in range(len(time)):
                               fontsize=titlefs)
 
 # ----- save figure to file
-month_str = ['', '_{}'.format(month)][month is None]
-overlay_str = ['', '_overlay'][overlay_panel is None]
+print('saving figure...')
+month_str = ['_{}'.format(month), ''][month is None]
+overlay_str = ['_overlay', ''][overlay_panel is None]
 plt.savefig('figs/{}_{}{}{}.png'.format(var, year, month_str, overlay_str), dpi=200)
-plt.show()
+#plt.show()

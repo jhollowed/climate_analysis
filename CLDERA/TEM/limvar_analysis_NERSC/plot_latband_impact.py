@@ -13,60 +13,85 @@ from matplotlib.ticker import FuncFormatter
 import math
 
 
-var  = sys.argv[1]       # variable to plot
-overlay_panel = bool(int(sys.argv[2])) # whether or not to render fourth panel with impact overlay on cf
+in_var  = sys.argv[1]   # variable to plot
+max_year = float(sys.argv[2])  # right-most year in time domain, as float
+overlay_panel = bool(int(sys.argv[3])) # whether or not to render fourth panel with impact overlay on cf
 try:
-    q    = sys.argv[3]   # either 'aoa', 'e90', 'none', or not passed
+    q    = sys.argv[4]   # either 'aoa', 'e90', 'none', or not passed
 except IndexError:
     q = None
 
 loc = '/pscratch/sd/j/jhollo/E3SM/historical_data/limvar/analysis'
 
-bands = ['SHpole', 'SHmid', 'tropics', 'NHmid', 'NHpole']
+bands = ['SHpole', 'SHmid', 'tropics', 'eq', 'NHmid', 'NHpole']
+
+#freqstr = ''
+freqstr = '_10daily'
 
 for bi in range(len(bands)):
+    
+    var = in_var
     band = bands[bi]
 
-    print('reading data')
-    data   = xr.open_dataset('{}/data_ensmean_{}.nc'.format(loc, band))
-    cf     = xr.open_dataset('{}/cf_ensmean_{}.nc'.format(loc, band))
-    impact = xr.open_dataset('{}/impact_ensmean_{}.nc'.format(loc, band))
-    pval   = xr.open_dataset('{}/pval_{}.nc'.format(loc, band))
-    print('available data vars: {}'.format(list(data.data_vars)))
+    print('reading data for var {}...'.format(var))
+    data   = xr.open_dataset('{}/data_ensmean_{}{}.nc'.format(loc, band, freqstr))
+    cf     = xr.open_dataset('{}/cf_ensmean_{}{}.nc'.format(loc, band, freqstr))
+    impact = xr.open_dataset('{}/impact_ensmean_{}{}.nc'.format(loc, band, freqstr))
+    pval   = xr.open_dataset('{}/pval_{}{}.nc'.format(loc, band, freqstr))
+    #print('available data vars: {}'.format(list(data.data_vars)))
 
-    tem_data      = xr.open_dataset('{}/tem_data_ensmean_{}.nc'.format(loc, band))
-    tem_cf        = xr.open_dataset('{}/tem_cf_ensmean_{}.nc'.format(loc, band))
-    tem_impact    = xr.open_dataset('{}/tem_impact_ensmean_{}.nc'.format(loc, band))
-    tem_pval      = xr.open_dataset('{}/tem_pval_{}.nc'.format(loc, band))
-    budget_data   = xr.open_dataset('{}/budget_data_ensmean_{}.nc'.format(loc, band))
-    budget_cf     = xr.open_dataset('{}/budget_cf_ensmean_{}.nc'.format(loc, band))
-    budget_impact = xr.open_dataset('{}/budget_impact_ensmean_{}.nc'.format(loc, band))
-    budget_pval   = xr.open_dataset('{}/budget_pval_{}.nc'.format(loc, band))
-    print('available TEM vars: {}'.format(list(tem_data.data_vars)))
-    print('available TEM budget vars: {}'.format(list(budget_data.data_vars)))
+    tem_data      = xr.open_dataset('{}/tem_data_ensmean_{}{}.nc'.format(loc, band, freqstr))
+    tem_cf        = xr.open_dataset('{}/tem_cf_ensmean_{}{}.nc'.format(loc, band, freqstr))
+    tem_impact    = xr.open_dataset('{}/tem_impact_ensmean_{}{}.nc'.format(loc, band, freqstr))
+    tem_pval      = xr.open_dataset('{}/tem_pval_{}{}.nc'.format(loc, band, freqstr))
+    budget_data   = xr.open_dataset('{}/budget_data_ensmean_{}{}.nc'.format(loc, band, freqstr))
+    budget_cf     = xr.open_dataset('{}/budget_cf_ensmean_{}{}.nc'.format(loc, band, freqstr))
+    budget_impact = xr.open_dataset('{}/budget_impact_ensmean_{}{}.nc'.format(loc, band, freqstr))
+    budget_pval   = xr.open_dataset('{}/budget_pval_{}{}.nc'.format(loc, band, freqstr))
+    #print('available TEM vars: {}'.format(list(tem_data.data_vars)))
+    #print('available TEM budget vars: {}'.format(list(budget_data.data_vars)))
 
-    aoa_tem_data      = xr.open_dataset('{}/tem_data_ensmean_TRACER-AOA_{}.nc'.format(loc, band))
-    aoa_tem_cf        = xr.open_dataset('{}/tem_cf_ensmean_TRACER-AOA_{}.nc'.format(loc, band))
-    aoa_tem_impact    = xr.open_dataset('{}/tem_impact_ensmean_TRACER-AOA_{}.nc'.format(loc, band))
-    aoa_tem_pval      = xr.open_dataset('{}/tem_pval_TRACER-AOA_{}.nc'.format(loc, band))
-    aoa_budget_data   = xr.open_dataset('{}/budget_data_ensmean_TRACER-AOA_{}.nc'.format(loc, band))
-    aoa_budget_cf     = xr.open_dataset('{}/budget_cf_ensmean_TRACER-AOA_{}.nc'.format(loc, band))
-    aoa_budget_impact = xr.open_dataset('{}/budget_impact_ensmean_TRACER-AOA_{}.nc'.format(loc, band))
-    aoa_budget_pval   = xr.open_dataset('{}/budget_pval_TRACER-AOA_{}.nc'.format(loc, band))
-    print('available AOA TEM vars: {}'.format(list(aoa_tem_data.data_vars)))
-    print('available AOA budget vars: {}'.format(list(aoa_budget_data.data_vars)))
+    aoa_tem_data      = xr.open_dataset('{}/tem_data_ensmean_TRACER-AOA_{}{}.nc'.format(
+                                                                       loc, band, freqstr))
+    aoa_tem_cf        = xr.open_dataset('{}/tem_cf_ensmean_TRACER-AOA_{}{}.nc'.format(
+                                                                     loc, band, freqstr))
+    aoa_tem_impact    = xr.open_dataset('{}/tem_impact_ensmean_TRACER-AOA_{}{}.nc'.format(
+                                                                         loc, band, freqstr))
+    aoa_tem_pval      = xr.open_dataset('{}/tem_pval_TRACER-AOA_{}{}.nc'.format(
+                                                               loc, band, freqstr))
+    aoa_budget_data   = xr.open_dataset('{}/budget_data_ensmean_TRACER-AOA_{}{}.nc'.format(
+                                                                          loc, band, freqstr))
+    aoa_budget_cf     = xr.open_dataset('{}/budget_cf_ensmean_TRACER-AOA_{}{}.nc'.format(
+                                                                        loc, band, freqstr))
+    aoa_budget_impact = xr.open_dataset('{}/budget_impact_ensmean_TRACER-AOA_{}{}.nc'.format(
+                                                                            loc, band, freqstr))
+    aoa_budget_pval   = xr.open_dataset('{}/budget_pval_TRACER-AOA_{}{}.nc'.format(
+                                                                  loc, band, freqstr))
+    #print('available AOA TEM vars: {}'.format(list(aoa_tem_data.data_vars)))
+    #print('available AOA budget vars: {}'.format(list(aoa_budget_data.data_vars)))
 
-    e90_tem_data      = xr.open_dataset('{}/tem_data_ensmean_TRACER-E90j_{}.nc'.format(loc, band))
-    e90_tem_cf        = xr.open_dataset('{}/tem_cf_ensmean_TRACER-E90j_{}.nc'.format(loc, band))
-    e90_tem_impact    = xr.open_dataset('{}/tem_impact_ensmean_TRACER-E90j_{}.nc'.format(loc, band))
-    e90_tem_pval      = xr.open_dataset('{}/tem_pval_TRACER-E90j_{}.nc'.format(loc, band))
-    e90_budget_data   = xr.open_dataset('{}/budget_data_ensmean_TRACER-E90j_{}.nc'.format(loc, band))
-    e90_budget_cf     = xr.open_dataset('{}/budget_cf_ensmean_TRACER-E90j_{}.nc'.format(loc, band))
-    e90_budget_impact = xr.open_dataset('{}/budget_impact_ensmean_TRACER-E90j_{}.nc'.format(loc, band))
-    e90_budget_pval   = xr.open_dataset('{}/budget_pval_TRACER-E90j_{}.nc'.format(loc, band))
-    print('available E90 TEM vars: {}'.format(list(e90_tem_data.data_vars)))
-    print('available E90 budget vars: {}'.format(list(e90_budget_data.data_vars)))
+    e90_tem_data      = xr.open_dataset('{}/tem_data_ensmean_TRACER-E90j_{}{}.nc'.format(
+                                                                        loc, band, freqstr))
+    e90_tem_cf        = xr.open_dataset('{}/tem_cf_ensmean_TRACER-E90j_{}{}.nc'.format(
+                                                                      loc, band, freqstr))
+    e90_tem_impact    = xr.open_dataset('{}/tem_impact_ensmean_TRACER-E90j_{}{}.nc'.format(
+                                                                          loc, band, freqstr))
+    e90_tem_pval      = xr.open_dataset('{}/tem_pval_TRACER-E90j_{}{}.nc'.format(
+                                                                loc, band, freqstr))
+    e90_budget_data   = xr.open_dataset('{}/budget_data_ensmean_TRACER-E90j_{}{}.nc'.format(
+                                                                           loc, band, freqstr))
+    e90_budget_cf     = xr.open_dataset('{}/budget_cf_ensmean_TRACER-E90j_{}{}.nc'.format(
+                                                                         loc, band, freqstr))
+    e90_budget_impact = xr.open_dataset('{}/budget_impact_ensmean_TRACER-E90j_{}{}.nc'.format(
+                                                                             loc, band, freqstr))
+    e90_budget_pval   = xr.open_dataset('{}/budget_pval_TRACER-E90j_{}{}.nc'.format(
+                                                                   loc, band, freqstr))
+    #print('available E90 TEM vars: {}'.format(list(e90_tem_data.data_vars)))
+    #print('available E90 budget vars: {}'.format(list(e90_budget_data.data_vars)))
 
+    # get tropopause data
+    data_tropp, cf_tropp, impact_tropp = [data['TROP_P'].T/100, cf['TROP_P'].T/100, 
+                                          impact['TROP_P'].T/100]
 
     # find which dataset the variable belongs to, read
     print('extracting variable...')
@@ -100,13 +125,17 @@ for bi in range(len(bands)):
             var = '{}_e90'.format(var)
     except KeyError: pass
 
+    # if variable hasn't been found by here, it doesn't exist
+    assert isinstance(data, xr.core.dataarray.DataArray), 'variable {} not found!'.format(var)
+
     # --------------------------------------------------------------------------
 
     plev = data.plev
     time = data.time
 
     # --- do slicing
-    ti, tf = 0, int(1.5*360) # plot for first year and a half
+    ti, tf = 0, int(max_year*360) # plot for first year and a half
+    if(freqstr == '_10daily'): tf = int(tf/10)
     tsl    = slice(ti, tf)
     data   = data.isel(time=tsl)
     cf     = cf.isel(time=tsl)
@@ -114,9 +143,14 @@ for bi in range(len(bands)):
     pval   = pval.isel(time=tsl)
     time   = data.time
     month = [tt.month+((tt.year-1991)*12)-6+tt.day/30 for tt in time.values]
+    month = [tt.month+((tt.year-1991)*12)-6+tt.day/30 for tt in time.values]
+    
+    data_tropp = data_tropp.isel(time=tsl)
+    cf_tropp = cf_tropp.isel(time=tsl)
+    impact_tropp = impact_tropp.isel(time=tsl)
 
     # --- do vertical slicing
-    pmin, pmax = 1, 250
+    pmin, pmax = 1, 400
     levslice = slice(pmin, pmax)
     plev     = plev.sel(plev = levslice)
     data     = data.sel(plev = levslice)
@@ -196,6 +230,13 @@ for bi in range(len(bands)):
     titlefs = 11
     labelfs = 9
 
+    # ---- plotting settings for tropopause
+    trop_lw = 2.5 # suppressed for now
+    trop_data_color='hotpink'
+    trop_cf_color='hotpink'
+    trop_ls = '-'
+    trop_label = 'tropopause'
+
     # --- function for formatting level labels on the colorbar
     def cbarfmt(v, pos):
         if(fmt is None):
@@ -252,37 +293,44 @@ for bi in range(len(bands)):
     # --- make figure
     if(overlay_panel): num_plt = 4
     else:              num_plt = 3
-    fig, ax = plt.subplots(num_plt, 1, figsize=(5, 20*num_plt/4), layout='constrained')
+    fig, ax = plt.subplots(num_plt, 1, figsize=(7, 10*num_plt/4), layout='constrained')
 
     # -------------------------------------------------------
 
-    print('plotting band {}'.format(band))
+    print('plotting band {}...'.format(band))
     
     # ---- forced run
-    x1 = data
+    x1 = data.T
     c1 = ax[0].contourf(month, plev, x1, cmap=cmap, norm=data_norm, levels=data_levels, 
                           extend='both')
     ax[0].contour(month, plev, x1, colors='k', levels=data_levels, alpha=0.5, linewidths=var_lw)
     # if zero-contour exists, make bold
     if(0 in data_levels):
         ax[0].contour(month, plev, x1, colors='k', levels=[0], alpha=0.5, linewidths=var_lw*1.5)
+    # overlay tropopause
+    ax[0].plot(month, data_tropp, ls=trop_ls, color=trop_data_color, lw=trop_lw)
 
 
     # ---- counterfactual
-    x2 = cf
+    x2 = cf.T
     c2 = ax[1].contourf(month, plev, x2, cmap=cmap, norm=c1.norm, levels=c1.levels, extend='both')
     ax[1].contour(month, plev, x2, colors='k', levels=c1.levels, alpha=0.5, linewidths=var_lw)
     # if zero-contour exists, make bold
     if(0 in c1.levels):
         ax[1].contour(month, plev, x2, colors='k', levels=[0], alpha=0.5, linewidths=var_lw*2)
+    # overlay tropopause
+    ax[1].plot(month, cf_tropp, ls=trop_ls, color=trop_data_color, lw=trop_lw)
     
     # ---- impact
-    x3 = impact
+    x3 = impact.T
     c3 = ax[2].contourf(month, plev, x3, cmap=impact_cmap, norm=impact_norm, 
                           levels=impact_levels, extend='both')
+    # overlay tropopause
+    #ax[2].plot(month, data_tropp, ls=trop_ls, color=trop_data_color, lw=trop_lw)
+    ax[2].plot(month, cf_tropp, ls=trop_ls, color=trop_data_color, lw=trop_lw)
 
     # ---- imapct significance
-    x4 = pval
+    x4 = pval.T
     c4 = ax[2].contour(month, plev, x4, colors='k', levels=[pthresh], linewidths=var_lw*1.25)
     c5 = ax[2].contourf(month, plev, x4, levels=[pthresh, x4.max()], 
                            hatches=['////'], extend='right', colors='none', alpha=0)
@@ -290,6 +338,9 @@ for bi in range(len(bands)):
     if(overlay_panel):
         # ---- plot sign agreement of significant impact with counterfactual
         ax[3].contourf(month, plev, x2, cmap=cmap, norm=c2.norm, levels=c2.levels, extend='both')
+        # overlay tropopause
+        #ax[3].plot(month, data_tropp, ls=trop_ls, color=trop_data_color, lw=trop_lw)
+        ax[3].plot(month, cf_tropp, ls=trop_ls, color=trop_data_color, lw=trop_lw)
      
         pmask = x4 < pthresh
         x5    = x3.where(pmask, other=0) * np.sign(x2)
@@ -298,9 +349,13 @@ for bi in range(len(bands)):
         if(x5neg.values.min() < 0):
             c6 = ax[3].contourf(month, plev, x5neg, colors='none', levels=[x5neg.values.min(), -1e-20], 
                             hatches=['**'], extend='left')
+        else:
+            c6 = None
         if(x5pos.values.max() > 0):
             c7 = ax[3].contourf(month, plev, x5pos, colors='none', levels=[1e-20, x5pos.values.max()], 
                             hatches=['OO'], extend='right')
+        else:
+            c7 = None
         #c8 = ax[3].contour(month, plev, x5neg, colors='blue', levels=[c3.levels[c3.levels < 0][-1]], 
         #                linewidths=var_lw*1.25)
         #c9 = ax[3].contour(month, plev, x5pos, colors='red', levels=[c3.levels[c3.levels > 0][0]], 
@@ -311,11 +366,19 @@ for bi in range(len(bands)):
         cc4 = plt.plot([0,0], [0,0], '-k', lw=var_lw*1.25)[0]
         cc5 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) for pc in c5.collections][0]
         if(overlay_panel):
-            cc6 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) for pc in c6.collections][0]
-            cc7 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) for pc in c7.collections][0]
+            if(c6 is not None):
+                cc6 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) for pc in c6.collections][0]
+            if(c7 is not None):
+                cc7 = [mpatches.Patch(facecolor='w', hatch=pc.get_hatch()) for pc in c7.collections][0]
     if(overlay_panel):
-        legend_lines = [cc4, cc5, cc6, cc7]
-        labels = ['pval = 0.05', 'pval > 0.05', 'impact decelerates', 'impact accelerates']
+        legend_lines = [cc4, cc5]
+        labels = ['pval = 0.05', 'pval > 0.05']
+        if(c6 is not None):
+            legend_lines.extend([cc6])
+            labels.extend('impact decelerates')
+        if(c7 is not None):
+            legend_lines.extend([cc7])
+            labels.extend('impact accelerates')
     else:
         legend_lines = [cc4, cc5]
         labels = ['pval = 0.05', 'pval > 0.05']
@@ -323,17 +386,17 @@ for bi in range(len(bands)):
                loc='lower center', ncol=[2,4][month is None], fontsize=titlefs-1)
 
     # ---- colorbars
-    cb1 = fig.colorbar(c2, ax=[ax[0]], location='left', aspect=7, pad=0.1, 
+    cb1 = fig.colorbar(c2, ax=[ax[0]], location='left', aspect=10, pad=0.025, 
                        format=FuncFormatter(cbarfmt))
     cb1.set_label('10 Tg\n{}'.format(varstr), fontsize=titlefs)
-    cb2 = fig.colorbar(c2, ax=[ax[1]], location='left', aspect=7, pad=0.1, 
+    cb2 = fig.colorbar(c2, ax=[ax[1]], location='left', aspect=10, pad=0.025, 
                        format=FuncFormatter(cbarfmt)) 
     cb2.set_label('0 Tg\n{}'.format(varstr), fontsize=titlefs)
-    cb3 = fig.colorbar(c3, ax=[ax[2]], location='left', aspect=7, pad=0.1, 
+    cb3 = fig.colorbar(c3, ax=[ax[2]], location='left', aspect=10, pad=0.025, 
                        format=FuncFormatter(cbarfmt))
     cb3.set_label('(10 Tg - 0 Tg)\n{}'.format(impactstr), fontsize=titlefs)
     if(overlay_panel):
-        cb4 = fig.colorbar(c2, ax=[ax[3]], location='left', aspect=7, pad=0.1, 
+        cb4 = fig.colorbar(c2, ax=[ax[3]], location='left', aspect=10, pad=0.025, 
                            format=FuncFormatter(cbarfmt))
         cb4.set_label('0 Tg\n{}'.format(varstr), fontsize=titlefs)
     # if norm = uneven, then the contours an non-uniformly spaced, and every one of them
@@ -375,6 +438,7 @@ for bi in range(len(bands)):
 
     ax[0].set_title('{} {}'.format(varstr, band), fontsize=titlefs)
 
-overlay_str = ['', '_overlay'][overlay_panel is None]
-plt.savefig('figs/{}_{}{}.png'.format(var, band, overlay_str), dpi=200)
-plt.show()
+    print('saving figure...')
+    overlay_str = ['_overlay', ''][overlay_panel is None]
+    plt.savefig('figs/{}_{}{}_maxyear{}.png'.format(var, band, overlay_str, max_year), dpi=200)
+#plt.show()
