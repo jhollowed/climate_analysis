@@ -34,7 +34,7 @@ try:
     tstat               = xr.load_dataset('{}/tstat.nc'.format(outdir))
     pval                = xr.load_dataset('{}/pval.nc'.format(outdir))
     tstat_read          = 1
-    coherence           = xr.load_dataset('{}/coherence.nc'.format(outdir))
+    coherence           = xr.load_dataset('{}/impact_coherence.nc'.format(outdir))
     coherence_read      = 1
     print('data read from files...')
 
@@ -60,7 +60,7 @@ except FileNotFoundError:
         impact.to_netcdf('{}/impact.nc'.format(outdir))
 
     # ---------- means
-    if(dat_ensmean_read == 0):
+    if(ensmean_read == 0):
         print('getting data ensemble mean')
         ensmean = data.mean('ens') 
         ensmean.to_netcdf('{}/data_ensmean.nc'.format(outdir))
@@ -89,9 +89,9 @@ except FileNotFoundError:
     # ---------- coherence
     if(coherence_read == 0):
         print('getting coherence')
-        coherence = np.sign(data) == np.sign(ensmean)
+        coherence = np.sign(impact) == np.sign(impact_ensmean)
         coherence = coherence.sum(dim='ens') / N
-        coherence.to_netcdf('{}/coherence.nc'.format(outdir))
+        coherence.to_netcdf('{}/impact_coherence.nc'.format(outdir))
     
 
 
@@ -120,7 +120,7 @@ for qi in range(3):
         tem_tstat               = xr.load_dataset('{}/tem_tstat{}.nc'.format(outdir, qstr))
         tem_pval                = xr.load_dataset('{}/tem_pval{}.nc'.format(outdir, qstr))
         tem_tstat_read          = 1
-        tem_coherence           = xr.load_dataset('{}/tem_coherence{}.nc'.format(outdir, qstr))
+        tem_coherence           = xr.load_dataset('{}/tem_impact_coherence{}.nc'.format(outdir, qstr))
         tem_coherence_read      = 1
         print('data read from files...')
 
@@ -177,9 +177,9 @@ for qi in range(3):
         # ---------- coherence
         if(tem_coherence_read == 0):
             print('getting coherence')
-            coherence = np.sign(tem) == np.sign(tem_ensmean)
+            coherence = np.sign(tem_impact) == np.sign(tem_impact_ensmean)
             coherence = coherence.sum(dim='ens') / N
-            coherence.to_netcdf('{}/tem_coherence.nc'.format(outdir))
+            coherence.to_netcdf('{}/tem_impact_coherence.nc'.format(outdir))
 
 
 # -------------------------------------------------------
@@ -207,8 +207,8 @@ for qi in range(3):
         budget_tstat               = xr.load_dataset('{}/budget_tstat{}.nc'.format(outdir, qstr))
         budget_pval                = xr.load_dataset('{}/budget_pval{}.nc'.format(outdir, qstr))
         budget_tstat_read          = 1
-        budget_coherence           = xr.load_dataset('{}/budget_coherence{}.nc'.format(outdir, qstr))
-        budget_coherence_read      = 1
+        budget_coherence      = xr.load_dataset('{}/budget_impact_coherence{}.nc'.format(outdir, qstr))
+        budget_coherence_read = 1
         print('data read from files...')
 
     except FileNotFoundError:
@@ -264,9 +264,9 @@ for qi in range(3):
         # ---------- coherence
         if(budget_coherence_read == 0):
             print('getting coherence')
-            coherence = np.sign(budget) == np.sign(budget_ensmean)
+            coherence = np.sign(budget_impact) == np.sign(budget_impact_ensmean)
             coherence = coherence.sum(dim='ens') / N
-            coherence.to_netcdf('{}/budget_coherence.nc'.format(outdir))
+            coherence.to_netcdf('{}/budget_impact_coherence.nc'.format(outdir))
 
 # ------------------------------------------------------------------
 

@@ -218,7 +218,8 @@ impact_cmap = colors.ListedColormap(newcolors)
 # --- set parameters
 mpl.rcParams['hatch.linewidth'] = 0.25
 var_lw = 0.75
-pthresh  = 0.025 # p-value threshold for significance
+pthresh  = 0.05 # p-value threshold for significance
+pval_levels = [0.025, 0.05] # contours to plot in pvalue
 
 # --- font sizes
 suptitlefs = 15
@@ -329,7 +330,13 @@ for j in range(len(time)):
 
     # ---- imapct significance
     x4 = pval.isel(time=j)
-    c4 = ax[2,j].contour(lat, plev, x4.T, colors='k', levels=[pthresh], linewidths=var_lw*1.25)
+    c4 = ax[2,j].contour(lat, plev, x4.T, colors='k', levels=pval_levels, linewidths=var_lw*1.25)
+    c5 = ax[2,j].contourf(lat, plev, x4.T, levels=[pthresh, x4.max()], 
+                           hatches=['////'], extend='right', colors='none', alpha=0)
+    
+    # ---- imapct coherence
+    x4 = pval.isel(time=j)
+    c4 = ax[2,j].contour(lat, plev, x4.T, colors='k', levels=pval_levels, linewidths=var_lw*1.25)
     c5 = ax[2,j].contourf(lat, plev, x4.T, levels=[pthresh, x4.max()], 
                            hatches=['////'], extend='right', colors='none', alpha=0)
 
