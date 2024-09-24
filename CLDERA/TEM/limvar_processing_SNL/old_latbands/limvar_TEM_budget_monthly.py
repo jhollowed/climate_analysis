@@ -65,14 +65,14 @@ for qi in [0, 1, 2]:
     qstr  = ['','_TRACER-AOA','_TRACER-E90j'][int(qi)]
     print('====== working on tracer {}...'.format(qi))
     if(not cfb):
-        temfile = sorted(glob.glob('{}/*{}Tg*ens{}*.eam.h1*TEM*L45{}_monthlymean.nc'.format(
+        temfile = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h1*TEM*L45{}_monthlymean.nc'.format(
                                     dataloc, massMag, Nens, qstr)))[0]
-        zmfile  = sorted(glob.glob('{}/*{}Tg*ens{}*.eam.h1*zonal*monthlymean.nc'.format(
+        zmfile  = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h1*zonal*monthlymean.nc'.format(
                                     dataloc, massMag, Nens)))[0]
     else:
-        temfile = sorted(glob.glob('{}/*ens{}*.cf.eam.h1*TEM*L45{}_monthlymean.nc'.format(
+        temfile = sorted(glob.glob('{}/*ens{}.cf.eam.h1*TEM*L45{}_monthlymean.nc'.format(
                                     dataloc, Nens, qstr)))[0]
-        zmfile  = sorted(glob.glob('{}/*ens{}*.cf.eam.h1*zonal*monthlymean.nc'.format(
+        zmfile  = sorted(glob.glob('{}/*ens{}.cf.eam.h1*zonal*monthlymean.nc'.format(
                                     dataloc, Nens)))[0]
     
     outfile = '{}/{}_TEMBudget{}.nc'.format(outloc, zmfile.split('/')[-1].split('.nc')[0], qstr)
@@ -131,6 +131,7 @@ for qi in [0, 1, 2]:
             # this won't be exactly right below 700 hPa since we've interpolated 
             # to pure pressure levels...
             zm['QTSOURCE'] = zm['AOA']/zm['AOA'] # clock tracer above 700 hPa, 1 s/s
+            zm['QTSOURCE'] = zm['QTSOURCE'] / 86400 # scale clock tracer to units of day/s
             zm['QTSOURCE'].loc[{'plev':slice(700, 10000)}] = 0
             # AOA has no sinks
             zm['QTSINK'] = zm['AOA'] * 0

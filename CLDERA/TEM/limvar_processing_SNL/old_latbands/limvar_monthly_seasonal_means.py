@@ -9,7 +9,7 @@ Command line arguments are:
 
 Usage
 -----
-python ./limvar_monthly_seasonal_means.py [Nens] [massMag] [tmini] [tmaxi] [overwrite] [dry]
+python ./limvar_zinterp.py [Nens] [massMag] [tmini] [tmaxi] [overwrite] [dry]
 
 Parameters
 ----------
@@ -48,8 +48,7 @@ import xarray as xr
 from datetime import datetime
 
 monthlyloc = '/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar_src_tag/tem_processed/interp_to_pressure_zonalMeans'
-#dailyloc = '/ascldap/users/jphollo/data/limvar/limvar_daily'
-dailyloc = '/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar_src_tag/tem_processed/timeConcat_zonalMeans'
+dailyloc = '/ascldap/users/jphollo/data/limvar/limvar_daily'
 monthlyoutloc   = '/ascldap/users/jphollo/data/limvar/limvar_monthly' 
 seasonaloutloc   = '/ascldap/users/jphollo/data/limvar/limvar_seasonal' 
 
@@ -62,17 +61,6 @@ dry       = bool(int(sys.argv[6]))
 print('args: {}'.format(sys.argv))
 
 cfb = massMag == 0   # counterfactual flag
-
-# if Nens was >90, this will denote the non-source-tagged ensemble
-if(Nens < 90):
-    no_src_tag = False
-    massStr = '.{}Tg.'.format(massMag)
-else:
-    massStr = ''
-    no_src_tag = True
-# the non-source-tagged ensemble only exists for 10 Tg and 0 Tg
-if(massMag != 0 and massMag != 10 and no_src_tag):
-    raise RuntimeError('must have massMag = 10 or 0 for the non-source tagged ensemble')
 
 
 # ----------------------------------------------------------------
@@ -167,8 +155,8 @@ def season_mean(ds, calendar='standard'):
 
 # get model monthly mean time bounds
 if(not cfb):
-    zmh0 = sorted(glob.glob('{}/*{}*ens{}.eam.h0*zonalmeans.nc'.format(
-                                monthlyloc, massStr, Nens)))
+    zmh0 = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h0*zonalmeans.nc'.format(
+                                monthlyloc, massMag, Nens)))
 else:
     zmh0 = sorted(glob.glob('{}/*ens{}.cf.eam.h0*zonalmeans.nc'.format(
                                 monthlyloc, Nens)))
@@ -192,7 +180,8 @@ def monthly_mean(ds, dsh0_time_bnds=h0_time_bounds):
     # as output from the model. It looks like the date range used in the model is different
     # (shifted by one day, running from the second of month A, to the first of month B,
     #  inclusive). So, we need to do this manually.
-  
+    
+    # first compute monthly mean the old way as a template
     ds_monmean = ds.resample(time='1MS').mean('time')
     ds_monmean = ds_monmean.transpose('time', 'lat', 'plev')
     
@@ -212,7 +201,7 @@ def monthly_mean(ds, dsh0_time_bnds=h0_time_bounds):
         delta =  (end - start).days
         x = ds.sel(time=slice(start, end)).isel(time=slice(1, delta+1)).mean('time')
         for var in x.data_vars:
-            ds_monmean[var][i] = x[var]
+            ds_monmean[var][i,:,:] = x[var]
     
     dsh0_time_bnds['time']  = ds_monmean.time
     ds_monmean['time_bnds'] = dsh0_time_bnds
@@ -229,12 +218,11 @@ if(not skip_tem):
     print('======== locating TEM data for ens{}, {} Tg...'.format(Nens, massMag))
     # loop over tracers
     for qi in [0, 1, 2]:
-        if(qi > 0 and no_src_tag): continue # no tracers for the non-source tagged ensemble
         qstr  = ['','_TRACER-AOA','_TRACER-E90j'][int(qi)]
         print('====== working on tracer {}...'.format(qi))
         if(not cfb):
-            enstem = sorted(glob.glob('{}/*{}*ens{}.eam.h1*TEM*L45{}.nc'.format(
-                                        dailyloc, massStr, Nens, qstr)))[0]
+            enstem = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h1*TEM*L45{}.nc'.format(
+                                        dailyloc, massMag, Nens, qstr)))[0]
         else:
             enstem = sorted(glob.glob('{}/*ens{}.cf.eam.h1*TEM*L45{}.nc'.format(
                                         dailyloc, Nens, qstr)))[0]
@@ -256,7 +244,7 @@ if(not skip_tem):
             if(len(existing) > 0 and not overwrite): 
                 print('monthly file exists; skipping...')
             else:
-                print('averaging TEM data...')
+                print('averaging data...')
                 tem = monthly_mean(tem)
                 print('writing out...')
                 tem.to_netcdf(outfile)
@@ -279,8 +267,8 @@ if(not skip_tem):
 print('======== locating zonal mean data for ens{}, {} Tg...'.format(Nens, massMag))
 
 if(not cfb):
-    enszm   = sorted(glob.glob('{}/*{}*ens{}.eam.h1*zonalmeans.nc'.format(
-                                dailyloc, massStr, Nens)))[0]
+    enszm   = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h1*zonalmeans.nc'.format(
+                                dailyloc, massMag, Nens)))[0]
 else:
     enszm   = sorted(glob.glob('{}/*ens{}.cf.eam.h1*zonalmeans.nc'.format(
                                 dailyloc, Nens)))[0]
@@ -302,7 +290,7 @@ if(not dry):
     if(len(existing) > 0 and not overwrite): 
         print('monthly file exists; skipping...')
     else:
-        print('averaging ZM data...')
+        print('averaging data...')
         zm = monthly_mean(zm)
         
         print('combining with existing monthly data...')

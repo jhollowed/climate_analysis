@@ -2,9 +2,9 @@
 Joe Hollowed 
 University of Michigan 2024
 
-This script computes the TEM budget for latitude-band averaged limvar data. That is, the
-total tendency expected by the TEM terms plus the parameterized gravity wave forcing
-Command line arguments are:
+This script computes the TEM budget for latitude-band averaged 10-daily mean limvar data. 
+That is, the total tendency expected by the TEM terms plus the parameterized gravity wave 
+forcing. Command line arguments are:
 
 Usage
 -----
@@ -46,8 +46,8 @@ import numpy as np
 import xarray as xr
 from datetime import datetime
 
-dataloc = '/ascldap/users/jphollo/data/limvar/limvar_latbands' 
-outloc  = '/ascldap/users/jphollo/data/limvar/limvar_latbands_tembudget'
+dataloc = '/ascldap/users/jphollo/data/limvar/limvar_latbands_10daily' 
+outloc  = '/ascldap/users/jphollo/data/limvar/limvar_latbands_tembudget_10daily'
 
 Nens      = int(sys.argv[1])
 massMag   = int(sys.argv[2])
@@ -59,26 +59,26 @@ print('args: {}'.format(sys.argv))
 
 cfb = massMag == 0   # counterfactual flag
 
-bands = ['SHpole', 'SHmid', 'tropics', 'NHmid', 'NHpole']
+bands = ['SHpole', 'SHmid', 'tropics', 'eq', 'NHmid', 'NHpole']
 
 # -----------------------------------------------------------------
 
 for band in bands:
 
-    print('+++++++++++ working on band {}'.format(band))
+    print('+++++++++++ working on band {} +++++++++'.format(band))
 
     for qi in [0, 1, 2]:
         qstr  = ['','_TRACER-AOA','_TRACER-E90j'][int(qi)]
         print('====== working on tracer {}...'.format(qi))
         if(not cfb):
-            temfile = sorted(glob.glob('{}/*{}Tg*ens{}*.eam.h1*TEM*L45{}_latband_{}.nc'.format(
+            temfile = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h1*TEM*L45{}_latband_{}*.nc'.format(
                                         dataloc, massMag, Nens, qstr, band)))[0]
-            zmfile  = sorted(glob.glob('{}/*{}Tg*ens{}*.eam.h1*zonal*latband_{}.nc'.format(
+            zmfile  = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h1*zonal*latband_{}*.nc'.format(
                                         dataloc, massMag, Nens, band)))[0]
         else:
-            temfile = sorted(glob.glob('{}/*ens{}*.cf.eam.h1*TEM*L45{}_latband_{}.nc'.format(
+            temfile = sorted(glob.glob('{}/*ens{}.cf.eam.h1*TEM*L45{}_latband_{}*.nc'.format(
                                         dataloc, Nens, qstr, band)))[0]
-            zmfile  = sorted(glob.glob('{}/*ens{}*.cf.eam.h1*zonal*latband_{}.nc'.format(
+            zmfile  = sorted(glob.glob('{}/*ens{}.cf.eam.h1*zonal*latband_{}*.nc'.format(
                                         dataloc, Nens, band)))[0]
         
         outfile = '{}/{}_TEMBudget{}.nc'.format(outloc, zmfile.split('/')[-1].split('.nc')[0], qstr)
@@ -132,7 +132,8 @@ for band in bands:
                 # compute AOA tendency by parameterized tracer source
                 # this won't be exactly right below 700 hPa since we've interpolated 
                 # to pure pressure levels...
-                zm['QTSOURCE'] = zm['AOA']/zm['AOA'] # clock tracer above 700 hPa, 1 s/s
+                zm['QTSOURCE'] = zm['AOA']/zm['AOA']    # clock tracer above 700 hPa, 1 s/s
+                zm['QTSOURCE'] = zm['QTSOURCE'] / 86400 # scale clock tracer to units of day/s
                 zm['QTSOURCE'].loc[{'plev':slice(700, 10000)}] = 0
                 # AOA has no sinks
                 zm['QTSINK'] = zm['AOA'] * 0
@@ -170,20 +171,3 @@ for band in bands:
         print('writing out...')
         zm = zm.drop_vars(orig_vars)
         zm.to_netcdf(outfile)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

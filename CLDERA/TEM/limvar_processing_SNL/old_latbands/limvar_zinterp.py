@@ -55,7 +55,6 @@ from geocat.comp import interpolation as gcinterp
 
 outdir = '/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar_src_tag/tem_processed/interp_to_pressure_3D'
 loc    = '/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar_src_tag'
-loc_nosrctag = '/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar'
 
 Nens      = int(sys.argv[1])
 histnum   = int(sys.argv[2])
@@ -68,51 +67,30 @@ print('args: {}'.format(sys.argv))
 
 cfb = massMag == 0   # counterfactual flag
 
-# if Nens was >90, this will denote the non-source-tagged ensemble
-if(Nens < 90):
-    Nens_ = Nens
-    no_src_tag = False
-    loc = loc
-else:
-    Nens_ = Nens - 90
-    no_src_tag = True
-    loc = loc_nosrctag
-
-# the non-source-tagged ensemble only exists for 10 Tg and 0 Tg
-if(massMag != 0 and massMag != 10 and no_src_tag):
-    raise RuntimeError('must have massMag = 10 or 0 for the non-source tagged ensemble')
-
 # ----------------------------------------------------------------
 
 # get ensemble data
 print('locating data...')
+ensdirs = np.array(sorted(glob.glob('{}/*{}Tg.ens{}'.format(loc, massMag, Nens))))
+mask    = np.array([not 'hud' in s for s in ensdirs])
+ensdirs = ensdirs[mask]
+ensdir  = ensdirs[0]
+enshist = sorted(glob.glob('{}/archive/atm/hist/*h{}*'.format(ensdir, histnum)))[tmini:tmaxi+1]
 
-cfdirs  = np.array(sorted(glob.glob('{}/*ens{}.cf'.format(loc, Nens_))))
+cfdirs  = np.array(sorted(glob.glob('{}/*ens{}.cf'.format(loc, Nens))))
 mask    = np.array([not 'hud' in s for s in cfdirs])
 cfdirs  = cfdirs[mask]
 cfdir   = cfdirs[0]
-cfhist  = sorted(glob.glob('{}/archive/atm/hist/*.h{}.*'.format(cfdir, histnum)))[tmini:tmaxi+1]
+cfhist  = sorted(glob.glob('{}/archive/atm/hist/*h{}*'.format(cfdir, histnum)))[tmini:tmaxi+1]
 if(cfb):
     ensdirs=cfdirs
     ensdir=cfdir
     enshist=cfhist
-else:
-    if(no_src_tag):
-        ensdirs = np.array(sorted(glob.glob('{}/*.ens{}'.format(loc, Nens_))))
-    else:
-        ensdirs = np.array(sorted(glob.glob('{}/*.{}Tg.ens{}'.format(loc, massMag, Nens_))))
-    mask    = np.array([not 'hud' in s for s in ensdirs])
-    ensdirs = ensdirs[mask]
-    ensdir  = ensdirs[0]
-    enshist = sorted(glob.glob('{}/archive/atm/hist/*.h{}.*'.format(ensdir, histnum)))[tmini:tmaxi+1]
 
 # do interpolation
 
-if(no_src_tag):
-    print('-------- working on ENS {}, times {}-{}, --------'.format(Nens, tmini, tmaxi))
-else:
-    print('-------- working on ENS {}, mass {}Tg, times {}-{}, --------'.format(
-           Nens, massMag, tmini, tmaxi))
+print('-------- working on ENS {}, mass {}Tg, times {}-{}, --------'.format(
+       Nens, massMag, tmini, tmaxi))
 
 print('first file is: {}'.format(enshist[0].split('/')[-1]))
 print('last file is: {}'.format(enshist[-1].split('/')[-1]))
@@ -123,10 +101,6 @@ for i in range(len(enshist)):
     print('\n ----- working on {}'.format(fname))
     
     outfile = '{}/{}_pinterp.nc'.format(outdir, fname.split('.nc')[0])
-    # if ens member belongs to the non-source-tagged ensemble, ass 90 to the member number
-    if(no_src_tag):
-        outfile = outfile.replace('ens{}'.format(Nens_), 'ens{}'.format(Nens))
-
     if(os.path.isfile(outfile) and not overwrite):
         print('output exists; skipping...')
         continue
@@ -156,11 +130,9 @@ for i in range(len(enshist)):
     if(dry): exit(0)
 
     # get native data precision
-    ppua, ppva, ppwap, ppta, ppp0, pplat, pplev = \
-    data['U'].dtype, data['V'].dtype, data['OMEGA'].dtype, data['T'].dtype, \
-    data['P0'].dtype, data['lat'].dtype, data['lev'].dtype
-    if('AOA' in data.data_vars):
-        ppaoa, ppe90 = data['AOA'].dtype, data['E90j'].dtype
+    ppua, ppva, ppwap, ppaoa, ppe90, ppta, ppp0, pplat, pplev = \
+    data['U'].dtype, data['V'].dtype, data['OMEGA'].dtype, data['AOA'].dtype, data['E90j'].dtype, \
+    data['T'].dtype, data['P0'].dtype, data['lat'].dtype, data['lev'].dtype
     if(histnum == 0):
         ppgw1, ppgw2, ppgw3 = data['BUTGWSPEC'].dtype, data['UTGWORO'].dtype, data['UTGWSPEC'].dtype
 
@@ -172,14 +144,13 @@ for i in range(len(enshist)):
     ua  = gcinterp.interp_hybrid_to_pressure(data['U'], **interp_args)
     va  = gcinterp.interp_hybrid_to_pressure(data['V'], **interp_args)
     wap = gcinterp.interp_hybrid_to_pressure(data['OMEGA'], **interp_args)
+    aoa = gcinterp.interp_hybrid_to_pressure(data['AOA'], **interp_args)
+    e90 = gcinterp.interp_hybrid_to_pressure(data['E90j'], **interp_args)
     ua['plev']  = ua.plev/100
     va['plev']  = va.plev/100
     wap['plev'] = wap.plev/100
-    if('AOA' in data.data_vars):
-        aoa = gcinterp.interp_hybrid_to_pressure(data['AOA'], **interp_args)
-        e90 = gcinterp.interp_hybrid_to_pressure(data['E90j'], **interp_args)
-        aoa['plev'] = aoa.plev/100
-        e90['plev'] = e90.plev/100
+    aoa['plev'] = aoa.plev/100
+    e90['plev'] = e90.plev/100
 
     t_interp_args = copy.deepcopy(interp_args)
     t_interp_args['variable'] = 'temperature'
@@ -190,10 +161,7 @@ for i in range(len(enshist)):
     ta = ta.drop_vars('lev')
         
     print('Computing interpolation...')
-    if('AOA' in data.data_vars):
-        ua, va, ta, wap, aoa, e90 = dask.compute(ua, va, ta, wap, aoa, e90)
-    else:
-        ua, va, ta, wap = dask.compute(ua, va, ta, wap)
+    ua, va, ta, wap, aoa, e90 = dask.compute(ua, va, ta, wap, aoa, e90)
     
     # get isobars
     plev = ua['plev']
@@ -203,9 +171,8 @@ for i in range(len(enshist)):
     ua   = ua.isel(plev=slice(1, len(plev)))
     va   = va.isel(plev=slice(1, len(plev)))
     wap  = wap.isel(plev=slice(1, len(plev)))
-    if('AOA' in data.data_vars):
-        aoa  = aoa.isel(plev=slice(1, len(plev)))
-        e90  = e90.isel(plev=slice(1, len(plev)))
+    aoa  = aoa.isel(plev=slice(1, len(plev)))
+    e90  = e90.isel(plev=slice(1, len(plev)))
     
     # if monthly data, then also interpolate the gravity wave forcing 
     if(histnum == 0):
@@ -229,16 +196,13 @@ for i in range(len(enshist)):
     ua   = ua.astype(ppua)
     va   = va.astype(ppva)
     wap  = wap.astype(ppwap)
+    aoa  = aoa.astype(ppaoa)
+    e90  = e90.astype(ppe90)
     ta   = ta.astype(ppta)
     p0   = p0.astype(ppp0)
     lat  = lat.astype(pplat)
     plev = plev.astype(pplev)
-    if('AOA' in data.data_vars):
-        aoa  = aoa.astype(ppaoa)
-        e90  = e90.astype(ppe90)
-        varout = [ua, va, wap, aoa, e90, ta]
-    else:
-        varout = [ua, va, wap, ta]
+    varout = [ua, va, wap, aoa, e90, ta]
     if(histnum == 0):
         gw1 = gw1.astype(ppgw1)
         gw2 = gw2.astype(ppgw2)

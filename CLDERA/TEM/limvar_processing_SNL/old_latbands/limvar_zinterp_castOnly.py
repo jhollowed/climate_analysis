@@ -70,7 +70,7 @@ cfb = massMag == 0   # counterfactual flag
 
 # get ensemble data
 print('locating data...')
-ensdirs = np.array(sorted(glob.glob('{}/*.{}Tg.ens{}'.format(loc, massMag, Nens))))
+ensdirs = np.array(sorted(glob.glob('{}/*{}Tg.ens{}'.format(loc, massMag, Nens))))
 mask    = np.array([not 'hud' in s for s in ensdirs])
 ensdirs = ensdirs[mask]
 ensdir  = ensdirs[0]

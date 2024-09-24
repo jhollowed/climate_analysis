@@ -17,8 +17,18 @@ The intended order of operations is as follows:
 5. limvar_monthly_seasonal_means.py
     computes monthly and seasonal means of the zonally-averaged data
 
-6. limvar_TEM_budget.py
-    comptues TEM budget quantities on the averaged data from steps 2 and 3
+6. limvar_latband_means.py
+    computes data means over latitude bands
 
-7. limvar_daily_to_10daily.py
-    computes 10-day averages of the daily data computed in steps 5 and 8
+7. limvar_latband_10daily.py
+    computes 10-day averages of the latitude band data from step 6
+
+8. limvar_TEM_budget_monthly.py
+    comptues TEM budget quantities on the monthly averaged data
+
+9. limvar_TEM_budget_latbands.py
+    comptues TEM budget quantities on the latitude band-averaged data from step 6
+
+10. limvar_TEM_budget_latbands_10daily.py
+    comptues TEM budget quantities on the 10-daily latitude band-averaged data from step 7
+

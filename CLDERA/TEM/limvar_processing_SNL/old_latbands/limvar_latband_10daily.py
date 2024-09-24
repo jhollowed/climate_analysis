@@ -2,7 +2,8 @@
 Joe Hollowed 
 University of Michigan 2024
 
-This script computes meridional-band  means of limvar TEM data, and limvar zonal means.
+This script computes meridional-band means of limvar TEM data, and limvar zonal means, and
+averages the result in time over 10-day intervals.
 Command line arguments are:
 
 Usage
@@ -46,43 +47,25 @@ import xarray as xr
 from datetime import datetime
 
 dailyloc = '/ascldap/users/jphollo/data/limvar/limvar_daily'
-outloc   = '/ascldap/users/jphollo/data/limvar/limvar_latbands' 
+bandloc   = '/ascldap/users/jphollo/data/limvar/limvar_latbands' 
+outloc   = '/ascldap/users/jphollo/data/limvar/limvar_latbands_10daily' 
 
+print('args: {}'.format(sys.argv))
 Nens      = int(sys.argv[1])
 massMag   = int(sys.argv[2])
 tmini     = int(sys.argv[3])
 tmaxi     = int(sys.argv[4])
 overwrite = bool(int(sys.argv[5]))
 dry       = bool(int(sys.argv[6]))
-print('args: {}'.format(sys.argv))
 
 cfb = massMag == 0   # counterfactual flag
 
-lat_bands = [slice(-90, -60), slice(-60, -20), 
-             slice(-20, 20), slice(-5, 5),
-             slice(20, 60), slice(60, 90)]
 lat_band_names = ['SHpole', 'SHmid', 'tropics', 'eq', 'NHmid', 'NHpole']
-
-def lat_band_mean(data, band_slice):
-
-    try:
-        data = data.drop_vars('time_bnds')
-    except ValueError:
-        pass
-    
-    data_weights = np.cos(np.deg2rad(data.lat))
-    data_weights.name = 'weights'
-    
-    data_lat_band = data.sel(lat=band_slice)
-    data_lat_band = data_lat_band.weighted(data_weights)
-    data_lat_band = data_lat_band.mean('lat')
-
-    return data_lat_band
 
 
 # ----------------------------------------------------------------
     
-for i in range(len(lat_bands)):
+for i in range(len(lat_band_names)):
     print('\n============== working on lat band {}'.format(lat_band_names[i]))
 
     # ---- First average TEM data
@@ -92,63 +75,68 @@ for i in range(len(lat_bands)):
         qstr  = ['','_TRACER-AOA','_TRACER-E90j'][int(qi)]
         print('====== working on tracer {}...'.format(qi))
         if(not cfb):
-            enstem = sorted(glob.glob('{}/*{}Tg*ens{}*.eam.h1*TEM*L45{}.nc'.format(
+            enstem = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h1*TEM*L45{}.nc'.format(
                                         dailyloc, massMag, Nens, qstr)))[0]
         else:
-            enstem = sorted(glob.glob('{}/*ens{}*.cf.eam.h1*TEM*L45{}.nc'.format(
+            enstem = sorted(glob.glob('{}/*ens{}.cf.eam.h1*TEM*L45{}.nc'.format(
                                         dailyloc, Nens, qstr)))[0]
        
         print('time concatenated file: {}'.format(enstem))
         name = enstem.split('/')[-1].split('.nc')[0]
         name = name.split('199')[0] + name.split('000_')[-1]
+        band_file = '{}/{}_latband_{}.nc'.format(bandloc, name, lat_band_names[i])
+        outfile = '{}/{}_latband_{}_10daily.nc'.format(outloc, name, lat_band_names[i])
         
-        print('---- computing {} band mean...'.format(lat_band_names[i]))
+        print('---- computing 10-day average for band {}...'.format(lat_band_names[i]))
         if(not dry): 
             
             print('reading data...')
-            tem = xr.open_dataset(enstem)
+            band_avg = xr.open_dataset(band_file)
             
             # skip if exists
-            outfile = '{}/{}_latband_{}.nc'.format(outloc, name, lat_band_names[i])
             existing = glob.glob(outfile)
             if(len(existing) > 0 and not overwrite): 
-                print('{} lat band file exists; skipping...'.format(lat_band_names[i]))
+                print('{} lat band 10-day average file exists; skipping...'.format(
+                                                                 lat_band_names[i]))
             else:
                 print('averaging data...')
-                tem = lat_band_mean(tem, lat_bands[i])
+                # average data in 10-day segments, 
+                band_avg = band_avg.resample(time='10D').mean('time')
                 print('writing out...')
-                tem.to_netcdf(outfile)
-        
-
+                band_avg.to_netcdf(outfile)
+            
     # ---- Now do the same for the zonal mean data
     print('======== locating zonal mean data for ens{}, {} Tg...'.format(Nens, massMag))
 
     if(not cfb):
-        enszm   = sorted(glob.glob('{}/*{}Tg*ens{}*.eam.h1*zonalmeans.nc'.format(
+        enszm   = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h1*zonalmeans.nc'.format(
                                     dailyloc, massMag, Nens)))[0]
     else:
-        enszm   = sorted(glob.glob('{}/*ens{}*.cf.eam.h1*zonalmeans.nc'.format(
-                                    dailyloc, Nens, qstr)))[0]
+        enszm   = sorted(glob.glob('{}/*ens{}.cf.eam.h1*zonalmeans.nc'.format(
+                                    dailyloc, Nens)))[0]
 
-    print('time concatenated file: {}'.format(enstem))
+    print('time concatenated file: {}'.format(enszm))
     name = enszm.split('/')[-1].split('.nc')[0]
     name = name.split('199')[0] + name.split('000_')[-1]
+    band_file = '{}/{}_latband_{}.nc'.format(bandloc, name, lat_band_names[i])
+    outfile = '{}/{}_latband_{}_10daily.nc'.format(outloc, name, lat_band_names[i])
 
-
-    print('---- computing {} band mean...'.format(lat_band_names[i]))
+    print('---- computing 10-day average for band {}...'.format(lat_band_names[i]))
     if(not dry): 
         
         print('reading data...')
-        zm   = xr.open_dataset(enszm)
+        band_avg = xr.open_dataset(band_file)
         
         # skip if exists
-        outfile = '{}/{}_latband_{}.nc'.format(outloc, name, lat_band_names[i])
         existing = glob.glob(outfile)
         if(len(existing) > 0 and not overwrite): 
-            print('{} lat band file exists; skipping...'.format(lat_band_names[i]))
+            print('{} lat band 10-day average file exists; skipping...'.format(
+                                                             lat_band_names[i]))
         else:
             print('averaging data...')
-            zm = lat_band_mean(zm, lat_bands[i])
+            band_avg = band_avg.resample(time='10D').mean('time')
             
             print('writing out...')
-            zm.to_netcdf(outfile)
+            band_avg.to_netcdf(outfile)
+
+    # ADD CODE TO ALSO WRITEOUT THE 10-DAY AVERAGE OF THIS TIME SERIES

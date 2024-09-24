@@ -6,7 +6,7 @@ Command line arguments are:
 
 Usage
 -----
-python ./limvar_zonalmeans.py [Nens] [histnum] [massMag] [tmini] [tmaxi] [overwrite] [dry] [add_tropopause]
+python ./limvar_zonalmeans.py [Nens] [histnum] [massMag] [tmini] [tmaxi] [overwrite] [dry]
 
 Parameters
 ----------
@@ -75,31 +75,19 @@ print('args: {}'.format(sys.argv))
 if(histnum == 0):
     temloc = '/ascldap/users/jphollo/data/limvar/limvar_monthly'
 if(histnum == 1):
-    #temloc = '/ascldap/users/jphollo/data/limvar/limvar_daily'
-    temloc = '/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar_src_tag/tem_processed/timeConcat_zonalMeans'
+    temloc = '/ascldap/users/jphollo/data/limvar/limvar_daily'
 
 cfb = massMag == 0  # counterfactual flag
 L   = 45            # spherical harmonic max order for TEM zonal averaging
 zm_debug = False    # whether or not to turn on debugging output from the zonal averager
-
-# if Nens was >90, this will denote the non-source-tagged ensemble
-if(Nens < 90):
-    no_src_tag = False
-    massStr = '.{}Tg.'.format(massMag)
-else:
-    massStr = ''
-    no_src_tag = True
-# the non-source-tagged ensemble only exists for 10 Tg and 0 Tg
-if(massMag != 0 and massMag != 10 and no_src_tag):
-    raise RuntimeError('must have massMag = 10 or 0 for the non-source tagged ensemble')
 
 # ----------------------------------------------------------------
 
 # get ensemble member data
 print('locating data...')
 if(not cfb):
-    enshist = sorted(glob.glob('{}/*{}*ens{}.eam*h{}*'.format(
-                               interploc, massStr, Nens, histnum)))[tmini:tmaxi+1]
+    enshist = sorted(glob.glob('{}/*{}Tg*ens{}.eam*h{}*'.format(
+                               interploc, massMag, Nens, histnum)))[tmini:tmaxi+1]
 else:
     enshist = sorted(glob.glob('{}/*ens{}.cf.*h{}*'.format(
                                interploc, Nens, histnum)))[tmini:tmaxi+1]
@@ -132,11 +120,7 @@ for i in range(len(enshist)):
         else:
             print('output exists, but add_tropopause is True; '\
                   'reading existing zonal mean data...')
-            zmdata = xr.load_dataset(outfile)
-            if('TROP_P' in zmdata.data_vars and not overwrite):
-                print('TROP_P already present in existing zonal mean data, and overwrite'\
-                      'is not True; skipping...')
-                continue
+            zmdata = xr.open_dataset(outfile)
         
     # open TEM data, get output lat
     temdata = xr.open_dataset(temfile)
@@ -192,11 +176,14 @@ for i in range(len(enshist)):
         zm_ta  = ZM.sph_zonal_mean(data['T'].T)
         print('wap...')
         zm_wap = ZM.sph_zonal_mean(data['OMEGA'].T)
-        if(not no_src_tag):
-            print('aoa...')
-            zm_aoa = ZM.sph_zonal_mean(data['AOA'].T)
-            print('e90...')
-            zm_e90 = ZM.sph_zonal_mean(data['E90j'].T)
+        print('aoa...')
+        zm_aoa = ZM.sph_zonal_mean(data['AOA'].T)
+        print('e90...')
+        zm_e90 = ZM.sph_zonal_mean(data['E90j'].T)
+        print('trop_p...')
+        zm_tropp = ZM.sph_zonal_mean(data['TROP_P'].T)
+        print('trop_z...')
+        zm_tropz = ZM.sph_zonal_mean(data['TROP_P'].T)
         
         # if operating on monthly data, also zonally average gravity wave forcing
         if(histnum == 0):
@@ -206,13 +193,10 @@ for i in range(len(enshist)):
             zm_gw2 = ZM.sph_zonal_mean(data['UTGWORO'].T)
             print('gw3...')
             zm_gw3 = ZM.sph_zonal_mean(data['UTGWSPEC'].T)
-       
-            if(not no_src_tag):
-                data = xr.merge([zm_ua, zm_va, zm_ta, zm_wap, zm_aoa, zm_e90, 
-                                 zm_gw1, zm_gw2, zm_gw3])
-            else:
-                data = xr.merge([zm_ua, zm_va, zm_ta, zm_wap, 
-                                 zm_gw1, zm_gw2, zm_gw3])
+            
+            # merge all varaibles to Dataset
+            data = xr.merge([zm_ua, zm_va, zm_ta, zm_wap, zm_aoa, zm_e90, 
+                             zm_tropp, zm_tropz, zm_gw1, zm_gw2, zm_gw3])
 
         # if operating on daily data, compute tendencies
         if(histnum == 1):
@@ -222,27 +206,22 @@ for i in range(len(enshist)):
             zm_utend.name = 'UTEND'
             zm_utend.attrs['long_name'] = 'U tendency'
             zm_utend.attrs['units']     = 'm/s/s'
-           
-            if(not no_src_tag):
-                zm_aoatend = zm_aoa.diff('time', label='lower') # in day/day
-                zm_aoatend = zm_aoatend/24/60/60  # in day/s
-                zm_aoatend.name = 'AOATEND'
-                zm_aoatend.attrs['long_name'] = 'AOA tendency'
-                zm_aoatend.attrs['units']     = 'day/s'
-               
-                zm_e90tend = zm_e90.diff('time', label='lower') # in kg/kg/days
-                zm_e90tend = zm_e90tend/24/60/60  # in kg/kg/s
-                zm_e90tend.name = 'E90TEND'
-                zm_e90tend.attrs['long_name'] = 'E90 tendency'
-                zm_e90tend.attrs['units']     = 'kg/kg/s'
             
-                # merge all varaibles to Dataset
-                data = xr.merge([zm_ua, zm_va, zm_ta, zm_wap, zm_aoa, zm_e90, 
-                                 zm_utend, zm_aoatend, zm_e90tend])
-            else:
-                # merge all varaibles to Dataset
-                data = xr.merge([zm_ua, zm_va, zm_ta, zm_wap, zm_utend])
-
+            zm_aoatend = zm_aoa.diff('time', label='lower') # in day/day
+            zm_aoatend = zm_aoatend/24/60/60  # in day/s
+            zm_aoatend.name = 'AOATEND'
+            zm_aoatend.attrs['long_name'] = 'AOA tendency'
+            zm_aoatend.attrs['units']     = 'day/s'
+           
+            zm_e90tend = zm_e90.diff('time', label='lower') # in kg/kg/days
+            zm_e90tend = zm_e90tend/24/60/60  # in kg/kg/s
+            zm_e90tend.name = 'E90TEND'
+            zm_e90tend.attrs['long_name'] = 'E90 tendency'
+            zm_e90tend.attrs['units']     = 'kg/kg/s'
+        
+            # merge all varaibles to Dataset
+            data = xr.merge([zm_ua, zm_va, zm_ta, zm_wap, zm_aoa, zm_e90, 
+                             zm_utend, zm_aoatend, zm_e90tend])
         
         # sanity check for nans. 180*72 nans are expected for each of the tendency 
         # variables UTEND, AOATEND, and E90TEND, since the tendency at the final

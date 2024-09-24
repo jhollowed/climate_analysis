@@ -8,7 +8,7 @@ Command line arguments are:
 
 Usage
 -----
-python ./limvar_timeConcat.py [Nens] [histnum] [massMag] [tmini] [tmaxi] [overwrite] [dry]
+python ./limvar_zinterp.py [Nens] [histnum] [massMag] [tmini] [tmaxi] [overwrite] [dry]
 
 Parameters
 ----------
@@ -48,7 +48,6 @@ import pdb
 import glob
 import dask
 import copy
-import os
 import os.path
 import numpy as np
 import xarray as xr
@@ -56,8 +55,7 @@ from datetime import datetime
 
 zmloc = '/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar_src_tag/tem_processed/interp_to_pressure_zonalMeans'
 temloc = '/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar_src_tag/tem_processed/tem_output'
-outloc='/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar_src_tag/tem_processed/timeConcat_zonalMeans'
-#outloc = '/ascldap/users/jphollo/data/limvar/limvar_daily' 
+outloc = '/ascldap/users/jphollo/data/limvar/limvar_daily' 
 
 Nens      = int(sys.argv[1])
 histnum   = int(sys.argv[2])
@@ -72,30 +70,19 @@ cfb = massMag == 0   # counterfactual flag
 
 skip_tem = 0 # flag to skip TEM data and concatenate only the zonal-mean model variables
 
-# if Nens was >90, this will denote the non-source-tagged ensemble
-if(Nens < 90):
-    no_src_tag = False
-    massStr = '.{}Tg.'.format(massMag)
-else:
-    massStr = ''
-    no_src_tag = True
-# the non-source-tagged ensemble only exists for 10 Tg and 0 Tg
-if(massMag != 0 and massMag != 10 and no_src_tag):
-    raise RuntimeError('must have massMag = 10 or 0 for the non-source tagged ensemble')
-
 # ----------------------------------------------------------------
+
 if(histnum == 1 and not skip_tem):
 
     # ---- First concatenate TEM data, if operating on daily data
     print('locating TEM data for ens{}, {} Tg...'.format(Nens, massMag))
     # loop over tracers
     for qi in [0, 1, 2]:
-        if(qi > 0 and no_src_tag): continue # no tracers for the non-source tagged ensemble
         qstr  = ['','_TRACER-AOA','_TRACER-E90j'][int(qi)]
         print('working on tracer {}...'.format(qi))
         if(not cfb):
-            enshist = sorted(glob.glob('{}/*{}*ens{}.eam.h{}*TEM*L45{}.nc'.format(
-                                        temloc, massStr, Nens, histnum, qstr)))
+            enshist = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h{}*TEM*L45{}.nc'.format(
+                                        temloc, massMag, Nens, histnum, qstr)))
         else:
             enshist = sorted(glob.glob('{}/*ens{}.cf.eam.h{}*TEM*L45{}.nc'.format(
                                         temloc, Nens, histnum, qstr)))
@@ -103,25 +90,21 @@ if(histnum == 1 and not skip_tem):
         print('first file: {}'.format(enshist[0]))
         print('last file: {}'.format(enshist[-1]))
         if(not dry): 
+            print('reading data...')
+            enshistdat = [xr.open_dataset(hist) for hist in enshist]
+            print('combining data...')
+            ensconcat = xr.concat(enshistdat, dim='time')
+            print('writing out...')
             name = enshist[0].split('/')[-1]
-            outfile = '{}/{}'.format(outloc, name)
-            if(os.path.exists(outfile) and not overwrite):
-                print('file exists; skipping...')
-            else:
-                print('reading data...')
-                enshistdat = [xr.load_dataset(hist) for hist in enshist]
-                print('combining data...')
-                ensconcat = xr.concat(enshistdat, dim='time')
-                print('writing out...')
-                ensconcat.to_netcdf(outfile)
+            ensconcat.to_netcdf('{}/{}'.format(outloc, name))
 
 if(histnum == 0 or histnum == 1):
 
     # ---- Now do the same for the zonal mean data
     print('locating zonal mean data for ens{}, {} Tg, h{}...'.format(Nens, massMag, histnum))
     if(not cfb):
-        enshist = sorted(glob.glob('{}/*{}*ens{}.eam.h{}*.nc'.format(
-                                    zmloc, massStr, Nens, histnum)))
+        enshist = sorted(glob.glob('{}/*{}Tg*ens{}.eam.h{}*.nc'.format(
+                                    zmloc, massMag, Nens, histnum)))
     else:
         enshist = sorted(glob.glob('{}/*ens{}.cf.eam.h{}*.nc'.format(
                                     zmloc, Nens, histnum)))
@@ -129,15 +112,10 @@ if(histnum == 0 or histnum == 1):
     print('first file: {}'.format(enshist[0]))
     print('last file: {}'.format(enshist[-1]))
     if(not dry):
+        print('reading data...')
+        enshistdat = [xr.open_dataset(hist) for hist in enshist]
+        print('combining data...')
+        ensconcat = xr.concat(enshistdat, dim='time')
+        print('writing out...')
         name = enshist[0].split('/')[-1]
-        outfile = '{}/{}'.format(outloc, name)
-        if(os.path.exists(outfile) and not overwrite):
-            print('file exists; skipping...')
-        else:
-            print('reading data...')
-            enshistdat = [xr.load_dataset(hist) for hist in enshist]
-            print('combining data...')
-            ensconcat = xr.concat(enshistdat, dim='time')
-            ensconcat = ensconcat.drop_vars('time_bnds')
-            print('writing out...')
-            ensconcat.to_netcdf(outfile)
+        ensconcat.to_netcdf('{}/{}'.format(outloc, name))

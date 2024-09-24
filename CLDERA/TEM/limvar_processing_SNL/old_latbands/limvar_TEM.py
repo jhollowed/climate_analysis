@@ -58,27 +58,16 @@ print('args: {}'.format(sys.argv))
 cfb = massMag == 0 # counterfactual flag 
 L   = 45           # spherical harmonic max order for TEM zonal averaging
 
-# if Nens was >90, this will denote the non-source-tagged ensemble
-if(Nens < 90):
-    no_src_tag = False
-    massStr = '.{}Tg.'.format(massMag)
-else:
-    massStr = ''
-    no_src_tag = True
-# the non-source-tagged ensemble only exists for 10 Tg and 0 Tg
-if(massMag != 0 and massMag != 10 and no_src_tag):
-    raise RuntimeError('must have massMag = 10 or 0 for the non-source tagged ensemble')
-
 # ----------------------------------------------------------------
 
 # get ensemble member data
 print('locating data...')
 if(not cfb):
-    enshist = sorted(glob.glob('{}/*{}*ens{}.eam*h1*'.format(
-                       interploc, massStr, Nens)))[tmini:tmaxi+1]
+    enshist = sorted(glob.glob('{}/*{}Tg*ens{}.eam*h1*'.format(
+                               interploc, massMag, Nens)))[tmini:tmaxi+1]
 else:
     enshist = sorted(glob.glob('{}/*ens{}.cf.*h1*'.format(
-                          interploc, Nens)))[tmini:tmaxi+1]
+                               interploc, Nens)))[tmini:tmaxi+1]
 
 # compute TEM for each history file in this time range
 print('computing ensemble TEM...')
@@ -102,18 +91,15 @@ for i in range(len(enshist)):
     print('---- computing TEM for file {}...'.format(name))
     if(dry): exit(0)
      
-    ua, va, ta, wap, lat, p0 = hist['U'], hist['V'], hist['T'], hist['OMEGA'],\
-                               hist['lat'], float(hist['P0'].values)
-    if(no_src_tag):
-        q = None
-    else:
-        q = [hist['AOA'], hist['E90j']]
- 
-    tem = pt.TEMDiagnostics(ua, va, ta, wap, lat, q=q, p0=p0, L=L,
+    ua, va, ta, wap, lat, p = hist['U'], hist['V'], hist['T'], hist['OMEGA'],\
+                              hist['lat'], hist['plev']*100
+    q                       = [hist['AOA'], hist['E90j']]
+    p0                      = float(hist['P0'].values)
+  
+    tem = pt.TEMDiagnostics(ua, va, ta, wap, p, lat, q=q, p0=p0, L=L,
                             overwrite_map=False, debug_level=1, grid_name='ne30pg2')
 
     # run TEM
     tem.to_netcdf(loc=outdir, prefix=name, include_attrs=False)
-    if(not no_src_tag):
-        # run TEM for tracers
-        tem.q_to_netcdf(loc=outdir, prefix=name, include_attrs=False)
+    # run TEM for tracers
+    tem.q_to_netcdf(loc=outdir, prefix=name, include_attrs=False)
