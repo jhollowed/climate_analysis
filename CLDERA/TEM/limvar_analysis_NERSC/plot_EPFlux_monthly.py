@@ -18,13 +18,26 @@ year = int(sys.argv[2])  # year to plot
 overlay_panel = bool(int(sys.argv[3])) # whether or not to render fourth panel with impact overlay on cf
 try:                     # if month not provided, plot entire calendar
     month = int(sys.argv[4])
-
 except (IndexError, ValueError):
     month = None
 try:
     q    = sys.argv[5]   # either 'aoa', 'e90', 'none', or not passed
 except IndexError:
     q = None
+try:
+    var2 = sys.argv[6]   # an optonal second variable to over-plot in contours
+except IndexError:
+    var2 = None
+try:
+    q2 = sys.argv[7]   # either 'aoa', 'e90', or 'none' for the optional second variable 
+                       # to over-plot in contours
+except IndexError:
+    q2 = None
+try:
+    vec1 = sys.argv[8]   # optional variables to plot as vector field
+    vec2 = sys.argv[9]
+except IndexError:
+    vec1, vec2 = None, None
 
 
 loc = '/pscratch/sd/j/jhollo/E3SM/historical_data/limvar/analysis'
@@ -81,43 +94,170 @@ data_tropp, cf_tropp, impact_tropp = [data['TROP_P']/100, cf['TROP_P']/100, impa
 
 # find which dataset the variable belongs to, read
 print('extracting variable...')
+
 try:
     data, cf, impact, pval, coherence = [data[var], cf[var], impact[var], 
                                          pval[var], coherence[var]]
 except KeyError: pass
 try:
+    if(var2 is not None):
+        data2, cf2, impact2, pval2, coherence2 = [data[var2], cf[var2], impact[var2], 
+                                                  pval[var2], coherence[var2]]
+except KeyError: pass
+try:
+    if(vec1 is not None and vec2 is not None):
+        data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
+            [data[vec1], cf[vec1], impact[vec1], pval[vec1], coherence[vec1]]
+        data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
+            [data[vec2], cf[vec2], impact[vec2], pval[vec2], coherence[vec2]]
+except KeyError: pass
+
+try:
     data, cf, impact, pval, coherence = [tem_data[var], tem_cf[var], tem_impact[var], 
                                          tem_pval[var], tem_coherence[var]]
 except KeyError: pass
+try:
+    if(var2 is not None):
+        data2, cf2, impact2, pval2, coherence2 = [tem_data[var2], tem_cf[var2], tem_impact[var2], 
+                                                  tem_pval[var2], tem_coherence[var2]]
+except KeyError: pass
+try:
+    if(vec1 is not None and vec2 is not None):
+        data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
+            [tem_data[vec1], tem_cf[vec1], tem_impact[vec1], tem_pval[vec1], tem_coherence[vec1]]
+        data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
+            [tem_data[vec2], tem_cf[vec2], tem_impact[vec2], tem_pval[vec2], tem_coherence[vec2]]
+except KeyError: pass
+
 try:
     data, cf, impact, pval, coherence = [budget_data[var], budget_cf[var], budget_impact[var], 
                                          budget_pval[var], budget_coherence[var]]
 except KeyError: pass
 try:
-    if(q == 'aoa'):
+    if(var2 is not None):
+        data2, cf2, impact2, pval2, coherence2 = [budget_data[var2], budget_cf[var2], 
+                                                  budget_impact[var2], budget_pval[var2], 
+                                                  budget_coherence[var2]]
+except KeyError: pass
+try:
+    if(vec1 is not None and vec2 is not None):
+        data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
+            [budget_data[vec1], budget_cf[vec1], budget_impact[vec1], 
+             budget_pval[vec1], budget_coherence[vec1]]
+        data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
+            [budget_data[vec2], budget_cf[vec2], budget_impact[vec2], 
+             budget_pval[vec2], budget_coherence[vec2]]
+except KeyError: pass
+
+if(q == 'aoa'):
+    try:
         data, cf, impact, pval, coherence = [aoa_tem_data[var], aoa_tem_cf[var], aoa_tem_impact[var], 
                                              aoa_tem_pval[var], aoa_coherence[var]]
         var = '{}_aoa'.format(var)
-    elif(q == 'e90'):
+    except KeyError: pass
+    try:
+        if(var2 is not None):
+            data2, cf2, impact2, pval2, coherence2 = [aoa_tem_data[var2], budget_cf[var2], 
+                                                      aoa_tem_impact[var2], budget_pval[var2], 
+                                                      aoa_tem_coherence[var2]]
+        var2 = '{}_aoa'.format(var2)
+    except KeyError: pass
+    try:
+        if(vec1 is not None and vec2 is not None):
+            data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
+                [aoa_tem_data[vec1], aoa_tem_cf[vec1], aoa_tem_impact[vec1], 
+                 aoa_tem_pval[vec1], aoa_tem_coherence[vec1]]
+            data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
+                [aoa_tem_data[vec2], aoa_tem_cf[vec2], aoa_tem_impact[vec2], 
+                 aoa_tem_pval[vec2], aoa_tem_coherence[vec2]]
+        vec1 = '{}_aoa'.format(vec1)
+        vec2 = '{}_aoa'.format(vec2)
+    except KeyError: pass
+
+elif(q == 'e90'):
+    try:
         data, cf, impact, pval, coherence = [e90_tem_data[var], e90_tem_cf[var], e90_tem_impact[var], 
                                              e90_tem_pval[var], e90_coherence[var]]
         var = '{}_e90'.format(var)
-except KeyError: pass
-try:
-    if(q == 'aoa'):
+    except KeyError: pass
+    try:
+        if(var2 is not None):
+            data2, cf2, impact2, pval2, coherence2 = [e90_tem_data[var2], budget_cf[var2], 
+                                                      e90_tem_impact[var2], budget_pval[var2], 
+                                                      e90_tem_coherence[var2]]
+        var2 = '{}_e90'.format(var2)
+    except KeyError: pass
+    try:
+        if(vec1 is not None and vec2 is not None):
+            data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
+                [e90_tem_data[vec1], e90_tem_cf[vec1], e90_tem_impact[vec1], 
+                 e90_tem_pval[vec1], e90_tem_coherence[vec1]]
+            data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
+                [e90_tem_data[vec2], e90_tem_cf[vec2], e90_tem_impact[vec2], 
+                 e90_tem_pval[vec2], e90_tem_coherence[vec2]]
+        vec1 = '{}_e90'.format(vec1)
+        vec2 = '{}_e90'.format(vec2)
+    except KeyError: pass
+
+if(q == 'aoa'):
+    try:
         data, cf, impact, pval, coherence = [aoa_budget_data[var], aoa_budget_cf[var], 
                                              aoa_budget_impact[var], aoa_budget_pval[var], 
                                              aoa_coherence[var]]
         var = '{}_aoa'.format(var)
-    elif(q == 'e90'):
+    except KeyError: pass
+    try:
+        if(var2 is not None):
+            data2, cf2, impact2, pval2, coherence2 = [aoa_budget_data[var2], budget_cf[var2], 
+                                                      aoa_budget_impact[var2], budget_pval[var2], 
+                                                      aoa_budget_coherence[var2]]
+        var2 = '{}_aoa'.format(var2)
+    except KeyError: pass
+    try:
+        if(vec1 is not None and vec2 is not None):
+            data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
+                [aoa_budget_data[vec1], aoa_budget_cf[vec1], aoa_budget_impact[vec1], 
+                 aoa_budget_pval[vec1], aoa_budget_coherence[vec1]]
+            data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
+                [aoa_budget_data[vec2], aoa_budget_cf[vec2], aoa_budget_impact[vec2], 
+                 aoa_budget_pval[vec2], aoa_budget_coherence[vec2]]
+        vec1 = '{}_aoa'.format(vec1)
+        vec2 = '{}_aoa'.format(vec2)
+    except KeyError: pass
+
+elif(q == 'e90'):
+    try:
         data, cf, impact, pval, coherence = [e90_budget_data[var], e90_budget_cf[var], 
                                              e90_budget_impact[var], e90_budget_pval[var], 
                                              e90_coherence[var]]
         var = '{}_e90'.format(var)
-except KeyError: pass
+    except KeyError: pass
+    try:
+        if(var2 is not None):
+            data2, cf2, impact2, pval2, coherence2 = [e90_budget_data[var2], budget_cf[var2], 
+                                                      e90_budget_impact[var2], budget_pval[var2], 
+                                                      e90_budget_coherence[var2]]
+        var2 = '{}_e90'.format(var2)
+    except KeyError: pass
+    try:
+        if(vec1 is not None and vec2 is not None):
+            data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
+                [e90_budget_data[vec1], e90_budget_cf[vec1], e90_budget_impact[vec1], 
+                 e90_budget_pval[vec1], e90_budget_coherence[vec1]]
+            data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
+                [e90_budget_data[vec2], e90_budget_cf[vec2], e90_budget_impact[vec2], 
+                 e90_budget_pval[vec2], e90_budget_coherence[vec2]]
+        vec1 = '{}_e90'.format(vec1)
+        vec2 = '{}_e90'.format(vec2)
+    except KeyError: pass
 
 # if variable hasn't been found by here, it doesn't exist
 assert isinstance(data, xr.core.dataarray.DataArray), 'variable {} not found!'.format(var)
+if(var2 is not None):
+    assert isinstance(data2, xr.core.dataarray.DataArray), 'variable {} not found!'.format(var2)
+if(vec1 is not None and vec2 is not None):
+    assert isinstance(data_vec1, xr.core.dataarray.DataArray), 'variable {} not found!'.format(vec1)
+    assert isinstance(data_vec2, xr.core.dataarray.DataArray), 'variable {} not found!'.format(vec2)
 
 # --------------------------------------------------------------------------
 
@@ -126,52 +266,84 @@ plev = data.plev
 time = data.time
 years = np.array([t.year for t in time.values])
 
-# --- do time slicing
-if(year == 1991): ti, tf = 0, 6
-elif(year == 1992): ti, tf = 7, 7+12
-elif(year == 1993): ti, tf, = 19, 19+12
-elif(year == 1994): ti, tf, = 30, len(years)-1
-tsl       = slice(ti, tf)
-data      = data.isel(time=tsl)
-cf        = cf.isel(time=tsl)
-impact    = impact.isel(time=tsl)
-pval      = pval.isel(time=tsl)
-coherence = coherence.isel(time=tsl)
-time      = data.time
-
-# extract single month if provided
-if(month is not None):
-    tidx      = [t.month for t in time.values].index(month)
-    tidx      = slice(tidx, tidx+1)
-    data      = data.isel(time=tidx)
-    cf        = cf.isel(time=tidx)
-    impact    = impact.isel(time=tidx)
-    pval      = pval.isel(time=tidx)
-    coherence = coherence.isel(time=tidx)
-    time      = data.time
-
-# --- do vertical slicing
 pmin, pmax = 1, 400
 levslice  = slice(pmin, pmax)
 plev      = plev.sel(plev = levslice)
-data      = data.sel(plev = levslice)
-cf        = cf.sel(plev = levslice)
-impact    = impact.sel(plev = levslice)
-pval      = pval.sel(plev = levslice)
-coherence = coherence.sel(plev = levslice)
 
-# ---- get plotting settings for this variable
-opt = variable_plotting_settings.lat_p_plots
-data_levels    = opt[var]['data_lev']
-impact_levels  = opt[var]['impact_lev']
-data_norm      = opt[var]['data_norm']
-impact_norm    = opt[var]['impact_norm']
-scaling        = opt[var]['scaling']
-impact_scaling = opt[var]['impact_scaling']
-units          = opt[var]['units']
-impact_units   = opt[var]['impact_units']
-cmap           = opt[var]['cmap']
-fmt            = opt[var]['fmt']
+def do_slicing(data_in, cf_in, impact_in, pval_in, coherence_in):
+    # --- do time slicing
+    if(year == 1991): ti, tf = 0, 6
+    elif(year == 1992): ti, tf = 7, 7+12
+    elif(year == 1993): ti, tf, = 19, 19+12
+    elif(year == 1994): ti, tf, = 30, len(years)-1
+    tsl          = slice(ti, tf)
+    data_in      = data_in.isel(time=tsl)
+    cf_in        = cf_in.isel(time=tsl)
+    impact_in    = impact_in.isel(time=tsl)
+    pval_in      = pval_in.isel(time=tsl)
+    coherence_in = coherence_in.isel(time=tsl)
+    
+    # extract single month if provided
+    if(month is not None):
+        tidx         = [t.month for t in data_in.time.values].index(month)
+        tidx         = slice(tidx, tidx+1)
+        data_in      = data_in.isel(time=tidx)
+        cf_in        = cf_in.isel(time=tidx)
+        impact_in    = impact_in.isel(time=tidx)
+        pval_in      = pval_in.isel(time=tidx)
+        coherence_in = coherence_in.isel(time=tidx)
+
+    # --- do vertical slicing
+    data_in      = data_in.sel(plev = levslice)
+    cf_in        = cf_in.sel(plev = levslice)
+    impact_in    = impact_in.sel(plev = levslice)
+    pval_in      = pval_in.sel(plev = levslice)
+    coherence_in = coherence_in.sel(plev = levslice)
+    
+    return data_in, cf_in, impact_in, pval_in, coherence_in
+
+data, cf, impact, pval, coherence = do_slicing(data, cf, impact, pval, coherence)
+time      = data.time
+data2, cf2, impact2, pval2, coherence2 = do_slicing(data2, cf2, impact2, pval2, coherence2)
+data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = do_slicing(data_vec1, cf_vec1, 
+                                                          impact_vec1, pval_vec1, coherence_vec1)
+data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = do_slicing(data_vec2, cf_vec2, 
+                                                          impact_vec2, pval_vec2, coherence_vec2)
+
+def get_settings(var_in):
+    # ---- get plotting settings for this variable
+    opt = variable_plotting_settings.lat_p_plots
+    return opt[var_in]['data_lev'], opt[var_in]['impact_lev'], opt[var_in]['data_norm'],\
+           opt[var_in]['impact_norm'], opt[var_in]['scaling'], opt[var_in]['impact_scaling'], \
+           opt[var_in]['units'], opt[var_in]['impact_units'], opt[var_in]['cmap'], opt[var_in]['fmt']
+
+data_levels, impact_levels, data_norm, impact_norm, scaling, impact_scaling, units, impact_units, cmap, fmt = get_settings(var)
+data2_levels, impact2_levels, data2_norm, impact2_norm, scaling2, impact2_scaling, units2, impact2_units, _, fmt2 = get_settings(var2)
+data_vec1_levels, impact_vec1_levels, data_vec1_norm, impact_vec1_norm, scaling_vec1, impact_vec1_scaling, units_vec1, impact_vec1_units, _, fmt_vec1 = get_settings(vec1)
+data_vec2_levels, impact_vec2_levels, data_vec2_norm, impact_vec2_norm, scaling_vec2, impact_vec2_scaling, units_vec2, impact_vec2_units, _, fmt_vec2 = get_settings(vec2)
+
+def get_defaults(var_in, scaling_in, impact_scaling_in, cmap_in, units_in, impact_units_in):
+    # ---- get default settings
+    if(var_in == 'E90j'): var = 'E90'
+    if(scaling_in is None):          scaling_in = 1
+    if(impact_scaling_in is None):   impact_scaling_in = 1
+    if(cmap_in is None):             cmap_in = 'Spectral_r'
+    if(units_in is not None):        varstr_in = '{} [{}]'.format(var_in, units_in)
+    else:                            varstr_in = var_in
+    if(impact_units_in is not None): impactstr_in = '{} impact [{}]'.format(var_in, impact_units_in)
+    else:                            impactstr_in = var_in
+    if(len(varstr_in) > 10): 
+        varstri_in = varstr_in.split(' [')[0] + '\n[' + varstr_in.split('[')[-1]
+    if(len(impactstr_in) > 10): 
+        impactstr_in = impactstr_in.split(' [')[0] + '\n[' + impactstr_in.split('[')[-1]
+    return scaling_in, impact_scaling_in, cmap_in, varstr_in, impactstr_in
+
+scaling, impact_scaling, cmap, varstr, impactstr = get_defaults(var, scaling, impact_scaling, cmap, units, impact_units) 
+scaling2, impact2_scaling, _, varstr2, impactstr2 = get_defaults(var2, scaling2, impact2_scaling, None, units2, impact2_units) 
+scaling_vec1, impact_vec1_scaling, _, varstr_vec1, impactstr_vec1 = get_defaults(vec1, scaling_vec1, impact_vec1_scaling, None, units_vec1, impact_vec1_units) 
+scaling_vec2, impact_vec2_scaling, _, varstr_vec2, impactstr_vec2 = get_defaults(vec2, scaling_vec2, impact_vec2_scaling, None, units_vec2, impact_vec2_units) 
+
+titlestr = varstr
 
 # ---- plotting settings for tropopause
 trop_lw = 3.2 # suppressed for now
@@ -180,31 +352,22 @@ trop_cf_color='pink'
 trop_ls = '-'
 trop_label = 'tropopause'
 
-# ---- get default settings
-if(var == 'E90j'): var = 'E90'
-if(scaling is None):          scaling = 1
-if(impact_scaling is None):   impact_scaling = 1
-if(cmap is None):             cmap = 'Spectral_r'
-if(units is not None):        varstr = '{} [{}]'.format(var, units)
-else:                         varstr = var
-if(impact_units is not None): impactstr = '{} impact [{}]'.format(var, impact_units)
-else:                         impactstr = var
+def scale_vars(data_in, cf_in, impact_in, scaling_in, impact_scaling_in):
+    # ---- scale variable
+    if(scaling_in == 'log'):
+        data_in   = np.log10(data_in)
+        cf_in     = np.log10(cf_in)
+    else:
+        data_in   = data_in * scaling_in
+        cf_in     = cf_in * scaling_in
+    if(impact_scaling_in == 'log'): impact_in = np.log10(impact_in)
+    else: impact_in = impact_in * impact_scaling_in
+    return data_in, cf_in, impact_in
 
-titlestr = varstr
-if(len(varstr) > 10): 
-    varstr = varstr.split(' [')[0] + '\n[' + varstr.split('[')[-1]
-if(len(impactstr) > 10): 
-    impactstr = impactstr.split(' [')[0] + '\n[' + impactstr.split('[')[-1]
-
-# ---- scale variable
-if(scaling == 'log'):
-    data   = np.log10(data)
-    cf     = np.log10(cf)
-else:
-    data   = data * scaling
-    cf     = cf * scaling
-if(impact_scaling == 'log'): impact = np.log10(impact)
-else: impact = impact * impact_scaling
+data, cf, impact = scale_vars(data, cf, impact, scaling, impact_scaling)
+data2, cf2, impact2 = scale_vars(data2, cf2, impact2, scaling2, impact2_scaling)
+data_vec1, cf_vec1, impact_vec1 = scale_vars(data_vec1, cf_vec1, impact_vec1, scaling_vec1, impact_vec1_scaling)
+data_vec2, cf_vec2, impact_vec2 = scale_vars(data_vec2, cf_vec2, impact_vec2, scaling_vec2, impact_vec2_scaling)
 
 # --- make colormap
 cmap_str = cmap
@@ -232,10 +395,14 @@ impact_cmap = colors.ListedColormap(newcolors)
 # --- set parameters
 mpl.rcParams['hatch.linewidth'] = 0.25
 var_lw = 0.75
+var2_lw = 1.5
 pthresh  = 0.05 # p-value threshold for significance
-pval_levels = [0.025, 0.05] # contours to plot in pvalue
+pval_levels = [0.025] # contours to plot in pvalue
 coherence_levels = [0.799] # contours to plot in pvalue
 coherence_color = 'yellow'
+var2_color = 'grey'
+vec_color = 'black'
+sig_color = 'yellow'
 
 # --- font sizes
 suptitlefs = 15
@@ -294,6 +461,42 @@ def get_levels(x, pp=0.5, levels=None, norm=None):
 # ---- configure levels
 data_levels, data_norm = get_levels(data, levels=data_levels, norm=data_norm)
 impact_levels, impact_norm = get_levels(impact, levels=impact_levels, norm=impact_norm)
+data2_levels, data2_norm = get_levels(data2, levels=data2_levels, norm=data2_norm)
+impact2_levels, impact2_norm = get_levels(impact2, levels=impact2_levels, norm=impact2_norm)
+data_vec1_levels, data_vec1_norm = get_levels(data_vec1, levels=data_vec1_levels, norm=data_vec1_norm)
+impact_vec1_levels, impact_vec1_norm = get_levels(impact_vec1, levels=impact_vec1_levels, norm=impact_vec1_norm)
+data_vec2_levels, data_vec2_norm = get_levels(data_vec2, levels=data_vec2_levels, norm=data_vec2_norm)
+impact_vec2_levels, impact_vec2_norm = get_levels(impact_vec2, levels=impact_vec2_levels, norm=impact_vec2_norm)
+
+# ---- scale vector data
+#sf = np.sqrt(data_vec1.plev) # scale factor
+sf = 10
+data_vecmag = (data_vec1**2 + data_vec2**2)**(1/2)
+#data_vecmag = 1
+data_vec1 = data_vec1/data_vecmag * sf
+data_vec2 = data_vec2/data_vecmag * sf
+cf_vecmag = (cf_vec1**2 + cf_vec2**2)**(1/2)
+#cf_vecmag = 1
+cf_vec1 = cf_vec1/cf_vecmag * sf
+cf_vec2 = cf_vec2/cf_vecmag * sf
+impact_vecmag = (impact_vec1**2 + impact_vec2**2)**(1/2)
+impact_vec1 = impact_vec1/impact_vecmag * sf
+impact_vec2 = impact_vec2/impact_vecmag * sf
+
+# scale vertical component by 10x
+sfv = 10 # vertical component scale factor
+data_vec2 = data_vec2*sfv
+cf_vec2 = cf_vec2*sfv
+impact_vec2 = impact_vec2*sfv
+
+# remove vectors where not significant
+mask = np.logical_or(pval_vec1 < 0.025, pval_vec2 < 0.025)
+impact_vec1 = impact_vec1.where(mask)
+impact_vec2 = impact_vec2.where(mask)
+
+# zero out var2 impact where not significant
+mask = pval2 < 0.025
+impact2 = impact2 * mask
 
 # --- make figure
 if(overlay_panel): num_plt = 4
@@ -318,23 +521,35 @@ for j in range(len(time)):
     x1 = data.isel(time=j)
     c1 = ax[0,j].contourf(lat, plev, x1.T, cmap=cmap, norm=data_norm, levels=data_levels, 
                           extend='both')
-    ax[0,j].contour(lat, plev, x1.T, colors='k', levels=data_levels, alpha=0.5, linewidths=var_lw)
+    #ax[0,j].contour(lat, plev, x1.T, colors='k', levels=data_levels, alpha=0.5, linewidths=var_lw)
     # if zero-contour exists, make bold
-    if(0 in data_levels):
-        ax[0,j].contour(lat, plev, x1.T, colors='k', levels=[0], alpha=0.5, linewidths=var_lw*1.5)
+    #if(0 in data_levels):
+    #    ax[0,j].contour(lat, plev, x1.T, colors='k', levels=[0], alpha=0.5, linewidths=var_lw*1.5)
     # overlay tropopause
     ax[0, j].plot(lat, data_troppj, ls=trop_ls, color=trop_data_color, lw=trop_lw)
+    # overlay var2
+    x1 = data2.isel(time=j)
+    ax[0,j].contour(lat, plev, x1.T, colors=var2_color, levels = data2_levels, linewidths=var2_lw)
+    # overlay vector field
+    x1 = [data_vec1.isel(time=j), data_vec2.isel(time=j)]
+    ax[0,j].quiver(lat, plev, x1[0].T, x1[1].T, color=vec_color)
 
 
     # ---- counterfactual
     x2 = cf.isel(time=j)
     c2 = ax[1,j].contourf(lat, plev, x2.T, cmap=cmap, norm=c1.norm, levels=c1.levels, extend='both')
-    ax[1,j].contour(lat, plev, x2.T, colors='k', levels=c1.levels, alpha=0.5, linewidths=var_lw)
+    #ax[1,j].contour(lat, plev, x2.T, colors='k', levels=c1.levels, alpha=0.5, linewidths=var_lw)
     # if zero-contour exists, make bold
-    if(0 in c1.levels):
-        ax[1,j].contour(lat, plev, x2.T, colors='k', levels=[0], alpha=0.5, linewidths=var_lw*2)
+    #if(0 in c1.levels):
+    #    ax[1,j].contour(lat, plev, x2.T, colors='k', levels=[0], alpha=0.5, linewidths=var_lw*2)
     # overlay tropopause
-    ax[1, j].plot(lat, cf_troppj, ls=trop_ls, color=trop_cf_color, lw=trop_lw)
+    ax[1, j].plot(lat, cf_troppj, ls=trop_ls, color=trop_cf_color, lw=trop_lw) 
+    # overlay var2
+    x2 = cf2.isel(time=j)
+    ax[1,j].contour(lat, plev, x2.T, colors=var2_color, levels = data2_levels, linewidths=var2_lw)
+    # overlay vector field
+    x2 = [cf_vec1.isel(time=j), cf_vec2.isel(time=j)]
+    ax[1,j].quiver(lat, plev, x2[0].T, x2[1].T, color=vec_color)
     
     # ---- impact
     x3 = impact.isel(time=j)
@@ -343,16 +558,22 @@ for j in range(len(time)):
     # overlay tropopause
     ax[2, j].plot(lat, cf_troppj, ls=trop_ls, color=trop_cf_color, lw=trop_lw)
     #ax[2, j].plot(lat, data_troppj, ls=trop_ls, color=trop_data_color, lw=trop_lw)
+    # overlay var2
+    x3 = impact2.isel(time=j)
+    ax[2,j].contour(lat, plev, x3.T, colors=var2_color, levels = impact2_levels, linewidths=var2_lw)
+    # overlay vector field
+    x2 = [impact_vec1.isel(time=j), impact_vec2.isel(time=j)]
+    ax[2,j].quiver(lat, plev, x2[0].T, x2[1].T, color=vec_color)
 
     # ---- imapct significance
     x4 = pval.isel(time=j)
-    c4 = ax[2,j].contour(lat, plev, x4.T, colors='k', levels=pval_levels, linewidths=var_lw*1.25)
+    c4 = ax[2,j].contour(lat, plev, x4.T, colors=sig_color, levels=pval_levels, linewidths=var_lw*1.25)
     #c5 = ax[2,j].contourf(lat, plev, x4.T, levels=[pthresh, x4.max()], 
     #                       hatches=['////'], extend='right', colors='none', alpha=0) 
     # ---- imapct coherence
     x4_c = coherence.isel(time=j)
-    c4_c = ax[2,j].contour(lat, plev, x4_c.T, colors = coherence_color, 
-                           levels=coherence_levels, linewidths=var_lw*1.25)
+    #c4_c = ax[2,j].contour(lat, plev, x4_c.T, colors = coherence_color, 
+    #                       levels=coherence_levels, linewidths=var_lw*1.25)
     c5 = ax[2,j].contourf(lat, plev, x4_c.T, levels=[0, coherence_levels[0]], 
                            hatches=['////'], extend='right', colors='none', alpha=0) 
 
@@ -477,5 +698,5 @@ for j in range(len(time)):
 print('saving figure...')
 month_str = ['_{}'.format(month), ''][month is None]
 overlay_str = ['_overlay', ''][overlay_panel is None]
-plt.savefig('figs/coherence/{}_{}{}{}.png'.format(var, year, month_str, overlay_str), dpi=200)
-#plt.show()
+#plt.savefig('figs/{}_{}{}{}.png'.format(var, year, month_str, overlay_str), dpi=200)
+plt.show()

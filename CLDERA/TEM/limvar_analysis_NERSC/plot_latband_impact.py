@@ -293,7 +293,7 @@ for bi in range(len(bands)):
     # --- make figure
     if(overlay_panel): num_plt = 4
     else:              num_plt = 3
-    fig, ax = plt.subplots(num_plt, 1, figsize=(7, 10*num_plt/4), layout='constrained')
+    fig, ax = plt.subplots(num_plt, 1, figsize=(12, 10*num_plt/4), layout='constrained')
 
     # -------------------------------------------------------
 
@@ -440,5 +440,5 @@ for bi in range(len(bands)):
 
     print('saving figure...')
     overlay_str = ['_overlay', ''][overlay_panel is None]
-    plt.savefig('figs/{}_{}{}_maxyear{}.png'.format(var, band, overlay_str, max_year), dpi=200)
+    plt.savefig('paper_figs/{}_{}{}_maxyear{}.png'.format(var, band, overlay_str, max_year), dpi=200)
 #plt.show()
