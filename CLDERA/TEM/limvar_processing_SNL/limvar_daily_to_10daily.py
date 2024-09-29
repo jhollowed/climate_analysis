@@ -80,12 +80,18 @@ else:
 if(massMag != 0 and massMag != 10 and no_src_tag):
     raise RuntimeError('must have massMag = 10 or 0 for the non-source tagged ensemble')
 
+#  CHECK THESE FLAGS BEFORE RUNNING
+SKIP_TEM    = True
+SKIP_ZM     = True
+SKIP_BUDGET = False
+
 # ----------------------------------------------------------------
 
 # ---- First average TEM data
 print('======== locating TEM data for ens{}, {} Tg...'.format(Nens, massMag))
 # loop over tracers
 for qi in [0, 1, 2]:
+    if(SKIP_TEM): continue
     if(qi > 0 and no_src_tag): continue # no tracers for the non-source tagged ensemble
     qstr  = ['','_TRACER-AOA','_TRACER-E90j'][int(qi)]
     print('====== working on tracer {}...'.format(qi))
@@ -124,45 +130,49 @@ for qi in [0, 1, 2]:
             time_avg.to_netcdf(outfile)
         
 # ---- Now do the same for the zonal mean data
-print('======== locating zonal mean data for ens{}, {} Tg...'.format(Nens, massMag))
 
-if(not cfb):
-    enszm   = sorted(glob.glob('{}/*{}*ens{}.eam.h1*zonalmeans.nc'.format(
-                                dailyloc, massStr, Nens)))[0]
-else:
-    enszm   = sorted(glob.glob('{}/*ens{}.cf.eam.h1*zonalmeans.nc'.format(
-                                dailyloc, Nens)))[0]
+if(not SKIP_ZM):
+    print('======== locating zonal mean data for ens{}, {} Tg...'.format(Nens, massMag))
 
-print('time concatenated file: {}'.format(enszm))
-name = enszm.split('/')[-1].split('.nc')[0]
-name = name.split('199')[0] + name.split('000_')[-1]
-outfile = '{}/{}_10daily.nc'.format(outloc, name)
-    
-if(os.path.isfile(outfile) and not overwrite):
-    print('file exists and overwrite=False; skipping')
-else:
-    print('---- computing 10-day average...')
-    if(not dry): 
-        # skip if exists
-        existing = glob.glob(outfile)
-        if(len(existing) > 0 and not overwrite): 
-            print('10-day average file exists; skipping...')
-        else:
-            print('reading data...')
-            time_avg = xr.open_dataset(enszm)
-            if('time_bnds' in time_avg.data_vars): time_avg = time_avg.drop_vars('time_bnds')
-            print('averaging data...')
-            #time_avg = time_avg.resample(time='10D').mean('time')
-            time_avg = time_avg.rolling(time=10, min_periods=4, center=True).mean()
-            time_avg = time_avg.isel(time=slice(9-ovr, None, 10-ovr))
-            print('writing out...')
-            time_avg.to_netcdf(outfile)
+    if(not cfb):
+        enszm   = sorted(glob.glob('{}/*{}*ens{}.eam.h1*zonalmeans.nc'.format(
+                                    dailyloc, massStr, Nens)))[0]
+    else:
+        enszm   = sorted(glob.glob('{}/*ens{}.cf.eam.h1*zonalmeans.nc'.format(
+                                    dailyloc, Nens)))[0]
+
+    print('time concatenated file: {}'.format(enszm))
+    name = enszm.split('/')[-1].split('.nc')[0]
+    name = name.split('199')[0] + name.split('000_')[-1]
+    outfile = '{}/{}_10daily.nc'.format(outloc, name)
+        
+    if(os.path.isfile(outfile) and not overwrite):
+        print('file exists and overwrite=False; skipping')
+    else:
+        print('---- computing 10-day average...')
+        if(not dry): 
+            # skip if exists
+            existing = glob.glob(outfile)
+            if(len(existing) > 0 and not overwrite): 
+                print('10-day average file exists; skipping...')
+            else:
+                print('reading data...')
+                time_avg = xr.open_dataset(enszm)
+                if('time_bnds' in time_avg.data_vars): time_avg = time_avg.drop_vars('time_bnds')
+                print('averaging data...')
+                #time_avg = time_avg.resample(time='10D').mean('time')
+                time_avg = time_avg.rolling(time=10, min_periods=4, center=True).mean()
+                time_avg = time_avg.isel(time=slice(9-ovr, None, 10-ovr))
+                print('writing out...')
+                time_avg.to_netcdf(outfile)
 
 
 # ---- Now do the same for the TEM budget data
 print('======== locating TEM budget data for ens{}, {} Tg...'.format(Nens, massMag))
 # loop over tracers
 for qi in [0, 1, 2]:
+    if(SKIP_BUDGET): continue
+    if(qi > 0): continue # TEMPORARY FOR UTEND FIXES, SKIPPING RUNNING TRACERS FOR NOW, REMOVE LATER
     if(qi > 0 and no_src_tag): continue # no tracers for the non-source tagged ensemble
     qstr  = ['','_TRACER-AOA','_TRACER-E90j'][int(qi)]
     print('====== working on tracer {}...'.format(qi))

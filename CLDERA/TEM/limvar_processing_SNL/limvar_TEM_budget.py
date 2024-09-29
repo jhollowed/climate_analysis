@@ -49,6 +49,7 @@ import os.path
 import numpy as np
 import xarray as xr
 from datetime import datetime
+from scipy import integrate
 
 Nens      = int(sys.argv[1])
 histnum   = int(sys.argv[2])
@@ -76,7 +77,7 @@ else:
     raise RuntimeError('histnum must be 0 or 1')
 
 spd = 24*60*60  # seconds per day
-tol = 1e-6      # integrated wind sanity check tolerance
+tol = 1e-5      # integrated wind sanity check tolerance
 
 # if Nens was >90, this will denote the non-source-tagged ensemble
 if(Nens < 90):
@@ -93,6 +94,7 @@ if(massMag != 0 and massMag != 10 and no_src_tag):
 # -----------------------------------------------------------------
 
 for qi in [0, 1, 2]:
+    if(qi > 0): continue # TEMPORARY FOR UTEND FIXES, SKIPPING RUNNING TRACERS FOR NOW, REMOVE LATER
     if(qi > 0 and no_src_tag): continue # no tracers for the non-source tagged ensemble
     qstr  = ['','_TRACER-AOA','_TRACER-E90j'][int(qi)]
     print('====== working on tracer {}...'.format(qi))
@@ -151,32 +153,128 @@ for qi in [0, 1, 2]:
             zm['UTDIFF'].attrs['long name'] = 'difference of UTTOTAL_NOGW and UTEND'
             zm['UTDIFF'].attrs['units'] = 'm/s2'
             
+            # ----- get integrated tendencies by starting from U on each day
+
+            # for integration methods which take N point and output N-1 points as a 
+            # numpy array (scipy), this function converts them back to an xr dataarray
+            # with dimensions and coordinates consistent with the data, and adds back
+            # the missing point at the beginning of the time series. That first point
+            # added will be all zeros, and it will be removed when later passed to
+            # merge_U_shifted()
+            def values_to_xr(values):
+                out = xr.zeros_like(zm['U'])
+                out[{'time':slice(1, None)}] = values
+                return out
+            # this function takes an integrated tendency, shfits it in time by one index, 
+            # and adds it to the zonal-mean zonal wind, such that U at t=0 is retained as 
+            # the initial condition, and the integrated tendency at t=-1 (which is 
+            # probably nan) is dropped
+            def merge_U_shifted(inttend):
+                out = zm['U'].copy()
+                out[{'time':slice(1, None)}] = inttend.isel(time=slice(None, -1)).values
+                return out
+
             # get integrated U components
             # first sanity check with UTEND
-            tmp = zm['U'] + zm['UTEND'] * spd 
-            tmp2 = zm['U']
-            tmp2[{'time':slice(1, None)}] = tmp.isel(time=slice(None, -1)).values
-            if(np.sum(np.abs(tmp2 - zm['U'])) > tol):
+            tmp = zm['U'] + zm['UTEND'] * spd
+            zm['UTEND_INT'] = merge_U_shifted(tmp)
+            if(np.max(np.abs(zm['UTEND_INT'] - zm['U'])) > tol):
                 raise RuntimeError('UTEND integration failed sanity check')
+            zm['UTEND_INT'].attrs['long name'] = 'integrated UTEND'
+            zm['UTEND_INT'].attrs['units'] = 'm/s'
             
             tmp = zm['U'] + zm['UTRESVEL'] * spd 
-            zm['UTRESVEL_INT'] = zm['U']
-            zm['UTRESVEL_INT'][{'time':slice(1, None)}] = tmp.isel(time=slice(None, -1)).values
+            zm['UTRESVEL_INT'] = merge_U_shifted(tmp)
             zm['UTRESVEL_INT'].attrs['long name'] = 'integrated UTRESVEL'
             zm['UTRESVEL_INT'].attrs['units'] = 'm/s'
             
             tmp = zm['U'] + tem['utendepfd'] * spd 
-            zm['UTEPFD_INT'] = zm['U']
-            zm['UTEPFD_INT'][{'time':slice(1, None)}] = tmp.isel(time=slice(None, -1)).values
+            zm['UTEPFD_INT'] = merge_U_shifted(tmp)
             zm['UTEPFD_INT'].attrs['long name'] = 'integrated utendepfd'
             zm['UTEPFD_INT'].attrs['units'] = 'm/s'
             
             tmp = zm['U'] + zm['UTDIFF'] * spd 
-            zm['UTDIFF_INT'] = zm['U']
+            zm['UTDIFF_INT'] = merge_U_shifted(tmp)
             zm['UTDIFF_INT'][{'time':slice(1, None)}] = tmp.isel(time=slice(None, -1)).values
             zm['UTDIFF_INT'].attrs['long name'] = 'integrated UTDIFF'
-            zm['UTDIFF_INT'].attrs['units'] = 'm/s'
+            zm['UTDIFF_INT'].attrs['units'] = 'm/s' 
             
+            # ----- get integrated tendencies by starting from U on day 0 only, summing tendencies
+            u0 = zm['U'].isel(time=0, drop=True) # initial condition
+
+            tmp = u0 + (zm['UTEND'] * spd).cumsum('time')
+            zm['UTEND_INT2'] = merge_U_shifted(tmp)
+            zm['UTEND_INT2'].attrs['long name'] = 'integrated UTEND, method 2'
+            zm['UTEND_INT2'].attrs['units'] = 'm/s'
+            
+            tmp = u0 + (zm['UTRESVEL'] * spd).cumsum('time')
+            zm['UTRESVEL_INT2'] = merge_U_shifted(tmp)
+            zm['UTRESVEL_INT2'].attrs['long name'] = 'integrated UTRESVEL, method 2'
+            zm['UTRESVEL_INT2'].attrs['units'] = 'm/s'
+            
+            tmp = u0 + (tem['utendepfd'] * spd).cumsum('time')
+            zm['UTEPFD_INT2'] = merge_U_shifted(tmp)
+            zm['UTEPFD_INT2'].attrs['long name'] = 'integrated utendepfd, method 2'
+            zm['UTEPFD_INT2'].attrs['units'] = 'm/s'
+            
+            tmp = u0 + (zm['UTDIFF'] * spd).cumsum('time')
+            zm['UTDIFF_INT2'] = merge_U_shifted(tmp)
+            zm['UTDIFF_INT2'].attrs['long name'] = 'integrated UTDIFF, method 2'
+            zm['UTDIFF_INT2'].attrs['units'] = 'm/s' 
+            
+            # ----- get integrated tendencies by starting from U on day 0 only, using trapezoid method
+            trapz = integrate.cumulative_trapezoid
+
+            tidx = zm['UTEND'].dims.index('time')
+            tmp = u0 + values_to_xr(trapz(zm['UTEND'].values, dx=spd, axis=tidx))
+            zm['UTEND_INT3'] = merge_U_shifted(tmp)
+            zm['UTEND_INT3'].attrs['long name'] = 'integrated UTEND, method 3'
+            zm['UTEND_INT3'].attrs['units'] = 'm/s'
+            
+            tidx = zm['UTRESVEL'].dims.index('time')
+            tmp = u0 + values_to_xr(trapz(zm['UTRESVEL'].values, dx=spd, axis=tidx))
+            zm['UTRESVEL_INT3'] = merge_U_shifted(tmp)
+            zm['UTRESVEL_INT3'].attrs['long name'] = 'integrated UTRESVEL, method 3'
+            zm['UTRESVEL_INT3'].attrs['units'] = 'm/s'
+            
+            tidx = tem['utendepfd'].dims.index('time')
+            tmp = u0 + values_to_xr(trapz(tem['utendepfd'].values, dx=spd, axis=tidx))
+            zm['UTEPFD_INT3'] = merge_U_shifted(tmp)
+            zm['UTEPFD_INT3'].attrs['long name'] = 'integrated utendepfd, method 3'
+            zm['UTEPFD_INT3'].attrs['units'] = 'm/s'
+            
+            tidx = zm['UTDIFF'].dims.index('time')
+            tmp = u0 + values_to_xr(trapz(zm['UTDIFF'].values, dx=spd, axis=tidx))
+            zm['UTDIFF_INT3'] = merge_U_shifted(tmp)
+            zm['UTDIFF_INT3'].attrs['long name'] = 'integrated UTDIFF, method 3'
+            zm['UTDIFF_INT3'].attrs['units'] = 'm/s' 
+            
+            # ----- get integrated tendencies by starting from U on day 0 only, using simpson method
+            simp = integrate.cumulative_simpson
+
+            tidx = zm['UTEND'].dims.index('time')
+            tmp = u0 + values_to_xr(simp(zm['UTEND'].values, dx=spd, axis=tidx))
+            zm['UTEND_INT4'] = merge_U_shifted(tmp)
+            zm['UTEND_INT4'].attrs['long name'] = 'integrated UTEND, method 4'
+            zm['UTEND_INT4'].attrs['units'] = 'm/s'
+            
+            tidx = zm['UTRESVEL'].dims.index('time')
+            tmp = u0 + values_to_xr(simp(zm['UTRESVEL'].values, dx=spd, axis=tidx))
+            zm['UTRESVEL_INT4'] = merge_U_shifted(tmp)
+            zm['UTRESVEL_INT4'].attrs['long name'] = 'integrated UTRESVEL, method 4'
+            zm['UTRESVEL_INT4'].attrs['units'] = 'm/s'
+            
+            tidx = tem['utendepfd'].dims.index('time')
+            tmp = u0 + values_to_xr(simp(tem['utendepfd'].values, dx=spd, axis=tidx))
+            zm['UTEPFD_INT4'] = merge_U_shifted(tmp)
+            zm['UTEPFD_INT4'].attrs['long name'] = 'integrated utendepfd, method 4'
+            zm['UTEPFD_INT4'].attrs['units'] = 'm/s'
+            
+            tidx = zm['UTDIFF'].dims.index('time')
+            tmp = u0 + values_to_xr(simp(zm['UTDIFF'].values, dx=spd, axis=tidx))
+            zm['UTDIFF_INT4'] = merge_U_shifted(tmp)
+            zm['UTDIFF_INT4'].attrs['long name'] = 'integrated UTDIFF, method 4'
+            zm['UTDIFF_INT4'].attrs['units'] = 'm/s' 
 
     else:
       
@@ -246,17 +344,17 @@ for qi in [0, 1, 2]:
                     raise RuntimeError('AOATEND integration failed sanity check')
                 
                 tmp = zm['AOA'] + zm['QTRESVEL'] * spd 
-                zm['QTRESVEL_INT'] = zm['AOA']
+                zm['QTRESVEL_INT'] = zm['AOA'].copy()
                 zm['QTRESVEL_INT'][{'time':slice(1, None)}] = tmp.isel(time=slice(None, -1)).values
                 zm['QTRESVEL_INT'].attrs['units'] = 'day'
                 
                 tmp = zm['AOA'] + tem['qtendetfd'] * spd 
-                zm['UTETFD_INT'] = zm['AOA']
+                zm['UTETFD_INT'] = zm['AOA'].copy()
                 zm['UTETFD_INT'][{'time':slice(1, None)}] = tmp.isel(time=slice(None, -1)).values
                 zm['UTETFD_INT'].attrs['units'] = 'day'
                 
                 tmp = zm['AOA'] + zm['QTDIFF'] * spd 
-                zm['QTDIFF_INT'] = zm['AOA']
+                zm['QTDIFF_INT'] = zm['AOA'].copy()
                 zm['QTDIFF_INT'][{'time':slice(1, None)}] = tmp.isel(time=slice(None, -1)).values
                 zm['QTDIFF_INT'].attrs['units'] = 'day'
 
@@ -284,17 +382,17 @@ for qi in [0, 1, 2]:
                     raise RuntimeError('E90TEND integration failed sanity check')
                 
                 tmp = zm['E90j'] + zm['QTRESVEL'] * spd 
-                zm['QTRESVEL_INT'] = zm['E90j']
+                zm['QTRESVEL_INT'] = zm['E90j'].copy()
                 zm['QTRESVEL_INT'][{'time':slice(1, None)}] = tmp.isel(time=slice(None, -1)).values
                 zm['QTRESVEL_INT'].attrs['units'] = 'kg/kg'
                 
                 tmp = zm['E90j'] + tem['qtendetfd'] * spd 
-                zm['UTETFD_INT'] = zm['E90j']
+                zm['UTETFD_INT'] = zm['E90j'].copy()
                 zm['UTETFD_INT'][{'time':slice(1, None)}] = tmp.isel(time=slice(None, -1)).values
                 zm['UTETFD_INT'].attrs['units'] = 'kg/kg'
                 
                 tmp = zm['E90j'] + zm['QTDIFF'] * spd 
-                zm['QTDIFF_INT'] = zm['E90j']
+                zm['QTDIFF_INT'] = zm['E90j'].copy()
                 zm['QTDIFF_INT'][{'time':slice(1, None)}] = tmp.isel(time=slice(None, -1)).values
                 zm['QTDIFF_INT'].attrs['units'] = 'kg/kg'
             
