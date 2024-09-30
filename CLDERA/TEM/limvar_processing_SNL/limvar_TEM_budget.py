@@ -162,7 +162,7 @@ for qi in [0, 1, 2]:
             zm['UTTOTAL_NOGW'].attrs['long name'] = 'sum of zonal mean UTRESVEL, utendepfd'
             zm['UTTOTAL_NOGW'].attrs['units'] = 'm/s2'
             # compute difference of TEM U tendency and measured U tendency
-            zm['UTDIFF'] = zm['UTTOTAL_NOGW'] - zm['UTEND']
+            zm['UTDIFF'] = zm['UTEND'] - zm['UTTOTAL_NOGW']
             zm['UTDIFF'].attrs['long name'] = 'difference of UTTOTAL_NOGW and UTEND'
             zm['UTDIFF'].attrs['units'] = 'm/s2'
             
@@ -196,13 +196,21 @@ for qi in [0, 1, 2]:
             zm['UTRESVEL_INT'].attrs['long name'] = 'integrated UTRESVEL'
             zm['UTRESVEL_INT'].attrs['units'] = 'm/s'
             
+            zm['UTVTEM_INT'] = integrate(u0, tem['utendvtem'])
+            zm['UTVTEM_INT'].attrs['long name'] = 'integrated utendvtem'
+            zm['UTVTEM_INT'].attrs['units'] = 'm/s'
+            
+            zm['UTWTEM_INT'] = integrate(u0, tem['utendwtem'])
+            zm['UTWTEM_INT'].attrs['long name'] = 'integrated utendwtem'
+            zm['UTWTEM_INT'].attrs['units'] = 'm/s'
+            
             zm['UTEPFD_INT'] = integrate(u0, tem['utendepfd'])
             zm['UTEPFD_INT'].attrs['long name'] = 'integrated utendepfd'
             zm['UTEPFD_INT'].attrs['units'] = 'm/s'
             
             zm['UTDIFF_INT'] = integrate(u0, zm['UTDIFF'])
             zm['UTDIFF_INT'].attrs['long name'] = 'integrated UTDIFF'
-            zm['UTDIFF_INT'].attrs['units'] = 'm/s' 
+            zm['UTDIFF_INT'].attrs['units'] = 'm/s'
 
 
     else:
