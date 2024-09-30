@@ -179,7 +179,7 @@ for qi in range(3):
             print('getting coherence')
             tem_coherence = np.sign(tem_impact) == np.sign(tem_impact_ensmean)
             tem_coherence = tem_coherence.sum(dim='ens') / N
-            tem_coherence.to_netcdf('{}/tem_impact_coherence.nc'.format(outdir))
+            tem_coherence.to_netcdf('{}/tem_impact_coherence{}.nc'.format(outdir, qstr))
 
 
 # -------------------------------------------------------
@@ -266,7 +266,7 @@ for qi in range(3):
             print('getting coherence')
             budget_coherence = np.sign(budget_impact) == np.sign(budget_impact_ensmean)
             budget_coherence = budget_coherence.sum(dim='ens') / N
-            budget_coherence.to_netcdf('{}/tem_impact_coherence.nc'.format(outdir))
+            budget_coherence.to_netcdf('{}/budget_impact_coherence{}.nc'.format(outdir, qstr))
 
 # ------------------------------------------------------------------
 

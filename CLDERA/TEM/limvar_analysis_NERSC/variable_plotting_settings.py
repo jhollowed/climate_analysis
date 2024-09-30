@@ -6,16 +6,29 @@ Providing plotting settings for indivudal limvar variables
 Each group of variable options is a dictionary containing the
 following keys:
 
-data_lev : contour levels for the forced and counterfactual run data
-impact_lev : contour levels for the (forced - counterfactual) impacts
-scaling : scaling to apply to data to be consistent with units
-units : variables units as a string
-cmap : the colormap to use for the variable
+data_lev       : contour levels for the forced and counterfactual run data
+impact_lev     : contour levels for the (forced - counterfactual) impacts
+scaling        : scaling to apply to data to be consistent with units
+impact_scaling : scaling to apply to impact to be consistent with impact units
+units          : variables units as a string
+impact_units   : variable impact units as a string
+cmap           : the colormap to use for the variable
+fmt            : string formatter for values on color bar tick labels
+norm           : sets the normalization of the colorscale. These strings are 
+                 intended to be input arguments to plotting_utils.get_cmap_norm()
+                 Options are:
+                 'linear    : linear colormap
+                 'twoslope' : separate linear color scales are used on each side 
+                              of zero, to utilize the full range 
+                 'uneven'   : the levels are non-equidistant, and colors should 
+                              be sampled evenly for each level, reagrdless of the 
+                              separation between levels
+                 'log'      : logarithmically space the colors
+                 'symlog'   : logarithmically space the colors symmetrically on 
+                              each side of zero
 '''
 
 import numpy as np
-
-# contour levels for variable
 
 UTEND_lev = [-3, -2, -1.5, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 1.5, 2, 3]
 UTEND_impactlev= [-1, -0.5, -0.1, -0.01, 0, 0.01, 0.1, 0.5, 1, 1.5]
@@ -26,26 +39,26 @@ E90TEND_impactlev = [-0.1, -1e-3, -1e-4, -1e-5, 0, 1e-5, 1e-4, 1e-3, 0.1]
 
 lat_p_plots = {
            'U': {'data_lev':np.linspace(-40, 70, 12),'impact_lev':np.linspace(-6, 6, 13), 
-                 'data_norm':None, 'impact_norm':None, 
-                 'scaling':None, 'impact_scaling':None, 
+                 'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                 'scaling':1, 'impact_scaling':1, 
                  'units':'m/s', 'impact_units':'m/s', 'cmap':None, 'fmt':None},
            'V': {'data_lev':[-2, -1, -0.5, -0.2, -0.05, 0, 0.05, 0.2, 0.5, 1], 
                  'impact_lev':[-0.25, -0.15, -0.05, -0.01, 0, 0.01, 0.05, 0.15, 0.25], 
                  'data_norm':'uneven', 'impact_norm':'uneven', 
-                 'scaling':None, 'impact_scaling':None, 
+                 'scaling':1, 'impact_scaling':1, 
                  'units':'m/s', 'impact_units':'m/s', 'cmap':None, 'fmt':None}, 
            'T': {'data_lev':np.linspace(190, 270, 9), 'impact_lev':np.linspace(-2.5, 3, 12), 
-                 'data_norm':None, 'impact_norm':None, 
-                 'scaling':None, 'impact_scaling':None, 
+                 'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                 'scaling':1, 'impact_scaling':1, 
                  'units':'K', 'impact_units':'K', 'cmap':None, 'fmt':None}, 
            'OMEGA': {'data_lev':[-1e-2, -1e-3, -1e-4, -3e-5, 0, 3e-5, 1e-4, 1e-3, 1e-2], 
                      'impact_lev':[-3e-4, -1e-4, -3e-5, -1e-5, 0, 1e-5, 3e-5, 1e-4, 3e-4], 
                      'data_norm':'uneven', 'impact_norm':'uneven', 
-                         'scaling':None, 'impact_scaling':None, 
-                         'units':'Pa/s', 'impact_units':'Pa/s', 'cmap':None, 
-                         'fmt':lambda x:'{:.0e}'.format(x).replace('e-0', 'e-').replace('e+0','e+')}, 
+                     'scaling':1, 'impact_scaling':1, 
+                     'units':'Pa/s', 'impact_units':'Pa/s', 'cmap':None, 
+                     'fmt':lambda x:'{:.0e}'.format(x).replace('e-0', 'e-').replace('e+0','e+')}, 
            'AOA': {'data_lev':np.linspace(0, 5.5, 12), 'impact_lev':np.linspace(-2.5, 2.5, 11), 
-                   'data_norm':None, 'impact_norm':None, 
+                   'data_norm':'twoslope', 'impact_norm':'twoslope', 
                    'scaling':1/365, 'impact_scaling':1/365*12, 
                    'units':'years', 'impact_units':'months', 'cmap':None, 'fmt':None}, 
            'E90j': {'data_lev':[0, 5e-4, 1e-3, 0.01, 0.1, 1, 10, 20, 50, 100], 
@@ -106,15 +119,15 @@ lat_p_plots = {
                          'scaling':86400, 'impact_scaling':86400,
                          'units':'m/s/day', 'impact_units':'m/s/day', 'cmap':None, 'fmt':None},
            'AOATEND': {'data_lev':AOATEND_lev, 'impact_lev':AOATEND_impactlev,
-                       'data_norm':None, 'impact_norm':'uneven', 
+                       'data_norm':'twoslope', 'impact_norm':'uneven', 
                        'scaling':86400, 'impact_scaling':86400, 
                        'units':'day/day', 'impact_units':'day/day', 'cmap':None, 'fmt':None}, 
            'QTTOTAL_aoa': {'data_lev':AOATEND_lev, 'impact_lev':AOATEND_impactlev, 
-                           'data_norm':None, 'impact_norm':None, 
+                           'data_norm':'twoslope', 'impact_norm':'twoslope', 
                            'scaling':86400, 'impact_scaling':86400, 
                            'units':'day/day', 'impact_units':'day/day', 'cmap':None, 'fmt':None}, 
            'QTDIFF_aoa': {'data_lev':AOATEND_lev, 'impact_lev':AOATEND_impactlev, 
-                          'data_norm':None, 'impact_norm':None, 
+                          'data_norm':'twoslope', 'impact_norm':'twoslope', 
                           'scaling':86400, 'impact_scaling':86400, 
                           'units':'day/day', 'impact_units':'day/day', 'cmap':None, 'fmt':None}, 
            'QTSRCSNK_aoa': {'data_lev':AOATEND_lev, 'impact_lev':AOATEND_impactlev, 
@@ -126,17 +139,17 @@ lat_p_plots = {
                          'scaling':86400, 'impact_scaling':86400,
                          'units':'day/day', 'impact_units':'day/day', 'cmap':None, 'fmt':None},
            'qtendetfd_aoa': {'data_lev':AOATEND_lev, 'impact_lev':AOATEND_impactlev, 
-                             'data_norm':None, 'impact_norm':None, 
+                             'data_norm':'twoslope', 'impact_norm':'twoslope', 
                              'scaling':86400, 'impact_scaling':86400, 
                              'units':'day/day', 'impact_units':'day/day', 
                              'cmap':None, 'fmt':None}, 
            'qtendvtem_aoa': {'data_lev':None, 'impact_lev':None, 
-                             'data_norm':None, 'impact_norm':None, 
+                             'data_norm':'twoslope', 'impact_norm':'twoslope', 
                              'scaling':86400, 'impact_scaling':86400, 
                              'units':'day/day', 'impact_units':'day/day', 
                              'cmap':None, 'fmt':None}, 
            'qtendwtem_aoa': {'data_lev':None, 'impact_lev':None, 
-                             'data_norm':None, 'impact_norm':None, 
+                             'data_norm':'twoslope', 'impact_norm':'twoslope', 
                              'scaling':86400, 'impact_scaling':86400, 
                              'units':'day/day', 'impact_units':'day/day', 
                              'cmap':None, 'fmt':None}, 
@@ -177,56 +190,56 @@ lat_p_plots = {
                              'units':'ppb/day', 'impact_units':'ppb/day', 
                              'cmap':None, 'fmt':None}, 
            'vtem': {'data_lev':None, 'impact_lev':None, 
-                    'data_norm':None, 'impact_norm':None, 
-                    'scaling':None, 'impact_scaling':None, 
+                    'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                    'scaling':1, 'impact_scaling':1, 
                     'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'omegatem': {'data_lev':None, 'impact_lev':None, 
-                        'data_norm':None, 'impact_norm':None, 
-                        'scaling':None, 'impact_scaling':None, 
+                        'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                        'scaling':1, 'impact_scaling':1, 
                         'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'wtem': {'data_lev':None, 'impact_lev':None, 
-                    'data_norm':None, 'impact_norm':None, 
-                    'scaling':None, 'impact_scaling':None, 
+                    'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                    'scaling':1, 'impact_scaling':1, 
                     'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'psitem': {'data_lev':[-1e10, -3e9, -1e9, -3e8, -1e8, 0, 1e8, 3e8, 1e9, 3e9, 1e10], 
                       'impact_lev':[-1e9, -3e8, -1e8, -3e7, -1e7, 0, 1e7, 3e7, 1e8, 3e8, 1e9], 
                       'data_norm':'uneven', 'impact_norm':'uneven', 
-                      'scaling':None, 'impact_scaling':None, 
+                      'scaling':1, 'impact_scaling':1, 
                       'units':'kg/s', 'impact_units':'kg/s', 'cmap':None, 
                       'fmt':lambda x: '{:.0e}'.format(x).replace('e+0','e+')}, 
            'epfy': {'data_lev':None, 'impact_lev':None, 
-                    'data_norm':None, 'impact_norm':None, 
-                    'scaling':None, 'impact_scaling':None, 
+                    'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                    'scaling':1, 'impact_scaling':1, 
                     'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'epfz': {'data_lev':None, 'impact_lev':None, 
-                    'data_norm':None, 'impact_norm':None, 
-                    'scaling':None, 'impact_scaling':None, 
+                    'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                    'scaling':1, 'impact_scaling':1, 
                     'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'epdiv': {'data_lev':None, 'impact_lev':None, 
-                     'data_norm':None, 'impact_norm':None, 
-                     'scaling':None, 'impact_scaling':None, 
+                     'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                     'scaling':1, 'impact_scaling':1, 
                      'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'etfy_aoa': {'data_lev':None, 'impact_lev':None, 
-                        'data_norm':None, 'impact_norm':None, 
-                        'scaling':None, 'impact_scaling':None, 
+                        'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                        'scaling':1, 'impact_scaling':1, 
                         'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'etfz_aoa': {'data_lev':None, 'impact_lev':None, 
-                        'data_norm':None, 'impact_norm':None, 
-                        'scaling':None, 'impact_scaling':None, 
+                        'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                        'scaling':1, 'impact_scaling':1, 
                         'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'etdiv_aoa': {'data_lev':None, 'impact_lev':None, 
-                         'data_norm':None, 'impact_norm':None, 
-                         'scaling':None, 'impact_scaling':None, 
+                         'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                         'scaling':1, 'impact_scaling':1, 
                          'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'etfy_e90': {'data_lev':None, 'impact_lev':None, 
-                        'data_norm':None, 'impact_norm':None, 
-                        'scaling':None, 'impact_scaling':None, 
+                        'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                        'scaling':1, 'impact_scaling':1, 
                         'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'etfz_e90': {'data_lev':None, 'impact_lev':None, 
-                        'data_norm':None, 'impact_norm':None, 
-                        'scaling':None, 'impact_scaling':None, 
+                        'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                        'scaling':1, 'impact_scaling':1, 
                         'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}, 
            'etdiv_e90': {'data_lev':None, 'impact_lev':None, 
-                         'data_norm':None, 'impact_norm':None, 
-                         'scaling':None, 'impact_scaling':None, 
+                         'data_norm':'twoslope', 'impact_norm':'twoslope', 
+                         'scaling':1, 'impact_scaling':1, 
                          'units':None, 'impact_units':None, 'cmap':None, 'fmt':None}}

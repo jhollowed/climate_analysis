@@ -1,8 +1,27 @@
 #!/bin/bash
 
 overlay=0
+    
+# 5-year time series 
+python ./plot_latband_impact.py U 5 $overlay
+python ./plot_latband_impact.py T 5 $overlay
+python ./plot_latband_impact.py AOA 5 $overlay
+python ./plot_latband_impact.py E90j 5 $overlay
+python ./plot_latband_impact.py psitem 5 $overlay
 
+python ./plot_latband_impact.py UTEND 5 $overlay
+python ./plot_latband_impact.py UTRESVEL 5 $overlay
+python ./plot_latband_impact.py utendepfd 5 $overlay
+python ./plot_latband_impact.py UTDIFF_NOGW 5 $overlay
+python ./plot_latband_impact.py UTTOTAL_NOGW 5 $overlay
+exit
+
+
+python ./plot_monthly_impact.py psitem 1991 $overlay
+python ./plot_monthly_impact.py epdiv 1991 $overlay
 python ./plot_monthly_impact.py U 1991 $overlay
+python ./plot_monthly_impact.py wtem 1991 $overlay
+python ./plot_monthly_impact.py utendepfd 1991 $overlay
 exit
 
 if [ $1 == 1 ]; then
