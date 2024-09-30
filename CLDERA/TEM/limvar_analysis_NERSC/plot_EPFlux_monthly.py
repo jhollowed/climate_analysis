@@ -11,6 +11,7 @@ import warnings
 import variable_plotting_settings
 from matplotlib.ticker import FuncFormatter
 import math
+import plotting_utils as putil
 
 
 var  = sys.argv[1]       # variable to plot
@@ -40,275 +41,30 @@ except IndexError:
     vec1, vec2 = None, None
 
 
-loc = '/pscratch/sd/j/jhollo/E3SM/historical_data/limvar/analysis'
-
-print('reading data for variable {}...'.format(var))
-data      = xr.open_dataset('{}/data_ensmean.nc'.format(loc))
-cf        = xr.open_dataset('{}/cf_ensmean.nc'.format(loc))
-impact    = xr.open_dataset('{}/impact_ensmean.nc'.format(loc))
-pval      = xr.open_dataset('{}/pval.nc'.format(loc))
-coherence = xr.open_dataset('{}/impact_coherence.nc'.format(loc))
-#print('available data vars: {}'.format(list(data.data_...vars)))
-
-tem_data         = xr.open_dataset('{}/tem_data_ensmean.nc'.format(loc))
-tem_cf           = xr.open_dataset('{}/tem_cf_ensmean.nc'.format(loc))
-tem_impact       = xr.open_dataset('{}/tem_impact_ensmean.nc'.format(loc))
-tem_pval         = xr.open_dataset('{}/tem_pval.nc'.format(loc))
-tem_coherence    = xr.open_dataset('{}/tem_impact_coherence.nc'.format(loc))
-budget_data      = xr.open_dataset('{}/budget_data_ensmean.nc'.format(loc))
-budget_cf        = xr.open_dataset('{}/budget_cf_ensmean.nc'.format(loc))
-budget_impact    = xr.open_dataset('{}/budget_impact_ensmean.nc'.format(loc))
-budget_pval      = xr.open_dataset('{}/budget_pval.nc'.format(loc))
-budget_coherence = xr.open_dataset('{}/budget_impact_coherence.nc'.format(loc))
-#print('available TEM vars: {}'.format(list(tem_data.data_vars)))
-#print('available TEM budget vars: {}'.format(list(budget_data.data_vars)))
-
-aoa_tem_data         = xr.open_dataset('{}/tem_data_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_tem_cf           = xr.open_dataset('{}/tem_cf_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_tem_impact       = xr.open_dataset('{}/tem_impact_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_tem_pval         = xr.open_dataset('{}/tem_pval_TRACER-AOA.nc'.format(loc))
-aoa_tem_coherence    = xr.open_dataset('{}/tem_impact_coherence_TRACER-AOA.nc'.format(loc))
-aoa_budget_data      = xr.open_dataset('{}/budget_data_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_budget_cf        = xr.open_dataset('{}/budget_cf_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_budget_impact    = xr.open_dataset('{}/budget_impact_ensmean_TRACER-AOA.nc'.format(loc))
-aoa_budget_pval      = xr.open_dataset('{}/budget_pval_TRACER-AOA.nc'.format(loc))
-aoa_budget_coherence = xr.open_dataset('{}/budget_impact_coherence_TRACER-AOA.nc'.format(loc))
-#print('available AOA TEM vars: {}'.format(list(aoa_tem_data.data_vars)))
-#print('available AOA budget vars: {}'.format(list(aoa_budget_data.data_vars)))
-
-e90_tem_data         = xr.open_dataset('{}/tem_data_ensmean_TRACER-E90j.nc'.format(loc))
-e90_tem_cf           = xr.open_dataset('{}/tem_cf_ensmean_TRACER-E90j.nc'.format(loc))
-e90_tem_impact       = xr.open_dataset('{}/tem_impact_ensmean_TRACER-E90j.nc'.format(loc))
-e90_tem_pval         = xr.open_dataset('{}/tem_pval_TRACER-E90j.nc'.format(loc))
-e90_tem_coherence    = xr.open_dataset('{}/tem_impact_coherence_TRACER-E90j.nc'.format(loc))
-e90_budget_data      = xr.open_dataset('{}/budget_data_ensmean_TRACER-E90j.nc'.format(loc))
-e90_budget_cf        = xr.open_dataset('{}/budget_cf_ensmean_TRACER-E90j.nc'.format(loc))
-e90_budget_impact    = xr.open_dataset('{}/budget_impact_ensmean_TRACER-E90j.nc'.format(loc))
-e90_budget_pval      = xr.open_dataset('{}/budget_pval_TRACER-E90j.nc'.format(loc))
-e90_budget_coherence = xr.open_dataset('{}/budget_impact_coherence_TRACER-E90j.nc'.format(loc))
-#print('available E90 TEM vars: {}'.format(list(e90_tem_data.data_vars)))
-#print('available E90 budget vars: {}'.format(list(e90_budget_data.data_vars)))
-
-# get tropopause data
-data_tropp, cf_tropp, impact_tropp = [data['TROP_P']/100, cf['TROP_P']/100, impact['TROP_P']/100]
-
-# find which dataset the variable belongs to, read
-print('extracting variable...')
-
-try:
-    data, cf, impact, pval, coherence = [data[var], cf[var], impact[var], 
-                                         pval[var], coherence[var]]
-except KeyError: pass
-try:
-    if(var2 is not None):
-        data2, cf2, impact2, pval2, coherence2 = [data[var2], cf[var2], impact[var2], 
-                                                  pval[var2], coherence[var2]]
-except KeyError: pass
-try:
-    if(vec1 is not None and vec2 is not None):
-        data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
-            [data[vec1], cf[vec1], impact[vec1], pval[vec1], coherence[vec1]]
-        data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
-            [data[vec2], cf[vec2], impact[vec2], pval[vec2], coherence[vec2]]
-except KeyError: pass
-
-try:
-    data, cf, impact, pval, coherence = [tem_data[var], tem_cf[var], tem_impact[var], 
-                                         tem_pval[var], tem_coherence[var]]
-except KeyError: pass
-try:
-    if(var2 is not None):
-        data2, cf2, impact2, pval2, coherence2 = [tem_data[var2], tem_cf[var2], tem_impact[var2], 
-                                                  tem_pval[var2], tem_coherence[var2]]
-except KeyError: pass
-try:
-    if(vec1 is not None and vec2 is not None):
-        data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
-            [tem_data[vec1], tem_cf[vec1], tem_impact[vec1], tem_pval[vec1], tem_coherence[vec1]]
-        data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
-            [tem_data[vec2], tem_cf[vec2], tem_impact[vec2], tem_pval[vec2], tem_coherence[vec2]]
-except KeyError: pass
-
-try:
-    data, cf, impact, pval, coherence = [budget_data[var], budget_cf[var], budget_impact[var], 
-                                         budget_pval[var], budget_coherence[var]]
-except KeyError: pass
-try:
-    if(var2 is not None):
-        data2, cf2, impact2, pval2, coherence2 = [budget_data[var2], budget_cf[var2], 
-                                                  budget_impact[var2], budget_pval[var2], 
-                                                  budget_coherence[var2]]
-except KeyError: pass
-try:
-    if(vec1 is not None and vec2 is not None):
-        data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
-            [budget_data[vec1], budget_cf[vec1], budget_impact[vec1], 
-             budget_pval[vec1], budget_coherence[vec1]]
-        data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
-            [budget_data[vec2], budget_cf[vec2], budget_impact[vec2], 
-             budget_pval[vec2], budget_coherence[vec2]]
-except KeyError: pass
-
-if(q == 'aoa'):
-    try:
-        data, cf, impact, pval, coherence = [aoa_tem_data[var], aoa_tem_cf[var], aoa_tem_impact[var], 
-                                             aoa_tem_pval[var], aoa_coherence[var]]
-        var = '{}_aoa'.format(var)
-    except KeyError: pass
-    try:
-        if(var2 is not None):
-            data2, cf2, impact2, pval2, coherence2 = [aoa_tem_data[var2], budget_cf[var2], 
-                                                      aoa_tem_impact[var2], budget_pval[var2], 
-                                                      aoa_tem_coherence[var2]]
-        var2 = '{}_aoa'.format(var2)
-    except KeyError: pass
-    try:
-        if(vec1 is not None and vec2 is not None):
-            data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
-                [aoa_tem_data[vec1], aoa_tem_cf[vec1], aoa_tem_impact[vec1], 
-                 aoa_tem_pval[vec1], aoa_tem_coherence[vec1]]
-            data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
-                [aoa_tem_data[vec2], aoa_tem_cf[vec2], aoa_tem_impact[vec2], 
-                 aoa_tem_pval[vec2], aoa_tem_coherence[vec2]]
-        vec1 = '{}_aoa'.format(vec1)
-        vec2 = '{}_aoa'.format(vec2)
-    except KeyError: pass
-
-elif(q == 'e90'):
-    try:
-        data, cf, impact, pval, coherence = [e90_tem_data[var], e90_tem_cf[var], e90_tem_impact[var], 
-                                             e90_tem_pval[var], e90_coherence[var]]
-        var = '{}_e90'.format(var)
-    except KeyError: pass
-    try:
-        if(var2 is not None):
-            data2, cf2, impact2, pval2, coherence2 = [e90_tem_data[var2], budget_cf[var2], 
-                                                      e90_tem_impact[var2], budget_pval[var2], 
-                                                      e90_tem_coherence[var2]]
-        var2 = '{}_e90'.format(var2)
-    except KeyError: pass
-    try:
-        if(vec1 is not None and vec2 is not None):
-            data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
-                [e90_tem_data[vec1], e90_tem_cf[vec1], e90_tem_impact[vec1], 
-                 e90_tem_pval[vec1], e90_tem_coherence[vec1]]
-            data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
-                [e90_tem_data[vec2], e90_tem_cf[vec2], e90_tem_impact[vec2], 
-                 e90_tem_pval[vec2], e90_tem_coherence[vec2]]
-        vec1 = '{}_e90'.format(vec1)
-        vec2 = '{}_e90'.format(vec2)
-    except KeyError: pass
-
-if(q == 'aoa'):
-    try:
-        data, cf, impact, pval, coherence = [aoa_budget_data[var], aoa_budget_cf[var], 
-                                             aoa_budget_impact[var], aoa_budget_pval[var], 
-                                             aoa_coherence[var]]
-        var = '{}_aoa'.format(var)
-    except KeyError: pass
-    try:
-        if(var2 is not None):
-            data2, cf2, impact2, pval2, coherence2 = [aoa_budget_data[var2], budget_cf[var2], 
-                                                      aoa_budget_impact[var2], budget_pval[var2], 
-                                                      aoa_budget_coherence[var2]]
-        var2 = '{}_aoa'.format(var2)
-    except KeyError: pass
-    try:
-        if(vec1 is not None and vec2 is not None):
-            data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
-                [aoa_budget_data[vec1], aoa_budget_cf[vec1], aoa_budget_impact[vec1], 
-                 aoa_budget_pval[vec1], aoa_budget_coherence[vec1]]
-            data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
-                [aoa_budget_data[vec2], aoa_budget_cf[vec2], aoa_budget_impact[vec2], 
-                 aoa_budget_pval[vec2], aoa_budget_coherence[vec2]]
-        vec1 = '{}_aoa'.format(vec1)
-        vec2 = '{}_aoa'.format(vec2)
-    except KeyError: pass
-
-elif(q == 'e90'):
-    try:
-        data, cf, impact, pval, coherence = [e90_budget_data[var], e90_budget_cf[var], 
-                                             e90_budget_impact[var], e90_budget_pval[var], 
-                                             e90_coherence[var]]
-        var = '{}_e90'.format(var)
-    except KeyError: pass
-    try:
-        if(var2 is not None):
-            data2, cf2, impact2, pval2, coherence2 = [e90_budget_data[var2], budget_cf[var2], 
-                                                      e90_budget_impact[var2], budget_pval[var2], 
-                                                      e90_budget_coherence[var2]]
-        var2 = '{}_e90'.format(var2)
-    except KeyError: pass
-    try:
-        if(vec1 is not None and vec2 is not None):
-            data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = \
-                [e90_budget_data[vec1], e90_budget_cf[vec1], e90_budget_impact[vec1], 
-                 e90_budget_pval[vec1], e90_budget_coherence[vec1]]
-            data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = \
-                [e90_budget_data[vec2], e90_budget_cf[vec2], e90_budget_impact[vec2], 
-                 e90_budget_pval[vec2], e90_budget_coherence[vec2]]
-        vec1 = '{}_e90'.format(vec1)
-        vec2 = '{}_e90'.format(vec2)
-    except KeyError: pass
-
-# if variable hasn't been found by here, it doesn't exist
-assert isinstance(data, xr.core.dataarray.DataArray), 'variable {} not found!'.format(var)
-if(var2 is not None):
-    assert isinstance(data2, xr.core.dataarray.DataArray), 'variable {} not found!'.format(var2)
-if(vec1 is not None and vec2 is not None):
-    assert isinstance(data_vec1, xr.core.dataarray.DataArray), 'variable {} not found!'.format(vec1)
-    assert isinstance(data_vec2, xr.core.dataarray.DataArray), 'variable {} not found!'.format(vec2)
-
 # --------------------------------------------------------------------------
 
+
+# ----- read the data
+data, cf, impact, pval, coherence                          = putil.read_variable(var, q)
+data2, cf2, impact2, pval2, coherence2                     = putil.read_variable(var2, q)
+data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = putil.read_variable(vec1, q)
+data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = putil.read_variable(vec2, q)
+
+# ---- do pressure, time slicing
+slice_args={'pmin':1,'pmax':400,'year':year,'month':month}
+all_data = [data, cf, impact, pval, coherence]
+data, cf, impact, pval, coherence = do_slicing(all_data, slice_args**)
+all_data = [data2, cf2, impact2, pval2, coherence2]
+data2, cf2, impact2, pval2, coherence2 = do_slicing(all_data, slice_args**)
+all_data = [data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1]
+data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = do_slicing(all_data, slice_args**)
+all_data = [data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1]
+data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = do_slicing(all_data, slice_args**)
+
+# ---- get dims
+time = data.time
 lat = data.lat
 plev = data.plev
-time = data.time
-years = np.array([t.year for t in time.values])
-
-pmin, pmax = 1, 400
-levslice  = slice(pmin, pmax)
-plev      = plev.sel(plev = levslice)
-
-def do_slicing(data_in, cf_in, impact_in, pval_in, coherence_in):
-    # --- do time slicing
-    if(year == 1991): ti, tf = 0, 6
-    elif(year == 1992): ti, tf = 7, 7+12
-    elif(year == 1993): ti, tf, = 19, 19+12
-    elif(year == 1994): ti, tf, = 30, len(years)-1
-    tsl          = slice(ti, tf)
-    data_in      = data_in.isel(time=tsl)
-    cf_in        = cf_in.isel(time=tsl)
-    impact_in    = impact_in.isel(time=tsl)
-    pval_in      = pval_in.isel(time=tsl)
-    coherence_in = coherence_in.isel(time=tsl)
-    
-    # extract single month if provided
-    if(month is not None):
-        tidx         = [t.month for t in data_in.time.values].index(month)
-        tidx         = slice(tidx, tidx+1)
-        data_in      = data_in.isel(time=tidx)
-        cf_in        = cf_in.isel(time=tidx)
-        impact_in    = impact_in.isel(time=tidx)
-        pval_in      = pval_in.isel(time=tidx)
-        coherence_in = coherence_in.isel(time=tidx)
-
-    # --- do vertical slicing
-    data_in      = data_in.sel(plev = levslice)
-    cf_in        = cf_in.sel(plev = levslice)
-    impact_in    = impact_in.sel(plev = levslice)
-    pval_in      = pval_in.sel(plev = levslice)
-    coherence_in = coherence_in.sel(plev = levslice)
-    
-    return data_in, cf_in, impact_in, pval_in, coherence_in
-
-data, cf, impact, pval, coherence = do_slicing(data, cf, impact, pval, coherence)
-time      = data.time
-data2, cf2, impact2, pval2, coherence2 = do_slicing(data2, cf2, impact2, pval2, coherence2)
-data_vec1, cf_vec1, impact_vec1, pval_vec1, coherence_vec1 = do_slicing(data_vec1, cf_vec1, 
-                                                          impact_vec1, pval_vec1, coherence_vec1)
-data_vec2, cf_vec2, impact_vec2, pval_vec2, coherence_vec2 = do_slicing(data_vec2, cf_vec2, 
-                                                          impact_vec2, pval_vec2, coherence_vec2)
 
 def get_settings(var_in):
     # ---- get plotting settings for this variable
