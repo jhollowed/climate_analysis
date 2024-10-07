@@ -81,8 +81,8 @@ if [[ $steps == *"6"* ]]; then
     echo "====== STEP 6 ======"
     echo "===================="
     echo
-    #python ./limvar_TEM_budget.py $ens 0 $mass $t1 $t2 $overwrite $dry
-    python ./limvar_TEM_budget.py $ens 1 $mass $t1 $t2 $overwrite $dry
+    python ./limvar_TEM_budget.py $ens 0 $mass $t1 $t2 $overwrite $dry
+    #python ./limvar_TEM_budget.py $ens 1 $mass $t1 $t2 $overwrite $dry
 fi
 
 # step 7

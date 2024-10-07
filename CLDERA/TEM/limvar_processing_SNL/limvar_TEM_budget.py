@@ -67,8 +67,6 @@ if(histnum == 0):
     outloc  = '/ascldap/users/jphollo/data/limvar/limvar_monthly'
     sfx = '_monthlymean'
 elif(histnum == 1):
-    #dataloc = '/ascldap/users/jphollo/data/limvar/limvar_daily' 
-    #outloc  = '/ascldap/users/jphollo/data/limvar/limvar_daily'
     dataloc = '/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar_src_tag/tem_processed/timeConcat_zonalMeans'
     outloc = '/gpfs/cldera/data/e3sm/e3sm-cldera/CLDERA-historical/limvar_src_tag/tem_processed/timeConcat_zonalMeans'
     sfx = ''
@@ -123,25 +121,51 @@ for qi in [0, 1, 2]:
 
         if(histnum == 0):
             # compute total gravity wave U tendency; these variables only exist for monthly data
-            zm['UTGWTOTAL'] = zm['BUTGWSPEC'] + zm['UTGWSPEC'] + zm['UTGWORO']
-            zm['UTGWTOTAL'].attrs['long name'] = 'sum of zonal mean BUTGWSPEC, UTGWSPEC, UTGWORO'
-            zm['UTGWTOTAL'].attrs['units'] = 'm/s2'
+            zm['utendgw'] = zm['BUTGWSPEC'] + zm['UTGWSPEC'] + zm['UTGWORO']
+            zm['utendgw'].attrs['long_name'] = 'sum of zonal mean BUTGWSPEC, UTGWSPEC, UTGWORO'
+            zm['utendgw'].attrs['units'] = 'm/s2'
 
         # compute total residual velocity U tendency
-        zm['UTRESVEL'] = tem['utendvtem'] + tem['utendwtem']
-        zm['UTRESVEL'].attrs['long name'] = 'sum of zonal mean utendvtem, utendwtem'
-        zm['UTRESVEL'].attrs['units'] = 'm/s'
+        zm['utendresvel'] = tem['utendvtem'] + tem['utendwtem']
+        zm['utendresvel'].attrs['long_name'] = 'sum of zonal mean utendvtem, utendwtem'
+        zm['utendresvel'].attrs['units'] = 'm/s'
+        # also compute the gradient-normal vectors of the streamfunction (parallel to contours)
+        
+        def sph_grad(x, phi, p):
+            # phi in degrees, p in hPa
+            latdim = x.dims.index('lat')
+            pdim   = x.dims.index('plev')
+            args   = {'dims':x.dims, 'coords':x.coords}
+            # radius of earth, scale height in meters
+            a, H = 6.37123e6, 7e3
+            # compute gradient components
+            dxdphi = 1/a * xr.DataArray(np.gradient(x, np.deg2rad(phi), axis=latdim), **args)
+            dxdp   = -(p/H) * xr.DataArray(np.gradient(x, p, axis=pdim), **args)
+            dxdp   = dxdp.transpose(*args['dims'])
+            return dxdphi, dxdp
+
+        lat, plev, time = tem['psitem'].lat, tem['psitem'].plev, tem['psitem'].time
+        gphi, gp   = sph_grad(tem['psitem'], lat, plev) # gradient vector components 
+        gnphi, gnp = gp, gphi # gradient-normal vector; sign is clockwise around local maxima
+        zm['psitem_gnlat'] = gnphi  
+        zm['psitem_gnp']   = gnp
+        zm['psitem_gnlat'].attrs['units']     = 'kg/s/m'
+        zm['psitem_gnlat'].attrs['long_name'] = 'meridional component of the TEM streamfunction '\
+                                                'gradient-normal vector field'
+        zm['psitem_gnp'].attrs['units']       = 'kg/s/m'
+        zm['psitem_gnp'].attrs['long_name']   = 'vertical component of the TEM streamfunction'\
+                                                'gradient-normal vector field'
 
         # compute total U tendency
         if(histnum == 0):
             # monthly data; total includes gravity waves
-            zm['UTTOTAL'] = zm['UTGWTOTAL'] + tem['utendepfd'] + tem['utendvtem'] + tem['utendwtem']
-            zm['UTTOTAL'].attrs['long name'] = 'sum of zonal mean UTGWTOTAL, UTRESVEL, utendepfd'
-            zm['UTTOTAL'].attrs['units'] = 'm/s2'
+            zm['utendtotal'] = zm['utendgw'] + tem['utendepfd'] + tem['utendvtem'] + tem['utendwtem']
+            zm['utendtotal'].attrs['long_name'] = 'sum of zonal mean utendgw, utendresvel, utendepfd'
+            zm['utendtotal'].attrs['units'] = 'm/s2'
             # compute difference of TEM U tendency and measured U tendency
-            zm['UTDIFF'] = zm['UTTOTAL'] - zm['UTEND']
-            zm['UTDIFF'].attrs['long name'] = 'difference of UTTOTAL and UTEND'
-            zm['UTDIFF'].attrs['units'] = 'm/s2'
+            zm['utenddiff'] = zm['utendtotal'] - zm['UTEND']
+            zm['utenddiff'].attrs['long_name'] = 'difference of utendtotal and UTEND'
+            zm['utenddiff'].attrs['units'] = 'm/s2'
         if(histnum == 1):
 
             # first compute the total U tendency (this overwrites the tendencies computed
@@ -156,19 +180,20 @@ for qi in [0, 1, 2]:
             zm['UTEND'].name = 'UTEND'
             zm['UTEND'].attrs['long_name'] = 'U tendency'
             zm['UTEND'].attrs['units']     = 'm/s/s'
+            orig_vars.remove('UTEND')
            
             # daily data; total does not include gravity waves
-            zm['UTTOTAL_NOGW'] = tem['utendepfd'] + tem['utendvtem'] + tem['utendwtem']
-            zm['UTTOTAL_NOGW'].attrs['long name'] = 'sum of zonal mean UTRESVEL, utendepfd'
-            zm['UTTOTAL_NOGW'].attrs['units'] = 'm/s2'
+            zm['utendtotal_nogw'] = tem['utendepfd'] + tem['utendvtem'] + tem['utendwtem']
+            zm['utendtotal_nogw'].attrs['long_name'] = 'sum of zonal mean utendresvel, utendepfd'
+            zm['utendtotal_nogw'].attrs['units'] = 'm/s2'
             # compute difference of TEM U tendency and measured U tendency
-            zm['UTDIFF'] = zm['UTEND'] - zm['UTTOTAL_NOGW']
-            zm['UTDIFF'].attrs['long name'] = 'difference of UTTOTAL_NOGW and UTEND'
-            zm['UTDIFF'].attrs['units'] = 'm/s2'
+            zm['utenddiff'] = zm['UTEND'] - zm['utendtotal_nogw']
+            zm['utenddiff'].attrs['long_name'] = 'difference of utendtotal_nogw and UTEND'
+            zm['utenddiff'].attrs['units'] = 'm/s2'
             
             # ================== integrate U tendencies ==================
             # The method below deposits the cumulative sum of all tendency data up to time N 
-            # at time N+1 (in other words, UTEND_INT at time N is the cumulative sum of UTEND 
+            # at time N+1 (in other words, UTEND_int at time N is the cumulative sum of UTEND 
             # at time N-1).
             # This ensures that the tendency at the time n does not contribute to the integrated 
             # value at time n.
@@ -185,33 +210,41 @@ for qi in [0, 1, 2]:
             # --- initial condition
             u0 = zm['U'].isel(time=0, drop=True) # initial condition
             
-            zm['UTEND_INT'] = integrate(u0, zm['UTEND'])
-            zm['UTEND_INT'].attrs['long name'] = 'integrated UTEND'
-            zm['UTEND_INT'].attrs['units'] = 'm/s'
+            zm['UTEND_int'] = integrate(u0, zm['UTEND'])
+            zm['UTEND_int'].attrs['long_name'] = 'integrated UTEND'
+            zm['UTEND_int'].attrs['units'] = 'm/s'
             # for UTEND, this method should exactly recover U...
-            if(np.max(np.abs(zm['UTEND_INT'] - zm['U'])) > tol):
+            if(np.max(np.abs(zm['UTEND_int'] - zm['U'])) > tol):
                 raise RuntimeError('UTEND integration failed sanity check')
             
-            zm['UTRESVEL_INT'] = integrate(u0, zm['UTRESVEL'])
-            zm['UTRESVEL_INT'].attrs['long name'] = 'integrated UTRESVEL'
-            zm['UTRESVEL_INT'].attrs['units'] = 'm/s'
+            zm['utendresvel_int'] = integrate(u0, zm['utendresvel'])
+            zm['utendresvel_int'].attrs['long_name'] = 'integrated utendresvel'
+            zm['utendresvel_int'].attrs['units'] = 'm/s'
             
-            zm['UTVTEM_INT'] = integrate(u0, tem['utendvtem'])
-            zm['UTVTEM_INT'].attrs['long name'] = 'integrated utendvtem'
-            zm['UTVTEM_INT'].attrs['units'] = 'm/s'
+            zm['utendvtem_int'] = integrate(u0, tem['utendvtem'])
+            zm['utendvtem_int'].attrs['long_name'] = 'integrated utendvtem'
+            zm['utendvtem_int'].attrs['units'] = 'm/s'
             
-            zm['UTWTEM_INT'] = integrate(u0, tem['utendwtem'])
-            zm['UTWTEM_INT'].attrs['long name'] = 'integrated utendwtem'
-            zm['UTWTEM_INT'].attrs['units'] = 'm/s'
+            zm['utendwtem_int'] = integrate(u0, tem['utendwtem'])
+            zm['utendwtem_int'].attrs['long_name'] = 'integrated utendwtem'
+            zm['utendwtem_int'].attrs['units'] = 'm/s'
             
-            zm['UTEPFD_INT'] = integrate(u0, tem['utendepfd'])
-            zm['UTEPFD_INT'].attrs['long name'] = 'integrated utendepfd'
-            zm['UTEPFD_INT'].attrs['units'] = 'm/s'
+            zm['utendepfd_int'] = integrate(u0, tem['utendepfd'])
+            zm['utendepfd_int'].attrs['long_name'] = 'integrated utendepfd'
+            zm['utendepfd_int'].attrs['units'] = 'm/s'
             
-            zm['UTDIFF_INT'] = integrate(u0, zm['UTDIFF'])
-            zm['UTDIFF_INT'].attrs['long name'] = 'integrated UTDIFF'
-            zm['UTDIFF_INT'].attrs['units'] = 'm/s'
+            zm['utenddiff_int'] = integrate(u0, zm['utenddiff'])
+            zm['utenddiff_int'].attrs['long_name'] = 'integrated utenddiff'
+            zm['utenddiff_int'].attrs['units'] = 'm/s'
 
+            # sanity checks...
+            dd = zm['UTEND_int'].isel(time=0)
+            assert zm['UTEND_int'].isel(time=0).equals(dd), "UTEND_int broken IC!"
+            assert zm['utendresvel_int'].isel(time=0).equals(dd), "utendresvel_int broken IC!"
+            assert zm['utendvtem_int'].isel(time=0).equals(dd), "utendvtem_int broken IC!"
+            assert zm['utendwtem_int'].isel(time=0).equals(dd), "utendwtem_int broken IC!"
+            assert zm['utendepfd_int'].isel(time=0).equals(dd), "utendepfd_int broken IC!"
+            assert zm['utenddiff_int'].isel(time=0).equals(dd), "utenddiff_int broken IC!"
 
     else:
         
@@ -229,112 +262,105 @@ for qi in [0, 1, 2]:
         zm['E90TEND'].attrs['units']     = 'kg/kg/s'
       
         # compute total residual velocity tracer tendency
-        zm['QTRESVEL'] = tem['qtendvtem'] + tem['qtendwtem']
-        zm['QTRESVEL'].attrs['long name'] = 'sum of zonal mean qtendvtem, qtendwtem'
-        zm['QTRESVEL'].attrs['units'] = '1/s'
+        zm['qtendresvel'] = tem['qtendvtem'] + tem['qtendwtem']
+        zm['qtendresvel'].attrs['long_name'] = 'sum of zonal mean qtendvtem, qtendwtem'
+        zm['qtendresvel'].attrs['units'] = '1/s'
         
         # compute total tracer tendency
-        zm['QTTOTAL'] = tem['qtendetfd'] + tem['qtendvtem'] + tem['qtendwtem']
-        zm['QTTOTAL'].attrs['long name'] = 'sum of zonal mean qtendepfd, QTRESVEL'
-        zm['QTTOTAL'].attrs['units'] = '1/s'
+        zm['qtendtotal'] = tem['qtendetfd'] + tem['qtendvtem'] + tem['qtendwtem']
+        zm['qtendtotal'].attrs['long_name'] = 'sum of zonal mean qtendetfd, qtendresvel'
+        zm['qtendtotal'].attrs['units'] = '1/s'
         
         # template for total sources/sinks
-        zm['QTSOURCE'] = zm['AOA'] * 0 
-        zm['QTSOURCE'].attrs['long name'] = 'tracer source'
-        zm['QTSOURCE'].attrs['units'] = '1/s'
-        zm['QTSINK'] = zm['AOA'] * 0 
-        zm['QTSINK'].attrs['long name'] = 'tracer sink'
-        zm['QTSINK'].attrs['units'] = '1/s'
-        zm['QTSRCSNK'] = zm['AOA'] * 0 
-        zm['QTSRCSNK'].attrs['long name'] = 'sum of zonal mean QTSOURCE, QTSINK'
-        zm['QTSRCSNK'].attrs['units'] = '1/s'
+        zm['qtendsource'] = zm['AOA'] * 0 
+        zm['qtendsource'].attrs['long_name'] = 'tracer source'
+        zm['qtendsource'].attrs['units'] = '1/s'
+        zm['qtendsink'] = zm['AOA'] * 0 
+        zm['qtendsink'].attrs['long_name'] = 'tracer sink'
+        zm['qtendsink'].attrs['units'] = '1/s'
         # template for tendency difference
-        zm['QTDIFF'] = zm['AOA'] * 0 
-        zm['QTDIFF'].attrs['long name'] = 'difference of QTTOTAL and AOATEND'
-        zm['QTDIFF'].attrs['units'] = '1/s'
+        zm['qtenddiff'] = zm['AOA'] * 0 
+        zm['qtenddiff'].attrs['units'] = '1/s'
         # templates for integrated tendencies
-        zm['QTRESVEL_INT'] = zm['AOA'] * 0
-        zm['QTRESVEL_INT'].attrs['long name'] = 'integrated QTRESVEL'
-        zm['QTRESVEL_INT'].attrs['units'] = 'kg/kg'
-        zm['QTETFD_INT'] = zm['AOA'] * 0
-        zm['QTETFD_INT'].attrs['long name'] = 'integrated qtendetfd'
-        zm['QTETFD_INT'].attrs['units'] = 'kg/kg'
-        zm['QTDIFF_INT'] = zm['AOA'] * 0
-        zm['QTDIFF_INT'].attrs['long name'] = 'integrated QTDIFF'
-        zm['QTDIFF_INT'].attrs['units'] = 'kg/kg'
+        zm['qtendresvel_int'] = zm['AOA'] * 0
+        zm['qtendresvel_int'].attrs['long_name'] = 'integrated qtendresvel'
+        zm['qtendresvel_int'].attrs['units'] = 'kg/kg'
+        zm['qtendetfd_int'] = zm['AOA'] * 0
+        zm['qtendetfd_int'].attrs['long_name'] = 'integrated qtendetfd'
+        zm['qtendetfd_int'].attrs['units'] = 'kg/kg'
+        zm['qtenddiff_int'] = zm['AOA'] * 0
+        zm['qtenddiff_int'].attrs['long_name'] = 'integrated qtenddiff'
+        zm['qtenddiff_int'].attrs['units'] = 'kg/kg'
         
         if(qi == 1):
             # compute AOA tendency by parameterized tracer source
             # this won't be exactly right below 700 hPa since we've interpolated 
             # to pure pressure levels...
-            zm['QTSOURCE'] = zm['AOA']/zm['AOA'] # clock tracer above 700 hPa, 1 s/s
-            zm['QTSOURCE'] = zm['QTSOURCE'] / 86400 # scale clock tracer to units of day/s
-            zm['QTSOURCE'].loc[{'plev':slice(700, 10000)}] = 0
-            zm['QTSOURCE'].attrs['units'] = 'day/s'
+            zm['qtendsource'] = zm['AOA']/zm['AOA'] # clock tracer above 700 hPa, 1 s/s
+            zm['qtendsource'] = zm['qtendsource'] / 86400 # scale clock tracer to units of day/s
+            zm['qtendsource'].loc[{'plev':slice(700, 10000)}] = 0
+            zm['qtendsource'].attrs['units'] = 'day/s'
             # AOA has no sinks
-            zm['QTSINK'] = zm['AOA'] * 0
-            zm['QTSINK'].attrs['units'] = 'day/s'
-            # sum sources, sinks
-            zm['QTSRCSNK'] = zm['QTSOURCE'] + zm['QTSINK']
-            zm['QTSRCSNK'].attrs['units'] = 'day/s'
+            zm['qtendsink'] = zm['AOA'] * 0
+            zm['qtendsink'].attrs['units'] = 'day/s'
             # add this to the total tendency computed above
-            zm['QTTOTAL'] = zm['QTTOTAL'] + zm['QTSRCSNK']
-            zm['QTTOTAL'].attrs['units'] = 'day/s'
+            zm['qtendtotal'] = zm['qtendtotal'] + zm['qtendsource'] + zm['qtendsink']
+            zm['qtendtotal'].attrs['units'] = 'day/s'
             # compute difference of TEM AOA tendency and measured AOA tendency
-            zm['QTDIFF'] = zm['QTTOTAL'] - zm['AOATEND']
-            zm['QTDIFF'].attrs['units'] = 'day/s'
+            zm['qtenddiff'] = zm['qtendtotal'] - zm['AOATEND']
+            zm['qtenddiff'].attrs['long_name'] = 'difference of qtendtotal and AOATEND'
+            zm['qtenddiff'].attrs['units'] = 'day/s'
        
             if(histnum == 1):
                 # get integrated AOA tendency components 
                 q0 = zm['AOA'].isel(time=0, drop=True) # initial condition
                 
-                zm['AOATEND_INT'] = integrate(q0, zm['AOATEND'])
+                zm['AOATEND_int'] = integrate(q0, zm['AOATEND'])
                 # for AOATEND, this method should exactly recover AOA...
-                if(np.max(np.abs(zm['AOATEND_INT'] - zm['AOA'])) > tol*np.max(zm['E90'])):
+                if(np.max(np.abs(zm['AOATEND_int'] - zm['AOA'])) > tol*np.max(zm['E90'])):
                     raise RuntimeError('AOATEND integration failed sanity check')
-                zm['AOATEND_INT'].attrs['units'] = 'day'
+                zm['AOATEND_int'].attrs['units'] = 'day'
                 
-                zm['QTETFD_INT'] = integrate(q0, zm['qtendetfd'])
-                zm['QTDIFF_INT'].attrs['units'] = 'day'
+                zm['qtendetfd_int'] = integrate(q0, zm['qtendetfd'])
+                zm['qtenddiff_int'].attrs['units'] = 'day'
                 
-                zm['QTRESVEL_INT'] = integrate(q0, zm['QTRESVEL'])
-                zm['QTRESVEL_INT'].attrs['units'] = 'day'
+                zm['qtendresvel_int'] = integrate(q0, zm['qtendresvel'])
+                zm['qtendresvel_int'].attrs['units'] = 'day'
                  
-                zm['QTDIFF_INT'] = integrate(q0, zm['QTDIFF'])
-                zm['QTDIFF_INT'].attrs['units'] = 'day'
+                zm['qtenddiff_int'] = integrate(q0, zm['qtenddiff'])
+                zm['qtenddiff_int'].attrs['units'] = 'day'
 
         if(qi == 2):
             # compute E90 tendency by parameterized tracer sources and sinks
             # E90 has no source
-            zm['QTSOURCE'] = zm['E90j'] * 0
+            zm['qtendsource'] = zm['E90j'] * 0
             # e-folding decay with timescale of 90 days
             tau = 90 * 24 * 60 * 60
-            zm['QTSINK'] = -1/tau * zm['E90j']
-            # sum sources, sinks
-            zm['QTSRCSNK'] = zm['QTSOURCE'] + zm['QTSINK']
+            zm['qtendsink'] = -1/tau * zm['E90j']
             # add this to the total tendency computed above
-            zm['QTTOTAL'] = zm['QTTOTAL'] + zm['QTSRCSNK']
+            zm['qtendtotal'] = zm['qtendtotal'] + zm['qtendsource'] + zm['qtendsink']
             # compute difference of TEM E90 tendency and measured E90 tendency
-            zm['QTDIFF'] = zm['QTTOTAL'] - zm['E90TEND']
+            zm['qtenddiff'] = zm['qtendtotal'] - zm['E90TEND']
+            zm['qtenddiff'].attrs['long_name'] = 'difference of qtendtotal and E90TEND'
             
             if(histnum == 1):
                 # get integrated E90 tendency components
                 q0 = zm['E90'].isel(time=0, drop=True) # initial condition
                 
-                zm['E90TEND_INT'] = integrate(q0, zm['E90TEND'])
+                zm['E90TEND_int'] = integrate(q0, zm['E90TEND'])
                 # for E90TEND, this method should exactly recover E90...
-                if(np.max(np.abs(zm['E90TEND_INT'] - zm['E90'])) > tol*np.max(zm['E90'])):
+                if(np.max(np.abs(zm['E90TEND_int'] - zm['E90'])) > tol*np.max(zm['E90'])):
                     raise RuntimeError('E90TEND integration failed sanity check')
-                zm['E90TEND_INT'].attrs['units'] = 'day'
+                zm['E90TEND_int'].attrs['units'] = 'day'
                 
-                zm['QTETFD_INT'] = integrate(q0, zm['qtendetfd'])
-                zm['QTDIFF_INT'].attrs['units'] = 'day'
+                zm['qtendetfd_int'] = integrate(q0, zm['qtendetfd'])
+                zm['qtenddiff_int'].attrs['units'] = 'day'
                 
-                zm['QTRESVEL_INT'] = integrate(q0, zm['QTRESVEL'])
-                zm['QTRESVEL_INT'].attrs['units'] = 'day'
+                zm['qtendresvel_int'] = integrate(q0, zm['qtendresvel'])
+                zm['qtendresvel_int'].attrs['units'] = 'day'
                  
-                zm['QTDIFF_INT'] = integrate(q0, zm['QTDIFF'])
-                zm['QTDIFF_INT'].attrs['units'] = 'day'
+                zm['qtenddiff_int'] = integrate(q0, zm['qtenddiff'])
+                zm['qtenddiff_int'].attrs['units'] = 'day'
             
 
     if(not dry):
