@@ -45,7 +45,7 @@ def get_variable(var, mass, freq='10daily', q=None,
                  pmin=None, pmax=None, latmin=None, latmax=None, tmin=None, tmax=None, 
                  average_lat=True, average_pres=True, average_time=True, overwrite=False, 
                  debug=False, skip_nosrctag=False, return_intersection=True, 
-                 return_members=False):
+                 return_members=False, pass_var=False):
     '''
     returns a dictionary of the ensemble data, TEM data, TEM budget data, as well as those dataset's 
     counterfactuals, impacts, p-values, and coherence for a specfied variable with a specified 
@@ -110,6 +110,14 @@ def get_variable(var, mass, freq='10daily', q=None,
         whether or not to return the member-level data.
         The counterfactual, forced runs, impacts and coherence are all provided with an
         'ens' dimension. Defaults to False.
+    pass_var : bool, optional
+        whether or not to pass the variable name requested to get_data_and_stats().
+        Defaults to False, in which case the data is processed for the entire dataset
+        under the slicing criteria specified.
+        If True, then only the variable rquested in processed
+        Setting to True will be much faster if only one variable is needed.
+        If many variables are going to be requested, then setting this to False will be
+        faster
         
     Returns
     -------
@@ -128,16 +136,18 @@ def get_variable(var, mass, freq='10daily', q=None,
           'tmin':tmin, 'tmax':tmax, 'average_time':average_time,
           'skip_nosrctag':skip_nosrctag, 'return_intersection':return_intersection, 
           'return_members':return_members}
+    if(pass_var): args['var'] = var
     
     # ---- ensemble data
-    if(return_members):
-        data, cf, impact, pval, coherence, data_members, cf_members, impact_members = \
-                        ces.get_data_and_stats(dataset='ens', mass=mass, freq=freq, qi=0, **args)
-    else:
-        data, cf, impact, pval, coherence = ces.get_data_and_stats(dataset='ens', mass=mass, freq=freq, qi=0, **args)
-    if(debug):
-        print('available data vars: {}'.format(q, list(data.data_vars)))
     try:
+        if(return_members):
+            data, cf, impact, pval, coherence, data_members, cf_members, impact_members = \
+                            ces.get_data_and_stats(dataset='ens', mass=mass, freq=freq, qi=0, **args)
+        else:
+            data, cf, impact, pval, coherence = ces.get_data_and_stats(dataset='ens', mass=mass, freq=freq, qi=0, **args)
+        if(debug):
+            print('available data vars: {}'.format(q, list(data.data_vars)))
+            
         data, cf, impact, pval, coherence = [data[var], cf[var], impact[var], pval[var], coherence[var]]
         data_dict = {'ensmean':data, 'cfmean':cf, 'impact':impact, 'pval':pval, 'coherence':coherence}
         if(return_members):
@@ -147,15 +157,16 @@ def get_variable(var, mass, freq='10daily', q=None,
     except KeyError: pass
     
     # ---- tem data
-    if(return_members):
-        tem_data, tem_cf, tem_impact, tem_pval, tem_coherence, tem_members, tem_cf_members, tem_impact_members = \
-               ces.get_data_and_stats(dataset='tem', mass=mass, freq=freq, qi=qi, **args)
-    else:
-        tem_data, tem_cf, tem_impact, tem_pval, tem_coherence = \
-                          ces.get_data_and_stats(dataset='tem', mass=mass, freq=freq, qi=qi, **args)
-    if(debug):
-        print('available TEM vars for tracer {}: {}'.format(q, list(tem_data.data_vars)))
     try:
+        if(return_members):
+            tem_data, tem_cf, tem_impact, tem_pval, tem_coherence, tem_members, tem_cf_members, tem_impact_members = \
+                   ces.get_data_and_stats(dataset='tem', mass=mass, freq=freq, qi=qi, **args)
+        else:
+            tem_data, tem_cf, tem_impact, tem_pval, tem_coherence = \
+                              ces.get_data_and_stats(dataset='tem', mass=mass, freq=freq, qi=qi, **args)
+        if(debug):
+            print('available TEM vars for tracer {}: {}'.format(q, list(tem_data.data_vars)))
+
         data, cf, impact, pval, coherence = [tem_data[var], tem_cf[var], tem_impact[var],
                                              tem_pval[var], tem_coherence[var]]
         data_dict = {'ensmean':data, 'cfmean':cf, 'impact':impact, 'pval':pval, 'coherence':coherence}
@@ -167,16 +178,17 @@ def get_variable(var, mass, freq='10daily', q=None,
     except KeyError: pass
     
     # ---- budget data
-    if(return_members):
-        budget_data, budget_cf, budget_impact, budget_pval, budget_coherence,\
-        budget_members, budget_cf_members, budget_impact_members = \
-                                ces.get_data_and_stats(dataset='budget', mass=mass, freq=freq, qi=qi, **args)
-    else:
-        budget_data, budget_cf, budget_impact, budget_pval, budget_coherence = \
-                                ces.get_data_and_stats(dataset='budget', mass=mass, freq=freq, qi=qi, **args)
-    if(debug):
-        print('available TEM budget vars for tracer{}: {}'.format(q, list(budget_data.data_vars)))
     try:
+        if(return_members):
+            budget_data, budget_cf, budget_impact, budget_pval, budget_coherence,\
+            budget_members, budget_cf_members, budget_impact_members = \
+                                    ces.get_data_and_stats(dataset='budget', mass=mass, freq=freq, qi=qi, **args)
+        else:
+            budget_data, budget_cf, budget_impact, budget_pval, budget_coherence = \
+                                    ces.get_data_and_stats(dataset='budget', mass=mass, freq=freq, qi=qi, **args)
+        if(debug):
+            print('available TEM budget vars for tracer{}: {}'.format(q, list(budget_data.data_vars)))
+
         data, cf, impact, pval, coherence = [budget_data[var], budget_cf[var], budget_impact[var],
                                              budget_pval[var], budget_coherence[var]]
         data_dict = {'ensmean':data, 'cfmean':cf, 'impact':impact, 'pval':pval, 'coherence':coherence}

@@ -81,7 +81,7 @@ def get_data_dirs(freq, mass, qstr, skip_nosrctag=False):
 # ---------------------------------------------------------------------------------------------------------
 
 
-def get_data_and_stats(dataset, mass, freq, qi, overwrite=False, 
+def get_data_and_stats(dataset, mass, freq, qi, var=None, overwrite=False, 
                        pmin=None, pmax=None, latmin=None, latmax=None, tmin=None, tmax=None, 
                        average_pres=True, average_lat=True, average_time=True, 
                        skip_nosrctag=False, return_intersection=False, return_members=False):
@@ -110,6 +110,9 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
         0 : no tracer
         1 : AOA
         2 : E90
+    var : str
+        variable to read. Defaults to None, in which case all variables on the
+        dataset are processed
     overwrite : bool, optional
         whether or not to overwrite the data produced by a previous run of this function.
         Defaults to False, in which case the processed data is simply read and returned 
@@ -156,9 +159,9 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
     
     # --- get tracer string
     qstr  = ['','_TRACER-AOA','_TRACER-E90j'][int(qi)]
-    qname = [qs.splot('-')[-1] for qs in qstr]
+    qname = [qstr.split('-')[-1] for qs in qstr]
     # turn this option off for tracers, since the non-source-tagged data doesn't exist for tracers
-    if(qi != 0): assert not skip_nosrctag, 'if qi>0, then skip_nosrctag must not be False! '\
+    if(qi != 0): assert skip_nosrctag, 'if qi>0, then skip_nosrctag must be True! '\
                                            'Tracer data not defined for the non-sourced-tagged ensemble'
 
     # --- check slicing for monthly data
@@ -168,6 +171,7 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
                                'must have day=1 (the first of the month)')
     
     # --- build string to append to the end of the filenames to specify the slicing
+    var_str  = ['', var][var is not None]
     tavg_str = ['','Avg'][int(average_time)]
     pavg_str = ['','Avg'][int(average_pres)]
     lavg_str = ['','Avg'][int(average_lat)]
@@ -179,8 +183,8 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
                   'time' :['_{}{}--{}'.format(tavg_str,ttos(tmin),ttos(tmax)), ''][tmin is None]}
     skip_nosrctag_str = ['_srctagonly', ''][skip_nosrctag is False]
     intersect_str     = ['_nointersect', ''][return_intersection is True]
-    sfx = '{}{}{}_{}Tg_{}{}{}'.format(slice_strs['plev'], slice_strs['lat'], slice_strs['time'], 
-                                      mass, freq, skip_nosrctag_str, intersect_str)
+    sfx = '{}{}{}{}_{}Tg_{}{}{}'.format(var_str, slice_strs['plev'], slice_strs['lat'], slice_strs['time'], 
+                                        mass, freq, skip_nosrctag_str, intersect_str)
    
     # --- get data directories
     data, cf, tem, tem_cf, budget, budget_cf = get_data_dirs(freq, mass, qstr, skip_nosrctag)
@@ -227,20 +231,37 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
                 data[i] = xr.load_dataset(data[i])
                 if 'time_bnds' in data[i].data_vars: data[i] = data[i].drop_vars(['time_bnds'])
                 if 'P0' in data[i].data_vars:        data[i] = data[i].drop_vars(['P0'])
-                if 'UTEND' in data[i].data_vars:     data[i] = data[i].drop_vars(['UTEND'])
-                if 'AOATEND' in data[i].data_vars:   data[i] = data[i].drop_vars(['AOATEND'])
-                if 'E90TEND' in data[i].data_vars:   data[i] = data[i].drop_vars(['E90TEND'])
+                if(freq!='monthly'):
+                    # if this is the daily or 10daily data, then the corrected tendencies
+                    # should be read from the TEM budget file instead
+                    if 'UTEND' in data[i].data_vars:     data[i] = data[i].drop_vars(['UTEND'])
+                    if 'AOATEND' in data[i].data_vars:   data[i] = data[i].drop_vars(['AOATEND'])
+                    if 'E90TEND' in data[i].data_vars:   data[i] = data[i].drop_vars(['E90TEND'])
             for i in range(N):
                 cf[i] = xr.load_dataset(cf[i])
                 if 'time_bnds' in cf[i].data_vars: cf[i] = cf[i].drop_vars(['time_bnds'])
                 if 'P0' in cf[i].data_vars:        cf[i] = cf[i].drop_vars(['P0'])
-                if 'UTEND' in cf[i].data_vars:     cf[i] = cf[i].drop_vars(['UTEND'])
-                if 'AOATEND' in cf[i].data_vars:   cf[i] = cf[i].drop_vars(['AOATEND'])
-                if 'E90TEND' in cf[i].data_vars:   cf[i] = cf[i].drop_vars(['E90TEND'])
+                if(freq!='monthly'):
+                    # if this is the daily or 10daily data, then the corrected tendencies
+                    # should be read from the TEM budget file instead
+                    if 'UTEND' in cf[i].data_vars:     cf[i] = cf[i].drop_vars(['UTEND'])
+                    if 'AOATEND' in cf[i].data_vars:   cf[i] = cf[i].drop_vars(['AOATEND'])
+                    if 'E90TEND' in cf[i].data_vars:   cf[i] = cf[i].drop_vars(['E90TEND'])
                 
             # ensure that the data and counterfactual data have the same shapeensmean_su
             data = [data[i].transpose(*tuple(data[i].dims)) for i in range(len(data))]
             cf   = [cf[i].transpose(*tuple(data[i].dims)) for i in range(len(cf))]
+            
+            # extract variable if specified
+            # (double backets on d[[var]] returns as a dataset rather than dataarray)
+            if(var is not None):
+                print('extracting variable {}'.format(var))
+                try:
+                    data = [d[[var]] for d in data]
+                    cf   = [d[[var]] for d in cf]
+                except KeyError:
+                    raise KeyError('variable {} not in dataset'.format(var))
+            tmpvar = ['U',var][var is not None]
 
             # merge ensemble members
             print('merging data')
@@ -291,8 +312,8 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
                 else:
                     data  = putil.do_slicing(data, **pres_slice_args)
                     cf    = putil.do_slicing(cf, **pres_slice_args)
-            print('data shape after member concat and slicing: {}'.format(data['U'].shape))
-            print('cf shape after member concat and slicing: {}'.format(cf['U'].shape))
+            print('data shape after member concat and slicing: {}'.format(data[tmpvar].shape))
+            print('cf shape after member concat and slicing: {}'.format(cf[tmpvar].shape))
 
             # ---------- impact
             if(impact_read == 0):
@@ -320,10 +341,11 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
                     print('getting ttest')
                     tstat = xr.zeros_like(idata.isel(ens=0, drop=True))
                     pval  = xr.zeros_like(idata.isel(ens=0, drop=True)) 
-                    axis  = idata['U'].get_axis_num('ens')
+                    axis  = idata[tmpvar].get_axis_num('ens')
                     for i, var in enumerate(list(idata.data_vars)):
-                        print('{}/{}...'.format(i+1, len(idata.data_vars)), end='\r')
-                        tstat_var, pval_var = scipy.stats.ttest_rel(idata[var], icf[var], axis=axis)
+                        print('variable {}/{}...'.format(i+1, len(idata.data_vars)), end='\r')
+                        tstat_var, pval_var = scipy.stats.ttest_rel(idata[var], icf[var], 
+                                                                    axis=axis, nan_policy='omit')
                         tstat[var].values   = tstat_var
                         pval[var].values    = pval_var
                     pval.to_netcdf(pval_str)
@@ -393,17 +415,31 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
             # ensure that the data and counterfactual data have the same shape
             tem = [tem[i].transpose(*tuple(tem[i].dims)) for i in range(len(tem))]
             tem_cf = [tem_cf[i].transpose(*tuple(tem[i].dims)) for i in range(len(tem_cf))]
+            
+            # extract variable if specified
+            # (double backets on d[[var]] returns as a dataset rather than dataarray)
+            if(var is not None):
+                print('extracting variable {}'.format(var))
+                try:
+                    tem    = [d[[var]] for d in tem]
+                    tem_cf = [d[[var]] for d in tem_cf]
+                except KeyError:
+                    raise KeyError('variable {} not in dataset'.format(var))
+            if(qi == 0):
+                tmpvar = ['vtem',var][var is not None]
+            else:
+                tmpvar = ['etfy',var][var is not None]
 
             # merge ensemble members
             print('merging tem data')
             tem    = xr.concat(tem, dim='ens')
             tem_cf = xr.concat(tem_cf, dim='ens')
             if(qi == 0):
-                print('tem data shape after member concat: {}'.format(tem['vtem'].shape))
-                print('tem cf shape after member concat: {}'.format(tem_cf['vtem'].shape))
+                print('tem data shape after member concat: {}'.format(tem[tmpvar].shape))
+                print('tem cf shape after member concat: {}'.format(tem_cf[tmpvar].shape))
             else:
-                print('tem data shape after member concat: {}'.format(tem['etfy'].shape))
-                print('tem cf shape after member concat: {}'.format(tem_cf['etfy'].shape))
+                print('tem data shape after member concat: {}'.format(tem[tmpvar].shape))
+                print('tem cf shape after member concat: {}'.format(tem_cf[tmpvar].shape))
                 
             # get data and conterfactual temporal intersection
             itime = np.intersect1d(tem['time'].values, tem_cf['time'].values)
@@ -444,8 +480,9 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
                 else:
                     tem     = putil.do_slicing(tem, **pres__slice_args)
                     tem_cf  = putil.do_slicing(tem_cf, **pres_slice_args)
-            print('tem data shape after member concat and slicing: {}'.format(tem['epdiv'].shape))
-            print('tem cf shape after member concat: and slicing {}'.format(tem_cf['epdiv'].shape))
+            
+            print('tem data shape after member concat and slicing: {}'.format(tem[tmpvar].shape))
+            print('tem cf shape after member concat: and slicing {}'.format(tem_cf[tmpvar].shape))
 
             # ---------- impact
             if(tem_impact_read == 0):
@@ -473,10 +510,11 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
                     print('getting ttest')
                     tem_tstat = xr.zeros_like(item.isel(ens=0, drop=True))
                     tem_pval  = xr.zeros_like(item.isel(ens=0, drop=True)) 
-                    axis = item['utendepfd'].get_axis_num('ens')
+                    axis = item[tmpvar].get_axis_num('ens')
                     for i, var in enumerate(list(item.data_vars)):
-                        print('{}/{}...'.format(i+1, len(item.data_vars)), end='\r')
-                        tstat_var, pval_var   = scipy.stats.ttest_rel(item[var], item_cf[var], axis=axis)
+                        print('variable {}/{}...'.format(i+1, len(item.data_vars)), end='\r')
+                        tstat_var, pval_var   = scipy.stats.ttest_rel(item[var], item_cf[var], 
+                                                                      axis=axis, nan_policy='omit')
                         tem_tstat[var].values = tstat_var
                         tem_pval[var].values  = pval_var
                     tem_pval.to_netcdf(pval_str)
@@ -542,17 +580,31 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
             # ensure that the data and counterfactual data have the same shape
             budget    = [budget[i].transpose(*tuple(budget[i].dims)) for i in range(len(budget))]
             budget_cf = [budget_cf[i].transpose(*tuple(budget[i].dims)) for i in range(len(budget_cf))]
+            
+            # extract variable if specified
+            # (double backets on d[[var]] returns as a dataset rather than dataarray)
+            if(var is not None):
+                try:
+                    print('extracting variable {}'.format(var))
+                    budget    = [d[[var]] for d in budget]
+                    budget_cf = [d[[var]] for d in budget_cf]
+                except KeyError:
+                    raise KeyError('variable {} not in dataset'.format(var))
+            if(qi == 0):
+                tmpvar = ['utendresvel',var][var is not None]
+            else:
+                tmpvar = ['qtendresvel',var][var is not None]
 
             # merge ensemble members
             print('merging budget data')
             budget    = xr.concat(budget, dim='ens')
             budget_cf = xr.concat(budget_cf, dim='ens')
             if(qi == 0):
-                print('budget data shape after member concat: {}'.format(budget['utendresvel'].shape))
-                print('budget cf shape after member concat: {}'.format(budget_cf['utendresvel'].shape))
+                print('budget data shape after member concat: {}'.format(budget[tmpvar].shape))
+                print('budget cf shape after member concat: {}'.format(budget_cf[tmpvar].shape))
             else:
-                print('budget data shape after member concat: {}'.format(budget['qtendresvel'].shape))
-                print('budget cf shape after member concat: {}'.format(budget_cf['qtendresvel'].shape))
+                print('budget data shape after member concat: {}'.format(budget[tmpvar].shape))
+                print('budget cf shape after member concat: {}'.format(budget_cf[tmpvar].shape))
                 
             # get data and conterfactual temporal intersection
             itime = np.intersect1d(budget['time'].values, budget_cf['time'].values)
@@ -593,8 +645,9 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
                 else:
                     budget     = putil.do_slicing(budget, **pres_slice_args)
                     budget_cf  = putil.do_slicing(budget_cf, **pres_slice_args)
-            print('budget data shape after member concat and slicing: {}'.format(budget['utendresvel'].shape))
-            print('budget cf shape after member concat: and slicing {}'.format(budget_cf['utendresvel'].shape))
+            
+            print('budget data shape after member concat and slicing: {}'.format(budget[tmpvar].shape))
+            print('budget cf shape after member concat: and slicing {}'.format(budget_cf[tmpvar].shape))
 
             # ---------- impact
             if(budget_impact_read == 0):
@@ -622,9 +675,11 @@ def get_data_and_stats(dataset, mass, freq, qi, overwrite=False,
                     print('getting ttest')
                     budget_tstat = xr.zeros_like(ibudget.isel(ens=0, drop=True))
                     budget_pval  = xr.zeros_like(ibudget.isel(ens=0, drop=True))
-                    axis = ibudget['utendresvel'].get_axis_num('ens')
+                    axis = ibudget[tmpvar].get_axis_num('ens')
                     for i, var in enumerate(list(ibudget.data_vars)):
-                        tstat_var, pval_var      = scipy.stats.ttest_rel(ibudget[var], ibudget_cf[var], axis=axis)
+                        print('variable {}/{}...'.format(i+1, len(ibudget.data_vars)), end='\r')
+                        tstat_var, pval_var      = scipy.stats.ttest_rel(ibudget[var], ibudget_cf[var], 
+                                                                         axis=axis, nan_policy='omit')
                         budget_tstat[var].values = tstat_var
                         budget_pval[var].values  = pval_var
                     budget_pval.to_netcdf(pval_str)
